@@ -1,0 +1,100 @@
+@startuml DFD_Level_0
+
+title Real Estate Application - Data Flow Diagram Level 0 (Context Diagram)
+
+!define EXTERNAL_ENTITY #FFE0B2
+!define PROCESS #E3F2FD
+!define DATA_STORE #E8F5E8
+
+skinparam rectangle {
+    BackgroundColor PROCESS
+    BorderColor #1976D2
+}
+
+skinparam entity {
+    BackgroundColor EXTERNAL_ENTITY
+    BorderColor #F57C00
+}
+
+skinparam storage {
+    BackgroundColor DATA_STORE
+    BorderColor #388E3C
+}
+
+' External Entities
+entity "Customer" as customer
+entity "Agent" as agent
+entity "Admin" as admin
+entity "Guest User" as guest
+
+' Main System Process
+rectangle "Real Estate\nManagement System" as system
+
+' Data Flows from External Entities to System
+customer --> system : User registration data
+customer --> system : Login credentials
+customer --> system : Search queries
+customer --> system : Favorite selections
+customer --> system : Property inquiries
+
+agent --> system : Agent registration data
+agent --> system : Login credentials  
+agent --> system : Property listings
+agent --> system : Property updates
+agent --> system : Message responses
+
+admin --> system : Admin credentials
+admin --> system : System configurations
+admin --> system : User management actions
+
+guest --> system : Browse requests
+guest --> system : Registration requests
+
+' Data Flows from System to External Entities
+system --> customer : Property search results
+system --> customer : Recommendations
+system --> customer : Property details
+system --> customer : Favorite lists
+system --> customer : Message notifications
+
+system --> agent : Property management interface
+system --> agent : Inquiry notifications
+system --> agent : Performance analytics
+system --> agent : Message inbox
+
+system --> admin : System reports
+system --> admin : User analytics
+system --> admin : System status
+
+system --> guest : Public property listings
+system --> guest : Registration forms
+
+note top of system
+  **Core Functions:**
+  - User Authentication & Authorization
+  - Property Management (CRUD)
+  - AI-Powered Search & Recommendations
+  - Real-time Messaging
+  - Favorites Management
+  - Advanced Filtering & Sorting
+end note
+
+note bottom of customer
+  **Customer Actions:**
+  - Browse properties
+  - Search with natural language
+  - Save favorites
+  - Contact agents
+  - View recommendations
+end note
+
+note bottom of agent
+  **Agent Actions:**
+  - Create property listings
+  - Manage property status
+  - Upload images
+  - Respond to inquiries
+  - Track performance
+end note
+
+@enduml

@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Results - RealEstate{% endblock %}
+
+{% block header %}
+<div class="bg-light py-4 mb-4">
+    <div class="container">
+        <h1 class="mb-0">Search Results</h1>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-body">
+                <form method="get" action="{% url 'search:search' %}">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="q" placeholder="Search properties..." value="{{ query }}" aria-label="Search">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                    <div class="mt-2 text-muted small">
+                        <i class="fas fa-info-circle me-1"></i> 
+                        Our semantic search finds properties based on meaning, not just keywords. Try describing what you're looking for.
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if query %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>Results for "{{ query }}"</h2>
+            <p>Found {{ results|length }} properties matching your search.</p>
+        </div>
+    </div>
+    
+    {% if results %}
+        <div class="row g-4">
+            {% for property in results %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card property-card h-100 shadow-sm">
+                        {% if property.images.first %}
+                            <img src="{{ property.images.first.image.url }}" class="card-img-top property-image" alt="{{ property.title }}">
+                        {% else %}
+                            <div class="card-img-top property-image bg-light d-flex justify-content-center align-items-center">
+                                <i class="fas fa-home fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ property.title }}</h5>
+                            <p class="card-text text-muted small mb-2">{{ property.address }}</p>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="fw-bold text-primary">${{ property.price|floatformat:0 }}</span>
+                                <div>
+                                    <span class="badge bg-light text-dark me-1"><i class="fas fa-bed me-1"></i>{{ property.bedrooms }}</span>
+                                    <span class="badge bg-light text-dark me-1"><i class="fas fa-bath me-1"></i>{{ property.bathrooms }}</span>
+                                    <span class="badge bg-light text-dark"><i class="fas fa-ruler me-1"></i>{{ property.square_footage }} sq ft</span>
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <a href="{% url 'properties:property_detail' property.id %}" class="btn btn-outline-primary btn-sm">View Details</a>
+                            </div>
+                            {% if user.is_authenticated and user.is_customer %}
+                                <div class="text-center mt-2">
+                                    <button class="btn btn-link btn-sm favorite-toggle" data-property-id="{{ property.id }}">
+                                        <i class="{% if property.id in favorite_property_ids %}fas{% else %}far{% endif %} fa-heart favorite-icon"></i>
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card shadow">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>No properties found matching your search</h4>
+                <p class="text-muted mb-4">Try using different keywords or browse our available properties.</p>
+                <a href="{% url 'properties:property_list' %}" class="btn btn-primary">
+                    <i class="fas fa-home me-2"></i> Browse All Properties
+                </a>
+            </div>
+        </div>
+    {% endif %}
+{% else %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                    <h4>Search for your dream home</h4>
+                    <p class="text-muted">Enter a search query above to find properties that match your needs.</p>
+                    <p class="mt-3">Try these examples:</p>
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+                            <div class="d-flex flex-wrap justify-content-center gap-2">
+                                <a href="{% url 'search:search' %}?q=modern apartment with balcony" class="btn btn-outline-primary btn-sm mb-2">modern apartment with balcony</a>
+                                <a href="{% url 'search:search' %}?q=spacious family home" class="btn btn-outline-primary btn-sm mb-2">spacious family home</a>
+                                <a href="{% url 'search:search' %}?q=downtown condo" class="btn btn-outline-primary btn-sm mb-2">downtown condo</a>
+                                <a href="{% url 'search:search' %}?q=houses with garden" class="btn btn-outline-primary btn-sm mb-2">houses with garden</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+{% if results and user.is_authenticated %}
+    <div class="card shadow mt-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="card-title mb-0">Search History</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                {% for search in user.search_history.all|slice:":5" %}
+                    <a href="{% url 'search:search' %}?q={{ search.query }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <span>{{ search.query }}</span>
+                            <small class="text-muted">{{ search.timestamp|timesince }} ago</small>
+                        </div>
+                    </a>
+                {% empty %}
+                    <div class="list-group-item text-center py-3">
+                        <p class="mb-0 text-muted">No search history yet</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="card-footer bg-white text-center">
+            <small class="text-muted">Last updated: {{ current_time|date:"M d, Y H:i" }}</small>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if user.is_authenticated and user.is_customer %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const favoriteButtons = document.querySelectorAll('.favorite-toggle');
+    
+    favoriteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const propertyId = this.dataset.propertyId;
+            const heartIcon = this.querySelector('.favorite-icon');
+            
+            fetch(`/properties/favorite/${propertyId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.is_favorite) {
+                        heartIcon.classList.replace('far', 'fas');
+                        showToast(`${data.message}`, 'success');
+                    } else {
+                        heartIcon.classList.replace('fas', 'far');
+                        showToast(`${data.message}`, 'info');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
+            });
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

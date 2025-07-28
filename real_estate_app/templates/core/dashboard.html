@@ -1,0 +1,648 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - RealEstate{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    
+    .welcome-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .welcome-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 200px;
+        height: 200px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        animation: float 6s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(180deg); }
+    }
+    
+    .welcome-animation {
+        animation: slideInUp 0.8s ease-out;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border: none;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .dashboard-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border: none;
+        margin-bottom: 2rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .dashboard-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 2px solid #e9ecef;
+        padding: 1.5rem;
+    }
+    
+    .card-header h5 {
+        margin: 0;
+        color: #2c3e50;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+    
+    .card-header i {
+        margin-right: 0.5rem;
+        color: #667eea;
+    }
+    
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .quick-action-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 10px;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .quick-action-btn:hover {
+        color: white;
+        text-decoration: none;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .quick-action-btn i {
+        font-size: 1.5rem;
+    }
+    
+    .property-card {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .property-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .property-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+    
+    .property-info {
+        padding: 1rem;
+    }
+    
+    .property-price {
+        color: #667eea;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    
+    .property-title {
+        color: #2c3e50;
+        font-weight: 600;
+        margin: 0.5rem 0;
+    }
+    
+    .property-location {
+        color: #6c757d;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .property-location i {
+        margin-right: 0.3rem;
+    }
+    
+    .list-item {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f1f3f4;
+        transition: all 0.3s ease;
+    }
+    
+    .list-item:last-child {
+        border-bottom: none;
+    }
+    
+    .list-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .item-title {
+        color: #2c3e50;
+        font-weight: 500;
+        margin-bottom: 0.3rem;
+    }
+    
+    .item-meta {
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #dee2e6;
+    }
+    
+    .quick-links {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .quick-link-item {
+        margin-bottom: 0.5rem;
+    }
+    
+    .quick-link {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        color: #495057;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .quick-link:hover {
+        background-color: #f8f9fa;
+        color: #667eea;
+        text-decoration: none;
+        transform: translateX(5px);
+    }
+    
+    .quick-link i {
+        margin-right: 0.75rem;
+        width: 20px;
+        text-align: center;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .dashboard-container {
+            padding: 1rem 0;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        
+        .quick-actions {
+            grid-template-columns: 1fr;
+        }
+        
+        .welcome-card {
+            padding: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="container">
+        <!-- Welcome Section -->
+        <div class="welcome-card welcome-animation">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        {% if user.user_type == 'agent' %}
+                            <i class="fas fa-briefcase me-3"></i>
+                            Welcome back, Agent {{ user.first_name|default:user.email }}!
+                        {% else %}
+                            <i class="fas fa-home me-3"></i>
+                            Welcome back, {{ user.first_name|default:user.email }}!
+                        {% endif %}
+                    </h1>
+                    <p class="mb-0 opacity-75">
+                        {% if user.user_type == 'agent' %}
+                            Manage your property listings and connect with potential buyers.
+                        {% else %}
+                            Discover your dream home from our curated selection of properties.
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="d-flex flex-column align-items-md-end">
+                        <small class="opacity-75">{{ "now"|date:"F j, Y" }}</small>
+                        <small class="opacity-75">{{ "now"|date:"g:i A" }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        {% if user.user_type == 'agent' %}
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ user_properties.count|default:"0" }}</div>
+                <div class="stat-label">Your Properties</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ available_properties|default:"0" }}</div>
+                <div class="stat-label">Available Listings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ sold_properties|default:"0" }}</div>
+                <div class="stat-label">Sold Properties</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ pending_properties|default:"0" }}</div>
+                <div class="stat-label">Pending Sales</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_favorites|default:"0" }}</div>
+                <div class="stat-label">Saved Properties</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ total_recommendations|default:"0" }}</div>
+                <div class="stat-label">Recommendations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ total_properties|default:"0" }}</div>
+                <div class="stat-label">Available Properties</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ days_since_joined|default:"0" }}</div>
+                <div class="stat-label">Days Active</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="row">
+            <!-- Quick Actions -->
+            <div class="col-lg-4">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-bolt"></i>Quick Actions</h5>
+                    </div>
+                    <div class="quick-actions">
+                        {% if user.user_type == 'agent' %}
+                            <a href="{% url 'properties:property_create' %}" class="quick-action-btn">
+                                <i class="fas fa-plus"></i>
+                                Add Property
+                            </a>
+                            <a href="{% url 'properties:agent_properties' %}" class="quick-action-btn">
+                                <i class="fas fa-list"></i>
+                                My Listings
+                            </a>
+                        {% else %}
+                            <a href="{% url 'search:search' %}" class="quick-action-btn">
+                                <i class="fas fa-search"></i>
+                                Search Properties
+                            </a>
+                            <a href="{% url 'properties:favorites_list' %}" class="quick-action-btn">
+                                <i class="fas fa-heart"></i>
+                                My Favorites
+                            </a>
+                            <a href="{% url 'search:recommendations' %}" class="quick-action-btn">
+                                <i class="fas fa-star"></i>
+                                Recommendations
+                            </a>
+                            <a href="{% url 'accounts:profile' %}" class="quick-action-btn">
+                                <i class="fas fa-user-cog"></i>
+                                My Profile
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-link"></i>Quick Links</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="quick-links">
+                            {% if user.user_type == 'agent' %}
+                                <li class="quick-link-item">
+                                    <a href="{% url 'properties:property_create' %}" class="quick-link">
+                                        <i class="fas fa-plus-circle"></i>
+                                        Add New Property
+                                    </a>
+                                </li>
+                                <li class="quick-link-item">
+                                    <a href="{% url 'properties:agent_properties' %}" class="quick-link">
+                                        <i class="fas fa-list"></i>
+                                        Manage Properties
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="quick-link-item">
+                                    <a href="{% url 'search:recommendations' %}" class="quick-link">
+                                        <i class="fas fa-thumbs-up"></i>
+                                        Recommendations
+                                    </a>
+                                </li>
+                                <li class="quick-link-item">
+                                    <a href="{% url 'properties:property_list' %}" class="quick-link">
+                                        <i class="fas fa-search"></i>
+                                        Browse Properties
+                                    </a>
+                                </li>
+                            {% endif %}
+                            <li class="quick-link-item">
+                                <a href="{% url 'accounts:profile' %}" class="quick-link">
+                                    <i class="fas fa-user-cog"></i>
+                                    Account Settings
+                                </a>
+                            </li>
+                            <li class="quick-link-item">
+                                <a href="{% url 'accounts:logout' %}" class="quick-link">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="col-lg-8">
+                {% if user.user_type == 'agent' %}
+                    <!-- Recent Properties for Agent -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-home"></i>Your Recent Properties</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_properties %}
+                                <div class="row">
+                                    {% for property in recent_properties %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="property-card">
+                                            {% if property.images.first %}
+                                                <img src="{{ property.images.first.image.url }}" alt="{{ property.title }}" class="property-image">
+                                            {% else %}
+                                                <div class="property-image bg-light d-flex align-items-center justify-content-center">
+                                                    <i class="fas fa-image text-muted fa-2x"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div class="property-info">
+                                                <div class="property-price">${{ property.price|floatformat:0 }}</div>
+                                                <h6 class="property-title">{{ property.title|truncatechars:40 }}</h6>
+                                                <div class="property-location">
+                                                    <i class="fas fa-map-marker-alt"></i>
+                                                    {{ property.location|truncatechars:30 }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-state">
+                                    <i class="fas fa-home"></i>
+                                    <h6>No properties listed yet</h6>
+                                    <p>Start by adding your first property listing.</p>
+                                    <a href="{% url 'properties:property_create' %}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i> Add Property
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-white">
+                            <a href="{% url 'properties:agent_properties' %}" class="btn btn-outline-primary btn-sm">View All Properties</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- Recent Favorites for Customer -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-heart"></i>Your Recent Favorites</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_favorites %}
+                                <div class="row">
+                                    {% for favorite in recent_favorites %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="property-card">
+                                            {% if favorite.property.images.first %}
+                                                <img src="{{ favorite.property.images.first.image.url }}" alt="{{ favorite.property.title }}" class="property-image">
+                                            {% else %}
+                                                <div class="property-image bg-light d-flex align-items-center justify-content-center">
+                                                    <i class="fas fa-image text-muted fa-2x"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div class="property-info">
+                                                <div class="property-price">${{ favorite.property.price|floatformat:0 }}</div>
+                                                <h6 class="property-title">{{ favorite.property.title|truncatechars:40 }}</h6>
+                                                <div class="property-location">
+                                                    <i class="fas fa-map-marker-alt"></i>
+                                                    {{ favorite.property.location|truncatechars:30 }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-state">
+                                    <i class="fas fa-heart"></i>
+                                    <h6>No favorites yet</h6>
+                                    <p>Start exploring properties and save your favorites.</p>
+                                    <a href="{% url 'search:search' %}" class="btn btn-primary">
+                                        <i class="fas fa-search me-2"></i> Browse Properties
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-white">
+                            <a href="{% url 'properties:favorites_list' %}" class="btn btn-outline-primary btn-sm">View All Favorites</a>
+                        </div>
+                    </div>
+
+                    <!-- Recent Searches -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-search"></i>Recent Searches</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if recent_searches %}
+                                {% for search in recent_searches %}
+                                <div class="list-item">
+                                    <div class="item-title">{{ search.query|default:"General Search" }}</div>
+                                    <div class="item-meta">
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        {{ search.created_at|date:"M j, Y" }}
+                                        {% if search.location %}
+                                            | <i class="fas fa-map-marker-alt me-1"></i>{{ search.location }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-state">
+                                    <i class="fas fa-search"></i>
+                                    <h6>No searches yet</h6>
+                                    <p>Start searching for properties to see your history here.</p>
+                                    <a href="{% url 'search:search' %}" class="btn btn-primary">
+                                        <i class="fas fa-search me-2"></i> Start Searching
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="dashboard-card">
+            <div class="card-body text-center py-4">
+                {% if user.user_type == 'agent' %}
+                    <h5 class="mb-3">Ready to list a new property?</h5>
+                    <p class="text-muted mb-3">Expand your portfolio and reach more potential buyers.</p>
+                    <a href="{% url 'properties:property_create' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus me-2"></i> Add New Property
+                    </a>
+                {% else %}
+                    <h5 class="mb-3">Find your dream home today!</h5>
+                    <p class="text-muted mb-3">Browse our extensive collection of properties tailored to your preferences.</p>
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <a href="{% url 'search:search' %}" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i> Search Properties
+                        </a>
+                        <a href="{% url 'search:recommendations' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-thumbs-up me-2"></i> View Recommendations
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Simple animation when the dashboard loads
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            document.querySelector('.welcome-animation').classList.add('welcome-animation');
+        }, 100);
+    });
+</script>
+{% endblock %}

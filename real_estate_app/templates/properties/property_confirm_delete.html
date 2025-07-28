@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Property - RealEstate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-white text-center py-3">
+                <h3 class="mb-0">Confirm Deletion</h3>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Warning: This action cannot be undone!
+                </div>
+                
+                <h5 class="mb-3">Are you sure you want to delete the following property?</h5>
+                
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h4 class="card-title">{{ property.title }}</h4>
+                        <p class="card-text"><i class="fas fa-map-marker-alt me-2"></i>{{ property.address }}</p>
+                        <p class="card-text"><strong class="text-primary">${{ property.price|floatformat:0 }}</strong></p>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark me-1"><i class="fas fa-bed me-1"></i>{{ property.bedrooms }}</span>
+                            <span class="badge bg-light text-dark me-1"><i class="fas fa-bath me-1"></i>{{ property.bathrooms }}</span>
+                            <span class="badge bg-light text-dark"><i class="fas fa-ruler me-1"></i>{{ property.square_footage }} sq ft</span>
+                        </div>
+                        
+                        {% if property.images.first %}
+                        <div class="mb-3 text-center">
+                            <img src="{{ property.images.first.image.url }}" alt="{{ property.title }}" style="max-width: 100%; height: auto; max-height: 200px;">
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <p class="text-danger mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Note: This property will also be removed from all customer favorites.
+                </p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'properties:property_detail' property.id %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-danger">Confirm Delete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}My Favorites - RealEstate{% endblock %}
+
+{% block header %}
+<div class="bg-light py-4 mb-4">
+    <div class="container">
+        <h1 class="mb-0">My Favorite Properties</h1>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="d-flex align-items-center">
+            <h2 class="me-3 mb-0">My Favorites</h2>
+            <span class="badge bg-danger rounded-pill">{{ favorites|length }}</span>
+        </div>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{% url 'properties:property_list' %}" class="btn btn-primary">
+            <i class="fas fa-search me-2"></i> Browse More Properties
+        </a>
+    </div>
+</div>
+
+{% if favorites %}
+<div class="row g-4">
+    {% for favorite in favorites %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card property-card h-100 shadow-sm">
+            {% if favorite.property.images.first %}
+                <img src="{{ favorite.property.images.first.image.url }}" class="card-img-top property-image" alt="{{ favorite.property.title }}">
+            {% else %}
+                <div class="card-img-top property-image bg-light d-flex justify-content-center align-items-center">
+                    <i class="fas fa-home fa-3x text-muted"></i>
+                </div>
+            {% endif %}
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h5 class="card-title">{{ favorite.property.title }}</h5>
+                    <button class="btn btn-link p-0 favorite-toggle" data-property-id="{{ favorite.property.id }}">
+                        <i class="fas fa-heart favorite-icon"></i>
+                    </button>
+                </div>
+                <p class="card-text text-muted small mb-2">{{ favorite.property.address }}</p>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold text-primary">${{ favorite.property.price|floatformat:0 }}</span>
+                    <div>
+                        <span class="badge bg-light text-dark me-1"><i class="fas fa-bed me-1"></i>{{ favorite.property.bedrooms }}</span>
+                        <span class="badge bg-light text-dark me-1"><i class="fas fa-bath me-1"></i>{{ favorite.property.bathrooms }}</span>
+                        <span class="badge bg-light text-dark"><i class="fas fa-ruler me-1"></i>{{ favorite.property.square_footage }} sq ft</span>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Added {{ favorite.added_at|date:"M d, Y" }}</small>
+                    <a href="{% url 'properties:property_detail' favorite.property.id %}" class="btn btn-outline-primary btn-sm">View Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card shadow">
+    <div class="card-body text-center py-5">
+        <i class="far fa-heart fa-4x text-muted mb-4"></i>
+        <h4>You haven't added any properties to your favorites yet</h4>
+        <p class="text-muted mb-4">Browse our listings and click the heart icon to add properties to your favorites.</p>
+        <a href="{% url 'properties:property_list' %}" class="btn btn-primary">
+            <i class="fas fa-search me-2"></i> Browse Properties
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const favoriteButtons = document.querySelectorAll('.favorite-toggle');
+    
+    favoriteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const propertyId = this.dataset.propertyId;
+            const card = this.closest('.col-md-6');
+            
+            fetch(`/properties/favorite/${propertyId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove card with animation
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.8)';
+                    card.style.transition = 'all 0.3s ease';
+                    
+                    setTimeout(() => {
+                        card.remove();
+                        
+                        // Check if there are no more favorites
+                        const remainingCards = document.querySelectorAll('.property-card');
+                        if (remainingCards.length === 0) {
+                            location.reload(); // Reload to show empty state
+                        }
+                    }, 300);
+                    
+                    showToast(data.message, 'info');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

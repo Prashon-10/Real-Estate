@@ -1,0 +1,86 @@
+@startuml Property_Search_Sequence
+
+title AI-Powered Property Search Process
+
+actor Customer as C
+participant "Search Interface" as SI
+participant "Search Views" as SV
+participant "Sentence Transformers" as ST
+participant "Recommendation Engine" as RE
+participant "Property Model" as PM
+participant "Database" as DB
+
+C -> SI : Enter search query
+activate SI
+
+SI -> SV : GET /search/?q="luxury apartment downtown"
+activate SV
+
+SV -> DB : Save search to SearchHistory
+activate DB
+DB -> SV : Search logged
+deactivate DB
+
+' Basic keyword search
+SV -> PM : Filter properties by keywords
+activate PM
+PM -> DB : Basic SQL query
+activate DB
+DB -> PM : Initial results
+deactivate DB
+PM -> SV : Basic property list
+deactivate PM
+
+' AI-powered semantic search
+SV -> ST : Encode search query
+activate ST
+ST -> ST : Generate query embedding
+ST -> SV : Query vector
+deactivate ST
+
+SV -> PM : Get all available properties
+activate PM
+PM -> DB : Fetch property descriptions
+activate DB
+DB -> PM : Property data
+deactivate DB
+PM -> SV : Property list with descriptions
+deactivate PM
+
+SV -> ST : Encode property descriptions
+activate ST
+ST -> ST : Generate property embeddings
+ST -> SV : Property vectors
+deactivate ST
+
+SV -> SV : Calculate cosine similarity
+SV -> SV : Rank results by relevance
+
+' Update recommendations
+SV -> RE : Update user recommendations
+activate RE
+RE -> DB : Store/update recommendations
+activate DB
+DB -> RE : Recommendations saved
+deactivate DB
+deactivate RE
+
+SV -> SI : Return ranked search results
+SI -> C : Display relevant properties
+
+deactivate SV
+deactivate SI
+
+note right of ST
+  Uses all-MiniLM-L6-v2 model
+  for semantic understanding
+  of natural language queries
+end note
+
+note right of SV
+  Fallback to basic search
+  if AI model fails to load
+  or encounters errors
+end note
+
+@enduml

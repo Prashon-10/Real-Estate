@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Messages - RealEstate{% endblock %}
+{% block content %}
+<h2 class="mb-4">Your Messages</h2>
+
+<div class="card shadow">
+    <div class="card-body">
+        {% if messages %}
+            <ul class="list-group list-group-flush">
+                {% for msg in messages %}
+                    <li class="list-group-item">
+                        <strong>{{ msg.sender }}</strong> on 
+                        <a href="{% url 'properties:property_detail' msg.property.id %}">
+                            {{ msg.property.title }}
+                        </a>
+                        <br>
+                        "{{ msg.content|truncatewords:15 }}"
+                        <small class="text-muted d-block">{{ msg.timestamp|date:"M j, Y g:i A" }}</small>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">You have no messages yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

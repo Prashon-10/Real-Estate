@@ -1,0 +1,306 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block title %}{% trans 'Site administration' %}{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .dashboard-container {
+            padding: 2rem;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .admin-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: none;
+        }
+        
+        .admin-card h3 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+            font-weight: 600;
+        }
+        
+        .admin-apps {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .admin-app {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+        
+        .admin-app:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+        
+        .admin-app h4 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        
+        .admin-app h4 i {
+            margin-right: 0.5rem;
+            color: #667eea;
+        }
+        
+        .model-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .model-links li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .model-links strong {
+            display: block;
+            color: #2c3e50;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+        }
+        
+        .model-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-add, .btn-change {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .btn-add i, .btn-change i {
+            font-size: 0.8rem;
+        }
+        
+        .btn-add:hover, .btn-change:hover {
+            opacity: 0.8;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .empty-dashboard {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+        
+        .empty-dashboard i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #dee2e6;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 1rem;
+            }
+            
+            .dashboard-header {
+                padding: 1.5rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .admin-apps {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-tachometer-alt me-3"></i>
+                    RealEstate Admin Dashboard
+                </h1>
+                <p class="mb-0 opacity-75">Welcome back! Here's what's happening with your real estate platform.</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="d-flex flex-column align-items-md-end">
+                    <small class="opacity-75">{{ "now"|date:"F j, Y" }}</small>
+                    <small class="opacity-75">{{ "now"|date:"g:i A" }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_users|default:"0" }}</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_properties|default:"0" }}</div>
+            <div class="stat-label">Properties Listed</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ available_properties|default:"0" }}</div>
+            <div class="stat-label">Available Properties</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_favorites|default:"0" }}</div>
+            <div class="stat-label">Total Favorites</div>
+        </div>
+    </div>
+
+    <!-- Admin Applications -->
+    {% if app_list %}
+        <div class="admin-card">
+            <h3><i class="fas fa-cogs me-2"></i>System Administration</h3>
+            <div class="admin-apps">
+                {% for app in app_list %}
+                <div class="admin-app">
+                    <h4>
+                        {% if app.name == 'Accounts' %}
+                            <i class="fas fa-users"></i>
+                        {% elif app.name == 'Properties' %}
+                            <i class="fas fa-home"></i>
+                        {% elif app.name == 'Search' %}
+                            <i class="fas fa-search"></i>
+                        {% elif app.name == 'Core' %}
+                            <i class="fas fa-cog"></i>
+                        {% else %}
+                            <i class="fas fa-cube"></i>
+                        {% endif %}
+                        {{ app.name }}
+                    </h4>
+                    
+                    <ul class="model-links">
+                        {% for model in app.models %}
+                        <li>
+                            <strong>{{ model.name }}</strong>
+                            <div class="model-actions">
+                                {% if model.add_url %}
+                                    <a href="{{ model.add_url }}" class="btn-add">
+                                        <i class="fas fa-plus"></i> Add
+                                    </a>
+                                {% endif %}
+                                {% if model.admin_url %}
+                                    <a href="{{ model.admin_url }}" class="btn-change">
+                                        <i class="fas fa-edit"></i> Change
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="admin-card">
+            <div class="empty-dashboard">
+                <i class="fas fa-inbox"></i>
+                <h4>No applications available</h4>
+                <p>Contact your administrator to set up applications for this admin site.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    {{ block.super }}
+</div>
+{% endblock %}

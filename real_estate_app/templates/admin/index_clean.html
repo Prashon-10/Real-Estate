@@ -1,0 +1,217 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block title %}{% trans 'Site administration' %}{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .admin-module {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .module-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+        
+        .module-content {
+            padding: 1.5rem;
+        }
+        
+        .model-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .model-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .model-item:last-child {
+            border-bottom: none;
+        }
+        
+        .model-name {
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        
+        .model-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .action-link {
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .action-add {
+            background: var(--success-color);
+            color: white;
+        }
+        
+        .action-change {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .action-link:hover {
+            opacity: 0.8;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #dee2e6;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Dashboard Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-1">Dashboard Overview</h1>
+            <p class="text-muted mb-0">Manage your real estate platform</p>
+        </div>
+        <div class="text-muted">
+            <i class="fas fa-calendar-alt me-2"></i>
+            {{ "now"|date:"F j, Y" }}
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_users|default:"0" }}</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_properties|default:"0" }}</div>
+            <div class="stat-label">Properties</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ active_agents|default:"0" }}</div>
+            <div class="stat-label">Active Agents</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ recent_activity|default:"0" }}</div>
+            <div class="stat-label">Recent Activity</div>
+        </div>
+    </div>
+
+    <!-- Admin Applications -->
+    {% if app_list %}
+        <div class="admin-grid">
+            {% for app in app_list %}
+            <div class="admin-module">
+                <div class="module-header">
+                    <i class="fas fa-cube me-2"></i>
+                    {{ app.name }}
+                </div>
+                <div class="module-content">
+                    {% if app.models %}
+                        <ul class="model-list">
+                            {% for model in app.models %}
+                            <li class="model-item">
+                                <span class="model-name">{{ model.name }}</span>
+                                <div class="model-actions">
+                                    {% if model.add_url %}
+                                        <a href="{{ model.add_url }}" class="action-link action-add">
+                                            <i class="fas fa-plus me-1"></i>Add
+                                        </a>
+                                    {% endif %}
+                                    {% if model.admin_url %}
+                                        <a href="{{ model.admin_url }}" class="action-link action-change">
+                                            <i class="fas fa-list me-1"></i>View
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-box-open"></i>
+                            <p>No models available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="admin-module">
+            <div class="module-content">
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <h4>No applications available</h4>
+                    <p class="text-muted">Contact your administrator to set up applications for this admin site.</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

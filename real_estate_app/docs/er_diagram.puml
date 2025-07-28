@@ -1,0 +1,161 @@
+@startuml Real_Estate_ER_Diagram
+
+!define ENTITY_COLOR #E1F5FE
+!define RELATIONSHIP_COLOR #FF5722
+!define PRIMARY_KEY #FFD700
+!define FOREIGN_KEY #90CAF9
+
+title Real Estate Application - Entity Relationship Diagram
+
+' User Entity (extends Django AbstractUser)
+entity "User" as user {
+  * **id** : AutoField <<PK>>
+  --
+  * username : CharField(150) <<UNIQUE>>
+  * email : EmailField
+  * password : CharField(128)
+  * first_name : CharField(150)
+  * last_name : CharField(150)
+  * user_type : CharField(10) <<CHOICES: customer, agent, admin>>
+  * profile_image : ImageField
+  * unique_key : CharField(9) <<UNIQUE>>
+  * phone_number : CharField(15)
+  * bio : TextField
+  * date_joined : DateTimeField
+  * is_active : BooleanField
+  * is_staff : BooleanField
+  * is_superuser : BooleanField
+  * last_login : DateTimeField
+}
+
+' Property Entity
+entity "Property" as property {
+  * **id** : AutoField <<PK>>
+  --
+  * title : CharField(255)
+  * address : CharField(500)
+  * price : DecimalField(12,2)
+  * bedrooms : PositiveSmallIntegerField
+  * bathrooms : DecimalField(3,1)
+  * square_footage : PositiveIntegerField
+  * description : TextField
+  * status : CharField(10) <<CHOICES: available, sold, pending>>
+  * agent_id : ForeignKey(User) <<FK>>
+  * created_at : DateTimeField
+  * updated_at : DateTimeField
+}
+
+' PropertyImage Entity
+entity "PropertyImage" as property_image {
+  * **id** : AutoField <<PK>>
+  --
+  * property_id : ForeignKey(Property) <<FK>>
+  * image : ImageField
+  * order : PositiveSmallIntegerField
+}
+
+' Favorite Entity (Junction Table)
+entity "Favorite" as favorite {
+  * **id** : AutoField <<PK>>
+  --
+  * user_id : ForeignKey(User) <<FK>>
+  * property_id : ForeignKey(Property) <<FK>>
+  * added_at : DateTimeField
+  <<UNIQUE(user_id, property_id)>>
+}
+
+' SearchHistory Entity
+entity "SearchHistory" as search_history {
+  * **id** : AutoField <<PK>>
+  --
+  * user_id : ForeignKey(User) <<FK>>
+  * query : TextField
+  * property_id : ForeignKey(Property) <<FK, NULL>>
+  * timestamp : DateTimeField
+}
+
+' Recommendation Entity
+entity "Recommendation" as recommendation {
+  * **id** : AutoField <<PK>>
+  --
+  * user_id : ForeignKey(User) <<FK>>
+  * property_id : ForeignKey(Property) <<FK>>
+  * score : FloatField
+  * created_at : DateTimeField
+  <<UNIQUE(user_id, property_id)>>
+}
+
+' PropertyMessage Entity
+entity "PropertyMessage" as property_message {
+  * **id** : AutoField <<PK>>
+  --
+  * property_id : ForeignKey(Property) <<FK>>
+  * sender_id : ForeignKey(User) <<FK>>
+  * content : TextField
+  * timestamp : DateTimeField
+  * read : BooleanField
+}
+
+' Relationships
+user ||--o{ property : "agent creates\n(1:N)"
+property ||--o{ property_image : "has images\n(1:N)"
+user ||--o{ favorite : "saves favorites\n(1:N)"
+property ||--o{ favorite : "favorited by\n(1:N)"
+user ||--o{ search_history : "searches\n(1:N)"
+property ||--o{ search_history : "searched for\n(1:N, optional)"
+user ||--o{ recommendation : "receives\n(1:N)"
+property ||--o{ recommendation : "recommended\n(1:N)"
+user ||--o{ property_message : "sends\n(1:N)"
+property ||--o{ property_message : "receives\n(1:N)"
+
+' Notes and constraints
+note right of user
+  **User Types:**
+  - customer: Can search and favorite properties
+  - agent: Can create and manage properties  
+  - admin: Full system access
+  
+  **Authentication:**
+  - Extends Django AbstractUser
+  - Custom unique_key for password reset
+  - Profile image support
+end note
+
+note right of property
+  **Status Options:**
+  - available: Listed for sale/rent
+  - sold: Transaction completed
+  - pending: Under negotiation
+  
+  **Business Rules:**
+  - Only agents can create properties
+  - Status changes trigger favorite cleanup
+  - Automatic timestamp updates
+end note
+
+note right of favorite
+  **Constraints:**
+  - Unique combination of user + property
+  - Prevents duplicate favorites
+  - Cascade delete with user/property
+  - Auto-removed when property sold
+end note
+
+note right of recommendation
+  **AI Features:**
+  - Score based on search similarity
+  - Uses Sentence Transformers
+  - Cosine similarity algorithm
+  - Unique per user-property pair
+  - Updated on user searches
+end note
+
+note right of property_message
+  **Messaging System:**
+  - Real-time communication
+  - Read/unread status tracking
+  - Property-specific conversations
+  - WebSocket support ready
+end note
+
+@enduml

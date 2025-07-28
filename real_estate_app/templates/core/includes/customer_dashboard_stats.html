@@ -1,0 +1,63 @@
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-body text-center">
+                <h1 class="display-4 text-danger mb-2">{{ user.favorites.all|length }}</h1>
+                <p class="text-muted mb-0">Favorites</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-body text-center">
+                <h1 class="display-4 text-info mb-2">{{ user.customer_chats.all|length }}</h1>
+                <p class="text-muted mb-0">Conversations</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-body text-center">
+                <h1 class="display-4 text-primary mb-2">{{ user.search_history.count }}</h1>
+                <p class="text-muted mb-0">Searches</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+        <h5 class="card-title mb-0">Recently Viewed Properties</h5>
+        <a href="{% url 'properties:property_list' %}" class="btn btn-link btn-sm">View All</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% for search in user.search_history.all|slice:":3" %}
+                {% if search.property %}
+                    <a href="{% url 'properties:property_detail' search.property.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <div class="d-flex align-items-center">
+                                {% if search.property.images.first %}
+                                    <img src="{{ search.property.images.first.image.url }}" class="me-3 rounded" style="width: 60px; height: 60px; object-fit: cover;" alt="{{ search.property.title }}">
+                                {% else %}
+                                    <div class="me-3 bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-home text-muted"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ search.property.title }}</h6>
+                                    <small class="text-primary">${{ search.property.price|floatformat:0 }}</small>
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ search.timestamp|timesince }} ago</small>
+                        </div>
+                    </a>
+                {% endif %}
+            {% empty %}
+                <div class="list-group-item text-center py-4">
+                    <p class="mb-0">No recently viewed properties</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Real Estate App{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #e74c3c;
+            --text-dark: #2c3e50;
+            --text-light: #ecf0f1;
+            --background-light: #f8f9fa;
+            --background-dark: #343a40;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-dark);
+            background-color: var(--background-light);
+        }
+        
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--primary-color) !important;
+        }
+        
+        .nav-link {
+            color: var(--text-dark) !important;
+            font-weight: 500;
+        }
+        
+        .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-accent {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+        
+        .card {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .profile-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            overflow: hidden;
+        }
+        
+        .profile-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .hero-section {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 80px 0;
+            border-radius: 0 0 30px 30px;
+            margin-bottom: 30px;
+        }
+        
+        .property-card {
+            height: 100%;
+        }
+        
+        .property-image {
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        footer {
+            background-color: var(--background-dark);
+            color: var(--text-light);
+            padding: 40px 0;
+            margin-top: 50px;
+        }
+        
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        
+        .custom-toast {
+            min-width: 300px;
+            background-color: white;
+            border-left: 5px solid var(--primary-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .welcome-animation {
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .chat-container {
+            height: 400px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #f5f5f5;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 70%;
+        }
+        
+        .message-received {
+            background-color: white;
+            float: left;
+            clear: both;
+        }
+        
+        .message-sent {
+            background-color: var(--primary-color);
+            color: white;
+            float: right;
+            clear: both;
+        }
+        
+        .message-time {
+            font-size: 0.8em;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+        
+        .favorite-icon {
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .favorite-icon:hover {
+            transform: scale(1.2);
+        }
+        
+        .unique-key-alert {
+            background-color: #fff8e1;
+            border: 1px solid #ffecb3;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .unique-key-value {
+            font-family: monospace;
+            font-weight: bold;
+            background: #f1f1f1;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'index' %}">
+                <i class="fas fa-home"></i> RealEstate
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'index' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'properties:property_list' %}">Properties</a>
+                    </li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'core:dashboard' %}">Dashboard</a>
+                        </li>
+                        {% if user.is_agent %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'properties:agent_properties' %}">My Listings</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'properties:property_create' %}">Add Property</a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'properties:favorites_list' %}">Favorites</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'search:recommendations' %}">Recommendations</a>
+                            </li>
+                        {% endif %}
+                      {% if user.is_authenticated %}
+    <!-- <li class="nav-item">
+        <a class="nav-link" href="{% url 'properties:message_inbox' %}">
+            Messages
+            {% if unread_message_count > 0 %}
+                <span class="badge bg-danger ms-1">{{ unread_message_count }}</span>
+            {% endif %}
+        </a>
+    </li> -->
+{% endif %}
+</li>
+                    {% endif %}
+                </ul>
+                
+                <form class="d-flex mx-auto" action="{% url 'search:search' %}" method="GET">
+                    <input class="form-control me-2" type="search" name="q" placeholder="Search properties..." aria-label="Search">
+                    <button class="btn btn-outline-primary" type="submit">Search</button>
+                </form>
+                
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown">
+                                <div class="profile-circle">
+                                    {% if user.profile_image %}
+                                        <img src="{{ user.profile_image.url }}" alt="{{ user.username }}">
+                                    {% else %}
+                                        {{ user.username|make_list|first|upper }}
+                                    {% endif %}
+                                </div>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                                <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Your Profile</a></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:profile_edit' %}">Edit Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">Logout</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="registerDropdown" role="button" data-bs-toggle="dropdown">
+                                Register
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="registerDropdown">
+                                <li><a class="dropdown-item" href="{% url 'accounts:register_customer' %}">As Customer</a></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:register_agent' %}">As Agent</a></li>
+                            </ul>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    {% block header %}{% endblock %}
+    
+    <div class="container mt-4">
+        {% block content %}{% endblock %}
+    </div>
+    
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>RealEstate</h5>
+                    <p>Finding your dream home made simple.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'index' %}" class="text-light">Home</a></li>
+                        <li><a href="{% url 'properties:property_list' %}" class="text-light">Properties</a></li>
+                        {% if user.is_authenticated %}
+                            <li><a href="{% url 'core:dashboard' %}" class="text-light">Dashboard</a></li>
+                        {% else %}
+                            <li><a href="{% url 'accounts:login' %}" class="text-light">Login</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Contact</h5>
+                    <p>Email: info@realestate.com<br>Phone: 123-456-7890</p>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12 text-center">
+                    <p>&copy; 2025 RealEstate. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <div class="toast-container"></div>
+
+    <!-- Bootstrap JS with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toastContainer = document.querySelector('.toast-container');
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = 'custom-toast p-3 mb-2';
+            
+            // Set border color based on type
+            if (type === 'success') {
+                toast.style.borderLeftColor = '#2ecc71';
+            } else if (type === 'error') {
+                toast.style.borderLeftColor = '#e74c3c';
+            } else if (type === 'warning') {
+                toast.style.borderLeftColor = '#f39c12';
+            }
+            
+            // Create toast content
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Add toast to container
+            toastContainer.appendChild(toast);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => {
+                    toastContainer.removeChild(toast);
+                }, 500);
+            }, 5000);
+            
+            // Add click listener to close button
+            toast.querySelector('.btn-close').addEventListener('click', () => {
+                toastContainer.removeChild(toast);
+            });
+        }
+        
+        // Show toasts for Django messages
+        {% if messages %}
+            {% for message in messages %}
+                showToast('{{ message }}', '{{ message.tags }}');
+            {% endfor %}
+        {% endif %}
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

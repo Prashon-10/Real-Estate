@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}My Messages - RealEstate{% endblock %}
+
+{% block header %}
+<div class="bg-light py-4 mb-4">
+    <div class="container">
+        <h1 class="mb-0">My Messages</h1>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>
+                                    {% if user.is_customer %}Agent{% else %}Customer{% endif %}
+                                </th>
+                                <th>Property</th>
+                                <th>Last Message</th>
+                                <th>Started</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for chat_room in chat_rooms %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if user.is_customer %}
+                                            <div class="profile-circle me-3" style="width: 40px; height: 40px;">
+                                                {% if chat_room.agent.profile_image %}
+                                                    <img src="{{ chat_room.agent.profile_image.url }}" alt="{{ chat_room.agent.username }}">
+                                                {% else %}
+                                                    <span>{{ chat_room.agent.username|make_list|first|upper }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                {{ chat_room.agent.get_full_name|default:chat_room.agent.username }}
+                                            </div>
+                                        {% else %}
+                                            <div class="profile-circle me-3" style="width: 40px; height: 40px;">
+                                                {% if chat_room.customer.profile_image %}
+                                                    <img src="{{ chat_room.customer.profile_image.url }}" alt="{{ chat_room.customer.username }}">
+                                                {% else %}
+                                                    <span>{{ chat_room.customer.username|make_list|first|upper }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                {{ chat_room.customer.get_full_name|default:chat_room.customer.username }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if chat_room.property.images.first %}
+                                        <img src="{{ chat_room.property.images.first.image.url }}" alt="{{ chat_room.property.title }}" class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                                        {% else %}
+                                        <div class="me-2" style="width: 40px; height: 40px; background: #f1f1f1; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                                            <i class="fas fa-home text-muted"></i>
+                                        </div>
+                                        {% endif %}
+                                        <div>{{ chat_room.property.title }}</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% with last_message=chat_room.messages.last %}
+                                    {% if last_message %}
+                                    <div class="d-flex flex-column">
+                                        <small class="text-muted">{{ last_message.sender.username }}: {{ last_message.content|truncatechars:30 }}</small>
+                                        <small>{{ last_message.timestamp|timesince }} ago</small>
+                                    </div>
+                                    {% else %}
+                                    <small class="text-muted">No messages yet</small>
+                                    {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>{{ chat_room.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'chat:property_chat' chat_room.property.id %}{% if user.is_agent %}?customer_id={{ chat_room.customer.id }}{% endif %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-comments me-1"></i> Chat
+                                        </a>
+                                        <a href="{% url 'properties:property_detail' chat_room.property.id %}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-eye me-1"></i> Property
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="my-3">
+                                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                        <h5>You don't have any messages yet</h5>
+                                        {% if user.is_customer %}
+                                            <p class="text-muted">Start browsing properties and chat with agents to inquire about listings.</p>
+                                            <a href="{% url 'properties:property_list' %}" class="btn btn-primary mt-2">
+                                                <i class="fas fa-search me-2"></i> Browse Properties
+                                            </a>
+                                        {% else %}
+                                            <p class="text-muted">Customers will appear here when they initiate a chat about your properties.</p>
+                                            <a href="{% url 'properties:agent_properties' %}" class="btn btn-primary mt-2">
+                                                <i class="fas fa-home me-2"></i> My Properties
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mt-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0">Message Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="py-3">
+                            <h3 class="text-primary mb-1">{{ chat_rooms|length }}</h3>
+                            <p class="text-muted mb-0">Total Conversations</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="py-3">
+                            <h3 class="text-primary mb-1">{{ chat_rooms|length|default:"0" }}</h3>
+                            <p class="text-muted mb-0">Active Discussions</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="py-3">
+                            <h3 class="text-primary mb-1">{{ chat_rooms.first.created_at|date:"M d, Y"|default:"N/A" }}</h3>
+                            <p class="text-muted mb-0">First Conversation</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white text-center">
+                <small class="text-muted">Last updated: May 31, 2025 11:28 AM</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

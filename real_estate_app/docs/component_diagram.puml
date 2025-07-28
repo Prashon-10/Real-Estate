@@ -1,0 +1,67 @@
+@startuml Real_Estate_Components
+
+!theme plain
+skinparam backgroundColor white
+
+title Component Diagram - Real Estate App
+
+package "Client" {
+  component [Frontend Templates] as UI
+  component [Static Files CSS/JS] as CSS
+}
+
+package "Django Framework" {
+  component [accounts/urls] as AccountURL
+  component [properties/urls] as PropURL
+  component [search/urls] as SearchURL
+  component [Auth Middleware] as Auth
+}
+
+package "Controllers" {
+  component [User Views] as UserCtrl
+  component [Property Views] as PropCtrl
+  component [Search Views] as SearchCtrl
+}
+
+package "Models" {
+  component [User Model] as UserModel
+  component [Property Model] as PropModel
+  component [Message Model] as MsgModel
+}
+
+package "External Services" {
+  component [AI Search SentenceTransformers] as AI
+  component [Redis WebSocket] as Redis
+}
+
+database "SQLite Database" {
+  component [User] as UserDB
+  component [Property] as PropDB
+  component [PropertyMessage] as MsgDB
+  component [SearchHistory] as SearchDB
+}
+
+UI --> AccountURL
+UI --> PropURL
+UI --> SearchURL
+CSS --> UI
+
+AccountURL --> UserCtrl
+PropURL --> PropCtrl
+SearchURL --> SearchCtrl
+
+UserCtrl --> UserModel
+PropCtrl --> PropModel
+PropCtrl --> MsgModel
+SearchCtrl --> PropModel
+
+UserModel --> UserDB
+PropModel --> PropDB
+MsgModel --> MsgDB
+SearchCtrl --> SearchDB
+
+SearchCtrl --> AI
+PropCtrl --> Redis
+Auth --> UserCtrl
+
+@enduml

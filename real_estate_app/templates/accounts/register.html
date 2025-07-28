@@ -1,0 +1,1014 @@
+{% extends 'base.html' %}
+
+{% block title %}Register as {{ user_type|title }} - RealEstate{% endblock %}
+
+{% block content %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+    
+    * {
+        box-sizing: border-box;
+    }
+    
+    body {
+        font-family: 'Poppins', sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+    }
+    
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: 
+            radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.2) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+    }
+    
+    .registration-wrapper {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+    }
+    
+    .container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+    
+    .registration-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 24px;
+        box-shadow: 
+            0 32px 64px rgba(0, 0, 0, 0.15),
+            0 16px 32px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        overflow: hidden;
+        max-width: 900px;
+        margin: 0 auto;
+        animation: cardSlideUp 1s ease-out;
+        position: relative;
+    }
+    
+    .card-header-modern {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        padding: 3rem 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .card-header-modern::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: conic-gradient(from 0deg, transparent, rgba(255,255,255,0.1), transparent);
+        animation: rotate 4s linear infinite;
+    }
+    
+    .header-content {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .brand-logo {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: white;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .header-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: white;
+        margin: 0 0 0.5rem 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        line-height: 1.2;
+    }
+    
+    .header-subtitle {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.9);
+        margin: 0;
+        font-weight: 400;
+    }
+    
+    .card-body-modern {
+        padding: 3rem 2rem;
+        background: white;
+    }
+    
+    .form-section {
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+    
+    .form-label-modern {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+    
+    .input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    .input-icon {
+        position: absolute;
+        left: 1rem;
+        color: #667eea;
+        z-index: 2;
+        transition: all 0.3s ease;
+    }
+    
+    /* Hide any visible class names and style all form inputs uniformly */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="file"],
+    textarea,
+    select {
+        width: 100%;
+        padding: 1rem 1rem 1rem 3rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 16px;
+        font-size: 1rem;
+        font-family: 'Poppins', sans-serif;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        outline: none;
+    }
+    
+    input[type="file"] {
+        padding: 1rem;
+        cursor: pointer;
+    }
+    
+    textarea {
+        resize: vertical;
+        min-height: 120px;
+        padding-top: 1rem;
+    }
+    
+    input:focus,
+    textarea:focus,
+    select:focus {
+        border-color: #667eea;
+        box-shadow: 
+            0 0 0 4px rgba(102, 126, 234, 0.1),
+            0 4px 12px rgba(102, 126, 234, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    input:focus + .input-icon,
+    textarea:focus + .input-icon {
+        color: #4f46e5;
+        transform: scale(1.1);
+    }
+    
+    .error-message {
+        color: #dc2626;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        animation: errorSlide 0.3s ease-out;
+    }
+    
+    .help-text {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.5rem;
+        line-height: 1.5;
+        padding: 0.75rem;
+        background: #f8fafc;
+        border-radius: 8px;
+        border-left: 3px solid #667eea;
+    }
+    
+    .alert-modern {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border: 1px solid #f87171;
+        color: #dc2626;
+        padding: 1rem 1.5rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        animation: alertSlide 0.5s ease-out;
+        box-shadow: 0 4px 12px rgba(248, 113, 113, 0.2);
+    }
+    
+    .profile-upload-area {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 3px dashed #cbd5e1;
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .profile-upload-area:hover {
+        border-color: #667eea;
+        background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    }
+    
+    .upload-icon {
+        font-size: 3rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    .upload-text {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .upload-subtext {
+        font-size: 0.9rem;
+        color: #6b7280;
+    }
+    
+    .agent-section {
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 2px solid #a7f3d0;
+        border-radius: 20px;
+        padding: 2rem;
+        margin: 2rem 0;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .agent-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #10b981, #059669);
+    }
+    
+    .agent-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-primary-modern {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        border: none;
+        padding: 1.25rem 2rem;
+        border-radius: 16px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: white;
+        width: 100%;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        cursor: pointer;
+        font-family: 'Poppins', sans-serif;
+    }
+    
+    .btn-primary-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .btn-primary-modern:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-primary-modern:hover::before {
+        left: 100%;
+    }
+    
+    .btn-primary-modern:active {
+        transform: translateY(-1px);
+    }
+    
+    .links-section {
+        text-align: center;
+        padding-top: 2rem;
+        border-top: 1px solid #e5e7eb;
+        margin-top: 2rem;
+    }
+    
+    .link-item {
+        margin-bottom: 1rem;
+        color: #6b7280;
+        font-size: 0.95rem;
+    }
+    
+    .link-item a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .link-item a::after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: -2px;
+        left: 0;
+        background: #667eea;
+        transition: width 0.3s ease;
+    }
+    
+    .link-item a:hover {
+        color: #4f46e5;
+    }
+    
+    .link-item a:hover::after {
+        width: 100%;
+    }
+    
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -0.75rem;
+    }
+    
+    .col-md-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
+        padding: 0 0.75rem;
+    }
+    
+    /* Hide any Bootstrap or Django form classes that might show */
+    .form-control,
+    .form-control-modern,
+    input.form-control,
+    textarea.form-control,
+    select.form-control {
+        /* Override any existing styles */
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+    }
+    
+    /* Ensure file inputs look consistent */
+    input[type="file"] {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 1rem;
+        font-family: 'Poppins', sans-serif;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    input[type="file"]:hover {
+        border-color: #667eea;
+        background: #f8fafc;
+    }
+    
+    input[type="file"]:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    /* Animations */
+    @keyframes cardSlideUp {
+        from {
+            opacity: 0;
+            transform: translateY(50px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    @keyframes errorSlide {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    @keyframes alertSlide {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .registration-card {
+            margin: 1rem;
+        }
+        
+        .card-header-modern {
+            padding: 2.5rem 1.5rem;
+        }
+        
+        .card-body-modern {
+            padding: 2.5rem 1.5rem;
+        }
+        
+        .header-title {
+            font-size: 2.2rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .registration-wrapper {
+            padding: 0.5rem;
+        }
+        
+        .registration-card {
+            margin: 0.5rem;
+            border-radius: 20px;
+        }
+        
+        .card-header-modern {
+            padding: 2rem 1rem;
+        }
+        
+        .card-body-modern {
+            padding: 2rem 1rem;
+        }
+        
+        .header-title {
+            font-size: 1.8rem;
+        }
+        
+        .header-subtitle {
+            font-size: 1rem;
+        }
+        
+        .brand-logo {
+            font-size: 2.5rem;
+        }
+        
+        .col-md-6 {
+            flex: 0 0 100%;
+            max-width: 100%;
+            margin-bottom: 1rem;
+        }
+        
+        .row {
+            margin: 0;
+        }
+        
+        .col-md-6 {
+            padding: 0;
+        }
+        
+        input, textarea, select {
+            padding: 0.875rem 0.875rem 0.875rem 2.75rem;
+            font-size: 16px; /* Prevents zoom on iOS */
+        }
+        
+        input[type="file"] {
+            padding: 0.875rem;
+        }
+        
+        .input-icon {
+            left: 0.875rem;
+        }
+        
+        .btn-primary-modern {
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+        }
+        
+        .agent-section {
+            padding: 1.5rem;
+        }
+        
+        .profile-upload-area {
+            padding: 1.5rem;
+        }
+        
+        .upload-icon {
+            font-size: 2.5rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .registration-wrapper {
+            padding: 0.25rem;
+        }
+        
+        .registration-card {
+            margin: 0.25rem;
+            border-radius: 16px;
+        }
+        
+        .card-header-modern {
+            padding: 1.5rem 0.75rem;
+        }
+        
+        .card-body-modern {
+            padding: 1.5rem 0.75rem;
+        }
+        
+        .header-title {
+            font-size: 1.5rem;
+        }
+        
+        .brand-logo {
+            font-size: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+        }
+        
+        .profile-upload-area {
+            padding: 1rem;
+        }
+        
+        .agent-section {
+            padding: 1rem;
+        }
+    }
+</style>
+
+<div class="registration-wrapper">
+    <div class="container">
+        <div class="registration-card">
+            <div class="card-header-modern">
+                <div class="header-content">
+                    <div class="brand-logo">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <h1 class="header-title">Register as {{ user_type|title }}</h1>
+                    <p class="header-subtitle">Join our premium real estate community</p>
+                </div>
+            </div>
+
+            <div class="card-body-modern">
+                <form method="post" enctype="multipart/form-data" id="registrationForm">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert-modern">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <div>
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Profile Image Section -->
+                    <div class="form-section">
+                        <div class="profile-upload-area" onclick="document.getElementById('id_profile_image').click()">
+                            <div class="upload-icon">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                            <div class="upload-text">Upload Profile Photo</div>
+                            <div class="upload-subtext">Click here to select your profile image</div>
+                            <input type="file" id="id_profile_image" name="profile_image" accept="image/*" style="display: none;" class="form-control">
+                            {% if form.profile_image.errors %}
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {% for error in form.profile_image.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Personal Information -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-user"></i>
+                            Personal Information
+                        </h3>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.first_name.id_for_label }}" class="form-label-modern">
+                                        First Name
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-user input-icon"></i>
+                                        {{ form.first_name }}
+                                    </div>
+                                    {% if form.first_name.errors %}
+                                        <div class="error-message">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            {% for error in form.first_name.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.last_name.id_for_label }}" class="form-label-modern">
+                                        Last Name
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-user input-icon"></i>
+                                        {{ form.last_name }}
+                                    </div>
+                                    {% if form.last_name.errors %}
+                                        <div class="error-message">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            {% for error in form.last_name.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.username.id_for_label }}" class="form-label-modern">
+                                Username
+                            </label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-at input-icon"></i>
+                                {{ form.username }}
+                            </div>
+                            {% if form.username.errors %}
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {% for error in form.username.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.email.id_for_label }}" class="form-label-modern">
+                                Email Address *
+                            </label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-envelope input-icon"></i>
+                                {{ form.email }}
+                            </div>
+                            {% if form.email.errors %}
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.email.help_text %}
+                                <div class="help-text">
+                                    <i class="fas fa-info-circle"></i>
+                                    {{ form.email.help_text }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Agent-specific fields -->
+                    {% if user_type == 'agent' %}
+                    <div class="agent-section">
+                        <div class="agent-badge">
+                            <i class="fas fa-briefcase"></i>
+                            Professional Details
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.phone_number.id_for_label }}" class="form-label-modern">
+                                Phone Number
+                            </label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-phone input-icon"></i>
+                                {{ form.phone_number }}
+                            </div>
+                            {% if form.phone_number.errors %}
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {% for error in form.phone_number.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.bio.id_for_label }}" class="form-label-modern">
+                                Professional Bio
+                            </label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-info-circle input-icon" style="top: 1rem;"></i>
+                                {{ form.bio }}
+                            </div>
+                            {% if form.bio.errors %}
+                                <div class="error-message">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    {% for error in form.bio.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Security Section -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-shield-alt"></i>
+                            Account Security
+                        </h3>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.password1.id_for_label }}" class="form-label-modern">
+                                        Password
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-lock input-icon"></i>
+                                        {{ form.password1 }}
+                                    </div>
+                                    {% if form.password1.errors %}
+                                        <div class="error-message">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            {% for error in form.password1.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.password1.help_text %}
+                                        <div class="help-text">
+                                            <i class="fas fa-info-circle"></i>
+                                            {{ form.password1.help_text|safe }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.password2.id_for_label }}" class="form-label-modern">
+                                        Confirm Password
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-lock input-icon"></i>
+                                        {{ form.password2 }}
+                                    </div>
+                                    {% if form.password2.errors %}
+                                        <div class="error-message">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            {% for error in form.password2.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="form-section">
+                        <button type="submit" class="btn-primary-modern" id="submitBtn">
+                            <i class="fas fa-user-plus"></i>
+                            Create My Account
+                        </button>
+                    </div>
+                    
+                    <!-- Links Section -->
+                    <div class="links-section">
+                        <div class="link-item">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Already have an account? 
+                            <a href="{% url 'accounts:login' %}">Sign In Here</a>
+                        </div>
+                        {% if user_type == 'customer' %}
+                            <div class="link-item">
+                                <i class="fas fa-briefcase"></i>
+                                Are you a real estate professional? 
+                                <a href="{% url 'accounts:register_agent' %}">Register as Agent</a>
+                            </div>
+                        {% else %}
+                            <div class="link-item">
+                                <i class="fas fa-user"></i>
+                                Looking to buy or rent? 
+                                <a href="{% url 'accounts:register_customer' %}">Register as Customer</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registrationForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const inputs = document.querySelectorAll('input, textarea, select');
+    
+    // Enhanced form interactions
+    inputs.forEach((input, index) => {
+        // Add staggered animation
+        input.style.animationDelay = `${index * 0.1}s`;
+        input.style.animation = 'cardSlideUp 0.6s ease-out forwards';
+        
+        // Enhanced focus effects
+        input.addEventListener('focus', function() {
+            if (this.closest('.input-wrapper')) {
+                this.closest('.input-wrapper').style.transform = 'scale(1.02)';
+                this.closest('.form-group').style.zIndex = '10';
+            }
+        });
+        
+        input.addEventListener('blur', function() {
+            if (this.closest('.input-wrapper')) {
+                this.closest('.input-wrapper').style.transform = 'scale(1)';
+                this.closest('.form-group').style.zIndex = '1';
+            }
+        });
+        
+        // Real-time validation feedback
+        input.addEventListener('input', function() {
+            if (this.value.length > 0) {
+                this.style.borderColor = '#10b981';
+                this.style.boxShadow = '0 0 0 4px rgba(16, 185, 129, 0.1)';
+            } else {
+                this.style.borderColor = '#e5e7eb';
+                this.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+            }
+        });
+    });
+    
+    // Enhanced form submission
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.7';
+            
+            // Add loading animation to the button
+            submitBtn.style.background = 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+        });
+    }
+    
+    // Profile image upload preview
+    const profileInput = document.getElementById('id_profile_image');
+    if (profileInput) {
+        profileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const uploadArea = document.querySelector('.profile-upload-area');
+                    uploadArea.innerHTML = `
+                        <div style="position: relative; display: inline-block;">
+                            <img src="${e.target.result}" alt="Profile Preview" 
+                                 style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #667eea;">
+                            <div style="position: absolute; bottom: 0; right: 0; background: #667eea; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-check" style="font-size: 0.8rem;"></i>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; color: #10b981; font-weight: 600;">
+                            <i class="fas fa-check-circle"></i> Image Selected
+                        </div>
+                        <div style="font-size: 0.9rem; color: #6b7280; margin-top: 0.5rem;">
+                            Click to change image
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Add smooth scrolling for form sections
+    const sections = document.querySelectorAll('.form-section');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animation = 'cardSlideUp 0.6s ease-out forwards';
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    sections.forEach(section => {
+        observer.observe(section);
+    });
+    
+    // Add keyboard navigation enhancements
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
+            e.preventDefault();
+            const inputs = Array.from(document.querySelectorAll('input, textarea, select'));
+            const currentIndex = inputs.indexOf(e.target);
+            if (currentIndex > -1 && currentIndex < inputs.length - 1) {
+                inputs[currentIndex + 1].focus();
+            }
+        }
+    });
+});
+</script>
+
+{% endblock %}

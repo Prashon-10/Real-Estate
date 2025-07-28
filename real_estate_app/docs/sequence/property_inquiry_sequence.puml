@@ -1,0 +1,68 @@
+@startuml Property_Inquiry_Sequence
+
+title Customer Property Inquiry Process
+
+actor Customer as customer
+participant "Frontend (React)" as frontend
+participant "Core Views" as core
+participant "Property Controller (API)" as property_api
+participant "Search Controller (API)" as search_api
+participant "Property (Model)" as property_model
+participant "Message (Model)" as message_model
+participant "User (Model)" as user_model
+database "Database" as db
+
+== Browse Properties ==
+customer -> frontend : Visit Property Page
+frontend -> core : GET /properties/
+core -> property_api : findAll()
+property_api -> property_model : Query all available properties
+property_model -> db : SELECT * FROM properties WHERE status='available'
+db --> property_model : Property data
+property_model --> property_api : Return properties
+property_api --> core : JSON response
+core --> frontend : Property list
+frontend --> customer : Show Property List
+
+== Search for Specific Property ==
+customer -> frontend : Search "downtown apartment"
+frontend -> search_api : GET /search/?q="downtown apartment"
+search_api -> property_model : semantic_search(query)
+property_model -> db : Query properties with AI matching
+db --> property_model : Matching properties
+property_model --> search_api : Search results
+search_api --> frontend : JSON response with results
+frontend --> customer : Display Search Results
+
+== View Property Details ==
+customer -> frontend : Click Property
+frontend -> property_api : GET /properties/{id}
+property_api -> property_model : findById(id)
+property_model -> db : Query property by id
+db --> property_model : Property details
+property_model --> property_api : Return property
+property_api --> frontend : JSON response
+frontend --> customer : Show Property Details
+
+== Send Inquiry Message ==
+customer -> frontend : Click "Send Message"
+frontend -> property_api : POST /properties/{id}/send-message/
+property_api -> message_model : create(user, property, content)
+message_model -> db : Save new message
+db --> message_model : Message saved
+message_model -> user_model : Update agent notification
+user_model -> db : Update notification status
+db --> user_model : Notification updated
+user_model --> message_model : Notification sent
+message_model --> property_api : Return message confirmation
+property_api --> frontend : Message success response
+frontend --> customer : Show "Message Sent" Confirmation
+
+== Agent Receives Notification ==
+note right of db : Real-time notification via WebSocket
+db -> user_model : New message notification
+user_model -> property_api : Notify agent
+property_api -> frontend : WebSocket notification
+frontend -> customer : Show notification badge
+
+@enduml

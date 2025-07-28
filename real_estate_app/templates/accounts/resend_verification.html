@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Resend Verification Email - RealEstate{% endblock %}
+
+{% block content %}
+<style>
+    .resend-container {
+        max-width: 500px;
+        margin: 50px auto;
+        padding: 20px;
+    }
+    
+    .resend-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .resend-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+    }
+    
+    .resend-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+    
+    .resend-body {
+        padding: 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn-resend {
+        width: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-resend:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .info-box {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    
+    .back-link {
+        text-align: center;
+        margin-top: 20px;
+    }
+    
+    .back-link a {
+        color: #667eea;
+        text-decoration: none;
+    }
+    
+    .back-link a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="resend-container">
+    <div class="resend-card">
+        <div class="resend-header">
+            <i class="fas fa-paper-plane" style="font-size: 2rem; margin-bottom: 10px;"></i>
+            <h2>Resend Verification Email</h2>
+        </div>
+        
+        <div class="resend-body">
+            <div class="info-box">
+                <i class="fas fa-info-circle"></i>
+                <strong>Haven't received your verification email?</strong><br>
+                Enter your email address below and we'll send you a new verification link.
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="email" class="form-label">
+                        <i class="fas fa-envelope"></i> Email Address
+                    </label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        class="form-control" 
+                        placeholder="Enter your email address"
+                        required
+                    >
+                </div>
+                
+                <button type="submit" class="btn-resend">
+                    <i class="fas fa-paper-plane"></i> Send Verification Email
+                </button>
+            </form>
+            
+            <div class="back-link">
+                <p>
+                    <a href="{% url 'accounts:login' %}">
+                        <i class="fas fa-arrow-left"></i> Back to Login
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

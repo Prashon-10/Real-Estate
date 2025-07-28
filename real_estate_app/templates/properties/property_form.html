@@ -1,0 +1,178 @@
+ {% extends 'base.html' %}
+
+{% block title %}{% if form.instance.id %}Edit{% else %}Add{% endif %} Property - RealEstate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow">
+            <div class="card-header bg-white text-center py-3">
+                <h3 class="mb-0">{% if form.instance.id %}Edit{% else %}Add New{% endif %} Property</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">Property Title*</label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.title.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.address.id_for_label }}" class="form-label">Address*</label>
+                            {{ form.address }}
+                            {% if form.address.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.address.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-3 mb-3">
+                            <label for="{{ form.price.id_for_label }}" class="form-label">Price (Rs)*</label>
+                            {{ form.price }}
+                            {% if form.price.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.price.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="{{ form.bedrooms.id_for_label }}" class="form-label">Bedrooms*</label>
+                            {{ form.bedrooms }}
+                            {% if form.bedrooms.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.bedrooms.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="{{ form.bathrooms.id_for_label }}" class="form-label">Bathrooms*</label>
+                            {{ form.bathrooms }}
+                            {% if form.bathrooms.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.bathrooms.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="{{ form.square_footage.id_for_label }}" class="form-label">Square Footage*</label>
+                            {{ form.square_footage }}
+                            {% if form.square_footage.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.square_footage.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description*</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.description.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.status.id_for_label }}" class="form-label">Status*</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.status.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">
+                            {% if form.instance.id %}Add More Images{% else %}Property Images{% endif %}
+                        </label>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ image_form.image1.id_for_label }}" class="form-label">Image 1</label>
+                                {{ image_form.image1 }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ image_form.image2.id_for_label }}" class="form-label">Image 2</label>
+                                {{ image_form.image2 }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ image_form.image3.id_for_label }}" class="form-label">Image 3</label>
+                                {{ image_form.image3 }}
+                            </div>
+                        </div>
+                        
+                        <small class="form-text text-muted">Supported formats: JPG, PNG, GIF. Max file size: 5MB per image.</small>
+                    </div>
+                    
+                    {% if existing_images %}
+                        <div class="mb-4">
+                            <label class="form-label">Current Images</label>
+                            <div class="row">
+                                {% for image in existing_images %}
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card">
+                                            <img src="{{ image.image.url }}" class="card-img-top" alt="Property image" style="height: 150px; object-fit: cover;">
+                                            <div class="card-body p-2 text-center">
+                                                <a href="{% url 'properties:delete_image' image.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this image?');">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'properties:agent_properties' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if form.instance.id %}Update{% else %}Create{% endif %} Property
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

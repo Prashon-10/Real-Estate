@@ -1,0 +1,371 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% load admin_urls %}
+{% load i18n %}
+
+{% block title %}
+    {% if add %}{% blocktrans with name=opts.verbose_name %}Add {{ name }}{% endblocktrans %}
+    {% else %}{% blocktrans with name=opts.verbose_name %}Change {{ name }}{% endblocktrans %}{% endif %}
+    | {{ site_title|default:_('Django site admin') }}
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .change-form-container {
+            padding: 2rem;
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        .change-form-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        }
+        
+        .form-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .form-row {
+            padding: 1.5rem;
+            border-bottom: 1px solid #f1f3f4;
+            transition: all 0.2s ease;
+        }
+        
+        .form-row:hover {
+            background: #f8f9fa;
+        }
+        
+        .form-row:last-child {
+            border-bottom: none;
+        }
+        
+        .form-row label {
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .form-row input[type="text"],
+        .form-row input[type="email"],
+        .form-row input[type="number"],
+        .form-row input[type="url"],
+        .form-row input[type="password"],
+        .form-row textarea,
+        .form-row select {
+            width: 100%;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .form-row input:focus,
+        .form-row textarea:focus,
+        .form-row select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+        
+        .form-row .help {
+            color: #6c757d;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+        
+        .form-row .errorlist {
+            color: #dc3545;
+            margin-top: 0.5rem;
+            list-style: none;
+            padding: 0;
+        }
+        
+        .form-row .errorlist li {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 6px;
+            padding: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .submit-row {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            align-items: center;
+        }
+        
+        .submit-row input[type="submit"] {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-row input[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .submit-row .default {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+        
+        .submit-row .deletelink {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-row .deletelink:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+            color: white;
+        }
+        
+        .fieldBox {
+            margin-bottom: 0;
+        }
+        
+        .module {
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .module h2 {
+            background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .file-upload {
+            border: 2px dashed #e9ecef;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+        
+        .file-upload input[type="file"] {
+            margin-top: 1rem;
+        }
+        
+        .related-widget-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .related-widget-wrapper .related-lookup,
+        .related-widget-wrapper .add-related,
+        .related-widget-wrapper .change-related,
+        .related-widget-wrapper .delete-related {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        
+        .related-widget-wrapper .related-lookup:hover,
+        .related-widget-wrapper .add-related:hover,
+        .related-widget-wrapper .change-related:hover,
+        .related-widget-wrapper .delete-related:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+        }
+        
+        .object-tools {
+            margin-bottom: 1.5rem;
+        }
+        
+        .object-tools a {
+            background: linear-gradient(135deg, #6f42c1, #563d7c);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .object-tools a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(111, 66, 193, 0.3);
+            color: white;
+        }
+        
+        .inline-group {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+        
+        .inline-group .module h2 {
+            background: linear-gradient(135deg, #e83e8c, #d73e8c);
+        }
+        
+        .tabular .form-row {
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .tabular .form-row:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .add-row {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            margin: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .add-row:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="change-form-container">
+    <!-- Header -->
+    <div class="change-form-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-{% if add %}plus{% else %}edit{% endif %} me-3"></i>
+                    {% if add %}
+                        {% blocktrans with name=opts.verbose_name %}Add {{ name }}{% endblocktrans %}
+                    {% else %}
+                        {% blocktrans with name=opts.verbose_name %}Change {{ name }}{% endblocktrans %}
+                    {% endif %}
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0" style="background: transparent;">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'admin:index' %}" style="color: rgba(255,255,255,0.8);">Home</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'admin:app_list' app_label=opts.app_label %}" style="color: rgba(255,255,255,0.8);">{{ opts.app_config.verbose_name }}</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{% url opts|admin_urlname:'changelist' %}" style="color: rgba(255,255,255,0.8);">{{ opts.verbose_name_plural|capfirst }}</a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page" style="color: white;">
+                            {% if add %}Add{% else %}Change{% endif %}
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if not add and has_view_permission %}
+                    <a href="{% url opts|admin_urlname:'changelist' %}" class="btn" style="background: rgba(255,255,255,0.2); color: white; border: 2px solid rgba(255,255,255,0.3); border-radius: 10px; padding: 0.75rem 1.5rem; text-decoration: none; margin-right: 0.5rem;">
+                        <i class="fas fa-list me-2"></i>
+                        View List
+                    </a>
+                {% endif %}
+                {% if not add and has_delete_permission %}
+                    <a href="{% url opts|admin_urlname:'delete' original.pk|admin_urlquote %}" class="btn" style="background: rgba(220, 53, 69, 0.8); color: white; border: 2px solid rgba(220, 53, 69, 0.3); border-radius: 10px; padding: 0.75rem 1.5rem; text-decoration: none;">
+                        <i class="fas fa-trash me-2"></i>
+                        Delete
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Content -->
+    <div class="form-container">
+        <form method="post"{% if form.is_multipart %} enctype="multipart/form-data"{% endif %} novalidate>
+            {% csrf_token %}
+            
+            {% if errors %}
+                <div class="alert alert-danger" style="margin: 1.5rem; border-radius: 10px;">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Please correct the errors below:</h5>
+                    {{ errors }}
+                </div>
+            {% endif %}
+            
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger" style="margin: 1.5rem; border-radius: 10px;">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            {% block field_sets %}
+                {% for fieldset in adminform %}
+                    {% include "admin/includes/fieldset.html" %}
+                {% endfor %}
+            {% endblock %}
+
+            {% block after_field_sets %}{% endblock %}
+
+            {% block inline_field_sets %}
+                {% for inline_admin_formset in inline_admin_formsets %}
+                    {% include inline_admin_formset.opts.template %}
+                {% endfor %}
+            {% endblock %}
+
+            {% block after_related_objects %}{% endblock %}
+
+            <div class="submit-row">
+                {% if show_save %}<input type="submit" value="{% trans 'Save' %}" class="default" name="_save">{% endif %}
+                {% if show_delete_link %}
+                    <a href="{% url opts|admin_urlname:'delete' original.pk|admin_urlquote %}" class="deletelink">{% trans "Delete" %}</a>
+                {% endif %}
+                {% if show_save_as_new %}<input type="submit" value="{% trans 'Save as new' %}" name="_saveasnew">{% endif %}
+                {% if show_save_and_add_another %}<input type="submit" value="{% trans 'Save and add another' %}" name="_addanother">{% endif %}
+                {% if show_save_and_continue %}<input type="submit" value="{% trans 'Save and continue editing' %}" name="_continue">{% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

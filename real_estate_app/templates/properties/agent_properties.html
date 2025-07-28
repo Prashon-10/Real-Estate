@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}My Properties - RealEstate{% endblock %}
+
+{% block header %}
+<div class="bg-light py-4 mb-4">
+    <div class="container">
+        <h1 class="mb-0">My Property Listings</h1>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="d-flex align-items-center">
+            <h2 class="me-3 mb-0">My Properties</h2>
+            <span class="badge bg-primary rounded-pill">{{ properties|length }}</span>
+        </div>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{% url 'properties:property_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i> Add New Property
+        </a>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Property</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for property in properties %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if property.images.first %}
+                                <img src="{{ property.images.first.image.url }}" alt="{{ property.title }}" class="me-3" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                                {% else %}
+                                <div class="me-3" style="width: 60px; height: 60px; background: #f1f1f1; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                                    <i class="fas fa-home text-muted"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-0">{{ property.title }}</h6>
+                                    <small class="text-muted">{{ property.address|truncatechars:40 }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${{ property.price|floatformat:0 }}</td>
+                        <td>
+                            <span class="badge {% if property.status == 'available' %}bg-success{% elif property.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                {{ property.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ property.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'properties:property_detail' property.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'properties:property_update' property.id %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'properties:property_delete' property.id %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <div class="my-3">
+                                <i class="fas fa-home fa-3x text-muted mb-3"></i>
+                                <h5>You haven't listed any properties yet</h5>
+                                <p class="text-muted">Get started by adding your first property listing.</p>
+                                <a href="{% url 'properties:property_create' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i> Add New Property
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0">Property Status Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="py-3">
+                            <h3 class="text-success mb-1">{{ available_count }}</h3>
+                            <p class="text-muted mb-0">Available</p>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="py-3">
+                            <h3 class="text-warning mb-1">{{ pending_count }}</h3>
+                            <p class="text-muted mb-0">Pending</p>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="py-3">
+                            <h3 class="text-secondary mb-1">{{ sold_count }}</h3>
+                            <p class="text-muted mb-0">Sold</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0">Recent Inquiries</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for chat in user.agent_chats.all|slice:":5" %}
+                    <a href="{% url 'chat:property_chat' chat.property.id %}?customer_id={{ chat.customer.id }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ chat.customer.username }}</h6>
+                            <small>{{ chat.created_at|timesince }} ago</small>
+                        </div>
+                        <p class="mb-1 small">Regarding: {{ chat.property.title }}</p>
+                    </a>
+                    {% empty %}
+                    <div class="list-group-item text-center py-4">
+                        <p class="mb-0">No inquiries yet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+@startuml Property_Inquiry_Simple
+
+!theme plain
+skinparam backgroundColor white
+skinparam activityFontSize 12
+skinparam activityBorderThickness 1.5
+skinparam activityBorderColor #333333
+skinparam activityBackgroundColor #f8f9fa
+skinparam diamondFontSize 11
+skinparam diamondBorderThickness 1.5
+skinparam diamondBorderColor #007bff
+skinparam diamondBackgroundColor #e3f2fd
+skinparam arrowThickness 2
+skinparam arrowColor #333333
+skinparam startEndColor #28a745
+
+title Activity Diagram - Property Inquiry Process
+
+start
+
+:User visits property page;
+
+:Display property details;
+
+if (Property available?) then (yes)
+  
+  if (User authenticated?) then (no)
+    :Redirect to login;
+    stop
+  else (yes)
+  endif
+  
+  if (Send inquiry message?) then (yes)
+    :Fill message form;
+    
+    if (Message valid?) then (no)
+      :Show error message;
+      stop
+    else (yes)
+    endif
+    
+    :Save message to database;
+    :Notify property agent;
+    :Show success confirmation;
+    
+  else (no)
+    :Continue browsing;
+  endif
+  
+else (no)
+  :Show "Not available" message;
+endif
+
+stop
+
+@enduml

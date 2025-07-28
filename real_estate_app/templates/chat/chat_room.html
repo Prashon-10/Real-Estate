@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block title %}Chat - {{ property.title }} - RealEstate{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'chat:chat_list' %}">Messages</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ property.title }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    {% if user.is_customer %}
+                    <span>Chat with {{ chat_room.agent.get_full_name|default:chat_room.agent.username }}</span>
+                    {% else %}
+                    <span>Chat with {{ chat_room.customer.get_full_name|default:chat_room.customer.username }}</span>
+                    {% endif %}
+                </h5>
+                <span class="badge bg-primary">{{ property.title }}</span>
+            </div>
+            <div class="card-body">
+                <div class="chat-container mb-3" id="chatContainer">
+                    <div id="messagesList">
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="message {% if message.sender == user %}message-sent{% else %}message-received{% endif %}">
+                                    <div>
+                                        {% if message.sender != user %}
+                                            <strong>{{ message.sender.username }}</strong><br>
+                                        {% endif %}
+                                        {{ message.content }}
+                                        <div class="message-time">{{ message.timestamp|time:'H:i' }}</div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-comments fa-2x mb-3"></i>
+                                <p>Start a conversation about this property.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <form id="messageForm" class="d-flex">
+                    <input type="text" class="form-control me-2" id="messageInput" placeholder="Type your message..." required>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0">Property Details</h5>
+            </div>
+            <div class="card-body">
+                {% if property.images.first %}
+                    <img src="{{ property.images.first.image.url }}" class="img-fluid rounded mb-3" alt="{{ property.title }}">
+                {% endif %}
+                
+                <h5>{{ property.title }}</h5>
+                <p class="text-muted mb-2"><i class="fas fa-map-marker-alt me-2"></i>{{ property.address }}</p>
+                <h5 class="text-primary">${{ property.price|floatformat:0 }}</h5>
+                
+                <div class="d-flex mb-3">
+                    <div class="me-3">
+                        <span class="badge bg-light text-dark"><i class="fas fa-bed me-1"></i>{{ property.bedrooms }}</span>
+                    </div>
+                    <div class="me-3">
+                        <span class="badge bg-light text-dark"><i class="fas fa-bath me-1"></i>{{ property.bathrooms }}</span>
+                    </div>
+                    <div>
+                        <span class="badge bg-light text-dark"><i class="fas fa-ruler me-1"></i>{{ property.square_footage }} sq ft</span>
+                    </div>
+                </div>
+                
+                <div class="d-grid">
+                    <a href="{% url 'properties:property_detail' property.id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-2"></i> View Property
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0">
+                    {% if user.is_customer %}
+                    <span>Agent Information</span>
+                    {% else %}
+                    <span>Customer Information</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                {% if user.is_customer %}
+                    <div class="profile-circle mx-auto mb-3" style="width: 80px; height: 80px;">
+                        {% if chat_room.agent.profile_image %}
+                            <img src="{{ chat_room.agent.profile_image.url }}" alt="{{ chat_room.agent.username }}">
+                        {% else %}
+                            <span style="font-size: 2rem;">{{ chat_room.agent.username|make_list|first|upper }}</span>
+                        {% endif %}
+                    </div>
+                    <h5>{{ chat_room.agent.get_full_name|default:chat_room.agent.username }}</h5>
+                    <p class="text-muted mb-3">{{ chat_room.agent.get_user_type_display }}</p>
+                    
+                    {% if chat_room.agent.phone_number %}
+                        <p><i class="fas fa-phone me-2"></i>{{ chat_room.agent.phone_number }}</p>
+                    {% endif %}
+                    
+                    {% if chat_room.agent.email %}
+                        <p><i class="fas fa-envelope me-2"></i>{{ chat_room.agent.email }}</p>
+                    {% endif %}
+                {% else %}
+                    <div class="profile-circle mx-auto mb-3" style="width: 80px; height: 80px;">
+                        {% if chat_room.customer.profile_image %}
+                            <img src="{{ chat_room.customer.profile_image.url }}" alt="{{ chat_room.customer.username }}">
+                        {% else %}
+                            <span style="font-size: 2rem;">{{ chat_room.customer.username|make_list|first|upper }}</span>
+                        {% endif %}
+                    </div>
+                    <h5>{{ chat_room.customer.get_full_name|default:chat_room.customer.username }}</h5>
+                    <p class="text-muted mb-3">{{ chat_room.customer.get_user_type_display }}</p>
+                    
+                    {% if chat_room.customer.email %}
+                        <p><i class="fas fa-envelope me-2"></i>{{ chat_room.customer.email }}</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Establish WebSocket connection
+    const chatRoomId = {{ chat_room.id }};
+    const userId = {{ user.id }};
+    // update
+    const chatSocket = new WebSocket(
+    `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/chat/${chatRoomId}/`
+    );
+    
+    // Handle received messages
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        addMessage(data.message, data.sender_id == userId, data.sender_name, data.timestamp);
+    };
+    
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+    
+    // Send message function
+    document.getElementById('messageForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const messageInput = document.getElementById('messageInput');
+        const message = messageInput.value.trim();
+        
+        if (message) {
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'sender_id': userId
+            }));
+            messageInput.value = '';
+        }
+    });
+    
+    // Scroll to bottom of chat on load
+    scrollToBottom();
+    
+    // Helper functions for chat
+    function addMessage(content, isMine, sender, timestamp) {
+        const messagesList = document.getElementById('messagesList');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isMine ? 'message-sent' : 'message-received'}`;
+        
+        messageDiv.innerHTML = `
+            <div>
+                ${!isMine ? `<strong>${sender}</strong><br>` : ''}
+                ${content}
+                <div class="message-time">${formatTime(timestamp)}</div>
+            </div>
+        `;
+        
+        messagesList.appendChild(messageDiv);
+        scrollToBottom();
+    }
+    
+    function scrollToBottom() {
+        const chatContainer = document.getElementById('chatContainer');
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    }
+    
+    function formatTime(timestamp) {
+        return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+});
+</script>
+{% endblock %}

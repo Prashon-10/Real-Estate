@@ -1,0 +1,428 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}RealEstate Admin{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom admin styles */
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --light-bg: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-color: #334155;
+            --text-muted: #64748b;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif !important;
+            background-color: var(--light-bg) !important;
+            color: var(--text-color) !important;
+        }
+        
+        /* Style the default Django admin header */
+        #header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
+            color: white !important;
+            padding: 1rem 0 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        }
+        
+        #header #branding h1,
+        #header #branding h1 a:link,
+        #header #branding h1 a:visited {
+            color: white !important;
+            font-weight: 600 !important;
+            font-size: 1.5rem !important;
+        }
+        
+        #header #branding h1 a:hover {
+            color: rgba(255,255,255,0.9) !important;
+        }
+        
+        /* User tools */
+        #header #user-tools {
+            color: white !important;
+            font-size: 0.9rem !important;
+        }
+        
+        #header #user-tools a:link,
+        #header #user-tools a:visited {
+            color: white !important;
+            text-decoration: none !important;
+        }
+        
+        #header #user-tools a:hover {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        
+        /* Content area */
+        #content {
+            background: transparent !important;
+            padding: 2rem !important;
+        }
+        
+        /* Module styling */
+        .module {
+            background: white !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+            margin-bottom: 2rem !important;
+        }
+        
+        .module h2 {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
+            color: white !important;
+            padding: 1rem 1.5rem !important;
+            margin: 0 !important;
+            border-radius: 12px 12px 0 0 !important;
+            font-weight: 600 !important;
+            font-size: 1.1rem !important;
+        }
+        
+        .module table {
+            border: none !important;
+            border-radius: 0 0 12px 12px !important;
+            overflow: hidden !important;
+        }
+        
+        .module th {
+            background: #f8fafc !important;
+            color: var(--text-color) !important;
+            font-weight: 600 !important;
+            padding: 1rem !important;
+            border-bottom: 1px solid var(--border-color) !important;
+        }
+        
+        .module td {
+            padding: 1rem !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            vertical-align: middle !important;
+        }
+        
+        .module tr:hover {
+            background-color: #f8fafc !important;
+        }
+        
+        /* Filters - Small and Moveable */
+        #changelist-filter {
+            position: fixed !important;
+            right: 20px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            width: 220px !important;
+            max-height: 400px !important;
+            background: white !important;
+            border: 2px solid var(--border-color) !important;
+            border-radius: 12px !important;
+            padding: 1rem !important;
+            overflow-y: auto !important;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+            z-index: 9999 !important;
+            cursor: move !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        #changelist-filter:hover {
+            box-shadow: 0 12px 35px rgba(0,0,0,0.2) !important;
+        }
+        
+        /* Drag handle */
+        #changelist-filter::before {
+            content: '⋮⋮' !important;
+            position: absolute !important;
+            top: 5px !important;
+            right: 8px !important;
+            color: var(--text-muted) !important;
+            font-size: 1.2rem !important;
+            cursor: grab !important;
+        }
+        
+        #changelist-filter:active::before {
+            cursor: grabbing !important;
+        }
+        
+        /* Adjust main content when filter is present */
+        .filtered #content {
+            margin-right: 0 !important;
+        }
+        
+        .filtered #content-main {
+            margin-right: 0 !important;
+        }
+        
+        .filtered .results {
+            margin-right: 0 !important;
+        }
+        
+        #changelist-filter h2 {
+            font-size: 0.9rem !important;
+            font-weight: 700 !important;
+            margin-bottom: 1rem !important;
+            color: var(--text-color) !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            padding-bottom: 0.5rem !important;
+            background: none !important;
+            border-radius: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        
+        #changelist-filter h3 {
+            font-size: 0.75rem !important;
+            font-weight: 600 !important;
+            margin: 1rem 0 0.5rem 0 !important;
+            color: var(--text-muted) !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+        }
+        
+        #changelist-filter ul {
+            list-style: none !important;
+            padding: 0 !important;
+            margin: 0 0 1rem 0 !important;
+        }
+        
+        #changelist-filter li {
+            margin-bottom: 0.25rem !important;
+        }
+        
+        #changelist-filter a {
+            display: block !important;
+            padding: 0.5rem 0.75rem !important;
+            border-radius: 6px !important;
+            color: var(--text-color) !important;
+            text-decoration: none !important;
+            transition: all 0.2s ease !important;
+            font-size: 0.75rem !important;
+            font-weight: 500 !important;
+        }
+        
+        #changelist-filter a:hover {
+            background: #f1f5f9 !important;
+            color: var(--primary-color) !important;
+            transform: translateX(2px) !important;
+        }
+        
+        #changelist-filter a.selected {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
+            color: white !important;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3) !important;
+        }
+        
+        /* Button styling */
+        .button, input[type="submit"], .submit-row input {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
+            border: none !important;
+            border-radius: 6px !important;
+            padding: 0.5rem 1rem !important;
+            color: white !important;
+            font-weight: 500 !important;
+            text-transform: none !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        .button:hover, input[type="submit"]:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3) !important;
+        }
+        
+        .button.default {
+            background: linear-gradient(135deg, var(--success-color), #047857) !important;
+        }
+        
+        /* Mobile responsiveness for filter */
+        @media (max-width: 768px) {
+            #changelist-filter {
+                width: 200px !important;
+                max-height: 300px !important;
+                right: 10px !important;
+            }
+        }
+    </style>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const filter = document.getElementById('changelist-filter');
+            if (!filter) return;
+            
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+            
+            // Make filter draggable
+            filter.addEventListener('mousedown', function(e) {
+                // Only start dragging if clicking on the drag handle area
+                if (e.target === filter || e.target.closest('#changelist-filter h2')) {
+                    isDragging = true;
+                    
+                    const rect = filter.getBoundingClientRect();
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    initialLeft = rect.left;
+                    initialTop = rect.top;
+                    
+                    filter.style.cursor = 'grabbing';
+                    filter.style.userSelect = 'none';
+                    filter.style.position = 'fixed';
+                    filter.style.transform = 'none';
+                    filter.style.left = initialLeft + 'px';
+                    filter.style.top = initialTop + 'px';
+                    filter.style.right = 'auto';
+                    
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+                
+                let newLeft = initialLeft + deltaX;
+                let newTop = initialTop + deltaY;
+                
+                // Keep filter within viewport bounds
+                const filterRect = filter.getBoundingClientRect();
+                const maxLeft = window.innerWidth - filterRect.width;
+                const maxTop = window.innerHeight - filterRect.height;
+                
+                newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+                newTop = Math.max(0, Math.min(newTop, maxTop));
+                
+                filter.style.left = newLeft + 'px';
+                filter.style.top = newTop + 'px';
+            });
+            
+            document.addEventListener('mouseup', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    filter.style.cursor = 'move';
+                    filter.style.userSelect = '';
+                    
+                    // Save position to localStorage
+                    const rect = filter.getBoundingClientRect();
+                    localStorage.setItem('adminFilterPosition', JSON.stringify({
+                        left: rect.left,
+                        top: rect.top
+                    }));
+                }
+            });
+            
+            // Restore saved position
+            const savedPosition = localStorage.getItem('adminFilterPosition');
+            if (savedPosition) {
+                try {
+                    const position = JSON.parse(savedPosition);
+                    filter.style.position = 'fixed';
+                    filter.style.transform = 'none';
+                    filter.style.left = position.left + 'px';
+                    filter.style.top = position.top + 'px';
+                    filter.style.right = 'auto';
+                } catch (e) {
+                    console.log('Failed to restore filter position');
+                }
+            }
+            
+            // Add close button
+            const closeButton = document.createElement('button');
+            closeButton.innerHTML = '×';
+            closeButton.style.cssText = `
+                position: absolute;
+                top: 5px;
+                right: 5px;
+                background: none;
+                border: none;
+                font-size: 20px;
+                color: #666;
+                cursor: pointer;
+                width: 25px;
+                height: 25px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                transition: all 0.2s ease;
+            `;
+            
+            closeButton.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f1f5f9';
+                this.style.color = '#dc2626';
+            });
+            
+            closeButton.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = 'transparent';
+                this.style.color = '#666';
+            });
+            
+            closeButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                filter.style.display = 'none';
+                localStorage.setItem('adminFilterVisible', 'false');
+            });
+            
+            filter.appendChild(closeButton);
+            
+            // Add toggle button to show filter if hidden
+            const showFilterBtn = document.createElement('button');
+            showFilterBtn.innerHTML = '<i class="fas fa-filter"></i>';
+            showFilterBtn.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+                color: white;
+                border: none;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+                z-index: 10000;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+            `;
+            
+            showFilterBtn.addEventListener('click', function() {
+                filter.style.display = 'block';
+                this.style.display = 'none';
+                localStorage.setItem('adminFilterVisible', 'true');
+            });
+            
+            document.body.appendChild(showFilterBtn);
+            
+            // Check if filter should be hidden
+            const filterVisible = localStorage.getItem('adminFilterVisible');
+            if (filterVisible === 'false') {
+                filter.style.display = 'none';
+                showFilterBtn.style.display = 'flex';
+            }
+        });
+    </script>
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <i class="fas fa-home me-2"></i>RealEstate Admin
+    </a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

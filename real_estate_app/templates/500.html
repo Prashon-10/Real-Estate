@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Server Error - RealEstate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <div class="card shadow p-5">
+            <h1 class="display-1 text-muted">500</h1>
+            <h2 class="mb-4">Server Error</h2>
+            <p class="lead mb-5">Sorry, something went wrong on our end. Please try again later.</p>
+            <div>
+                <a href="{% url 'index' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-home me-2"></i> Return Home
+                </a>
+                <button class="btn btn-outline-secondary btn-lg ms-2" onclick="location.reload()">
+                    <i class="fas fa-sync me-2"></i> Refresh Page
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

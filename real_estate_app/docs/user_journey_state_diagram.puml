@@ -1,0 +1,110 @@
+@startuml User_Journey_State_Diagram
+
+title Customer Journey - State Diagram
+
+[*] --> Anonymous : Visit website
+
+state Anonymous {
+    Anonymous : Browsing public content
+    Anonymous : Limited access
+    Anonymous : Can view basic property info
+}
+
+Anonymous --> Registering : Click "Sign Up"
+Anonymous --> LoggingIn : Click "Login"
+
+state Registering {
+    Registering : Filling registration form
+    Registering : Choosing user type
+    Registering : Profile setup
+}
+
+Registering --> Authenticated : Registration successful
+Registering --> Anonymous : Registration cancelled
+
+state LoggingIn {
+    LoggingIn : Entering credentials
+    LoggingIn : Authentication process
+}
+
+LoggingIn --> Authenticated : Login successful
+LoggingIn --> Anonymous : Login failed/cancelled
+
+state Authenticated {
+    state "Customer Activities" as CustomerState {
+        Browsing --> Searching : Enter search query
+        Searching --> ViewingProperty : Select property
+        ViewingProperty --> Browsing : Back to list
+        ViewingProperty --> Favoriting : Add to favorites
+        ViewingProperty --> Messaging : Contact agent
+        Favoriting --> ViewingProperty : Continue browsing
+        Messaging --> ViewingProperty : Message sent
+        
+        Browsing : - View all properties
+        Browsing : - Apply filters
+        Browsing : - Sort results
+        
+        Searching : - AI semantic search
+        Searching : - Filter results
+        Searching : - Save search history
+        
+        ViewingProperty : - View details
+        ViewingProperty : - See images
+        ViewingProperty : - Check agent info
+        
+        Favoriting : - Save property
+        Favoriting : - Manage favorites list
+        
+        Messaging : - Send inquiry
+        Messaging : - View conversation
+    }
+    
+    state "Agent Activities" as AgentState {
+        Managing --> Creating : Add new property
+        Managing --> Editing : Update existing
+        Managing --> Responding : Reply to inquiries
+        Creating --> Managing : Property created
+        Editing --> Managing : Updates saved
+        Responding --> Managing : Message sent
+        
+        Managing : - View my properties
+        Managing : - Check analytics
+        Managing : - Update status
+        
+        Creating : - Enter property details
+        Creating : - Upload images
+        Creating : - Set pricing
+        
+        Editing : - Modify details
+        Editing : - Change status
+        Editing : - Update images
+        
+        Responding : - Read messages
+        Responding : - Send replies
+        Responding : - Schedule viewings
+    }
+}
+
+Authenticated --> Anonymous : Logout
+Authenticated --> Authenticated : Session refresh
+
+Anonymous --> [*] : Leave website
+Authenticated --> [*] : Session timeout
+
+note right of CustomerState
+    Customer workflows focus on:
+    - Property discovery
+    - Information gathering
+    - Agent communication
+    - Favorite management
+end note
+
+note right of AgentState
+    Agent workflows focus on:
+    - Property management
+    - Client communication
+    - Performance tracking
+    - Lead conversion
+end note
+
+@enduml

@@ -1,0 +1,94 @@
+@startuml Property_State_Diagram
+
+title Property Lifecycle - State Diagram
+
+[*] --> Draft : Agent creates new listing
+
+state Draft {
+    Draft : Property details entered
+    Draft : Images being uploaded
+    Draft : Not visible to customers
+}
+
+Draft --> Available : Agent publishes listing
+Draft --> Cancelled : Agent cancels creation
+
+state Available {
+    Available : Listed for sale/rent
+    Available : Visible to customers
+    Available : Receiving inquiries
+    Available --> Available : Price updated
+    Available --> Available : Description updated
+    Available --> Available : Images added/removed
+}
+
+Available --> Pending : Offer accepted
+Available --> Withdrawn : Agent withdraws listing
+Available --> Expired : Listing expires
+
+state Pending {
+    Pending : Under negotiation
+    Pending : Contract in progress
+    Pending : Limited visibility
+}
+
+Pending --> Available : Deal falls through
+Pending --> Sold : Transaction completed
+Pending --> Withdrawn : Agent withdraws
+
+state Sold {
+    Sold : Transaction completed
+    Sold : No longer available
+    Sold : Favorites auto-removed
+    Sold : Historical record only
+}
+
+state Withdrawn {
+    Withdrawn : Removed by agent
+    Withdrawn : Not visible to customers
+    Withdrawn : Can be republished
+}
+
+Withdrawn --> Available : Agent republishes
+Withdrawn --> Cancelled : Permanently removed
+
+state Expired {
+    Expired : Listing period ended
+    Expired : Automatic status change
+    Expired : Requires agent action
+}
+
+Expired --> Available : Agent renews listing
+Expired --> Cancelled : Not renewed
+
+state Cancelled {
+    Cancelled : Permanently removed
+    Cancelled : Cannot be republished
+}
+
+Sold --> [*] : Archive after retention period
+Cancelled --> [*] : Archive after retention period
+
+note right of Available
+    Most active state where:
+    - Customers can view and favorite
+    - Search algorithms include property
+    - Messages can be sent to agent
+    - Analytics are tracked
+end note
+
+note right of Pending
+    Transitional state where:
+    - Limited customer interaction
+    - Status updates tracked
+    - Agent manages negotiations
+end note
+
+note right of Sold
+    Final state triggers:
+    - Automatic favorite removal
+    - Analytics finalization
+    - Commission calculations
+end note
+
+@enduml

@@ -1,0 +1,126 @@
+@startuml Real_Estate_Use_Case_Diagram
+
+title Real Estate Application (BricksMingle) - Use Case Diagram
+
+' Actors
+actor Admin
+actor Agent  
+actor Customer
+
+' System boundary
+rectangle "Real Estate Application\n(BricksMingle)" {
+
+    ' Admin Use Cases
+    usecase (Manage Users) as UC1
+    usecase (Manage Property Listings) as UC2
+    usecase (Manage Content) as UC3
+    usecase (View Analytics and Reports) as UC4
+    
+    ' Agent Use Cases  
+    usecase (Register) as UC5
+    usecase (Manage Profile) as UC6
+    usecase (Add Property Listing) as UC7
+    usecase (Edit Property Listing) as UC8
+    usecase (Delete Property Listing) as UC9
+    usecase (Upload Property Images) as UC10
+    usecase (Update Property Status) as UC11
+    usecase (View Property Analytics) as UC12
+    usecase (Respond to Messages) as UC13
+    
+    ' Customer/User Use Cases
+    usecase (User Register) as UC14
+    usecase (User Manage Profile) as UC15
+    usecase (Search Properties) as UC16
+    usecase (View Property Listings) as UC17
+    usecase (Filter Properties) as UC18
+    usecase (View Property Details) as UC19
+    usecase (View Image Galleries) as UC20
+    usecase (Save/Favorite Properties) as UC21
+    usecase (Contact Agents) as UC22
+    usecase (Real-time Messaging) as UC23
+    usecase (Receive Recommendations) as UC24
+    usecase (View Search History) as UC25
+    usecase (View Favorite History) as UC26
+    usecase (Authenticate) as UC27
+    usecase (Logout) as UC28
+    
+    ' Extensions and Includes
+    UC16 ..> UC17 : <<include>>
+    UC16 ..> UC18 : <<include>>
+    UC22 ..> UC23 : <<extend>>
+    UC5 ..> UC27 : <<include>>
+    UC14 ..> UC27 : <<include>>
+    UC7 ..> UC10 : <<extend>>
+    UC8 ..> UC10 : <<extend>>
+}
+
+' Admin associations
+Admin --> UC1
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+
+' Agent associations  
+Agent --> UC5
+Agent --> UC6
+Agent --> UC7
+Agent --> UC8
+Agent --> UC9
+Agent --> UC10
+Agent --> UC11
+Agent --> UC12
+Agent --> UC13
+
+' Customer associations
+Customer --> UC14
+Customer --> UC15
+Customer --> UC16
+Customer --> UC17
+Customer --> UC18
+Customer --> UC19
+Customer --> UC20
+Customer --> UC21
+Customer --> UC22
+Customer --> UC23
+Customer --> UC24
+Customer --> UC25
+Customer --> UC26
+
+' Shared use cases
+Admin --> UC27
+Agent --> UC27
+Customer --> UC27
+
+Admin --> UC28
+Agent --> UC28
+Customer --> UC28
+
+' Notes for specific features
+note right of UC16
+    AI-powered semantic search
+    using SentenceTransformers
+end note
+
+note right of UC12
+    Views, favorites, inquiries
+    analytics for agent properties
+end note
+
+note right of UC23
+    Real-time messaging using
+    Django Channels & WebSocket
+end note
+
+note right of UC24
+    Personalized recommendations
+    based on search history and
+    user behavior patterns
+end note
+
+note right of UC18
+    Filter by type, price, location,
+    features, bedrooms, bathrooms,
+    square footage
+end note
+
+@enduml
