@@ -439,10 +439,10 @@
                     <h1 class="mb-2">
                         {% if user.user_type == 'agent' %}
                             <i class="fas fa-briefcase me-3"></i>
-                            Welcome back, Agent {{ user.first_name|default:user.email }}!
+                            Welcome back, Agent {{ user.get_full_name|default:user.username }}!
                         {% else %}
                             <i class="fas fa-home me-3"></i>
-                            Welcome back, {{ user.first_name|default:user.email }}!
+                            Welcome back, {{ user.get_full_name|default:user.username }}!
                         {% endif %}
                     </h1>
                     <p class="mb-0 opacity-75">

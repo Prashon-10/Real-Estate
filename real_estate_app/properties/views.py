@@ -35,7 +35,8 @@ class PropertyListView(LoginRequiredMixin, ListView):
     paginate_by = 9
     
     def get_queryset(self):
-        queryset = Property.objects.filter(status='available').select_related('agent')
+        # Show ALL properties, including booked ones, but not sold ones
+        queryset = Property.objects.filter(status__in=['available', 'pending']).select_related('agent')
         
         # Search functionality
         search = self.request.GET.get('search')
@@ -94,23 +95,52 @@ class PropertyListView(LoginRequiredMixin, ListView):
         favorite_property_ids = []
         booked_property_ids = []
         
+        # Get properties that have been BOOKED (not visited) by any user (to gray them out)
+        from .models import PropertyBooking
+        all_booked_property_ids = list(
+            PropertyBooking.objects.filter(
+                booking_type='booking',  # Only actual bookings, not visits
+                status='confirmed'  # Only confirmed bookings
+            ).values_list('property_ref__id', flat=True)
+        )
+        
+        # Get properties that have VISIT REQUESTS (to show "Being Visited" indicator)
+        all_visited_property_ids = list(
+            PropertyBooking.objects.filter(
+                booking_type='visit',  # Only visit requests
+                status__in=['pending', 'confirmed']  # Pending or confirmed visits
+            ).values_list('property_ref__id', flat=True)
+        )
+        
         if self.request.user.is_authenticated and self.request.user.is_customer():
             favorite_property_ids = list(
                 Favorite.objects.filter(user=self.request.user)
                 .values_list('property__id', flat=True)
             )
             
-            # Get properties that the user has already booked
-            from .models import PropertyBooking
+            # Get properties that the current user has already booked (not visited)
             booked_property_ids = list(
                 PropertyBooking.objects.filter(
                     customer=self.request.user,
+                    booking_type='booking',  # Only actual bookings, not visits
                     status__in=['pending', 'confirmed']  # Don't show button if booking is pending or confirmed
+                ).values_list('property_ref__id', flat=True)
+            )
+            
+            # Get properties that the current user has already requested visits for
+            visited_property_ids = list(
+                PropertyBooking.objects.filter(
+                    customer=self.request.user,
+                    booking_type='visit',  # Only visit requests
+                    status__in=['pending', 'confirmed']  # Don't show button if visit is pending or confirmed
                 ).values_list('property_ref__id', flat=True)
             )
             
         context['favorite_property_ids'] = favorite_property_ids
         context['booked_property_ids'] = booked_property_ids
+        context['visited_property_ids'] = visited_property_ids  # User's own visit requests
+        context['all_booked_property_ids'] = all_booked_property_ids  # For graying out
+        context['all_visited_property_ids'] = all_visited_property_ids  # For "Being Visited" indicator
         
         # Add total count for debugging
         context['total_properties'] = self.get_queryset().count()
@@ -130,14 +160,55 @@ class PropertyDetailView(LoginRequiredMixin, DetailView):
                 property=self.object
             ).exists()
             
-            # Check if user has already booked this property
+            # Check if user has already booked this property (not visited)
             if self.request.user.is_customer():
                 from .models import PropertyBooking
                 context['has_booking'] = PropertyBooking.objects.filter(
                     customer=self.request.user,
                     property_ref=self.object,
+                    booking_type='booking',  # Only actual bookings, not visits
                     status__in=['pending', 'confirmed']  # Don't show button if booking is pending or confirmed
                 ).exists()
+                
+                # Check if user has already requested a visit for this property
+                context['has_visit_request'] = PropertyBooking.objects.filter(
+                    customer=self.request.user,
+                    property_ref=self.object,
+                    booking_type='visit',  # Only visit requests
+                    status__in=['pending', 'confirmed']  # Don't show button if visit is pending or confirmed
+                ).exists()
+                
+                # Check if ANY user has booked this property (not visited) - to disable booking
+                context['is_booked_by_anyone'] = PropertyBooking.objects.filter(
+                    property_ref=self.object,
+                    booking_type='booking',  # Only actual bookings, not visits
+                    status='confirmed'  # Only confirmed bookings
+                ).exists()
+                
+                # Get all blocked visit dates for this property (dates already taken by other users)
+                blocked_dates = list(
+                    PropertyBooking.objects.filter(
+                        property_ref=self.object,
+                        booking_type='visit',
+                        status__in=['pending', 'confirmed'],
+                        preferred_date__isnull=False
+                    ).values_list('preferred_date', flat=True)
+                )
+                
+                # Convert datetime objects to date strings for JavaScript
+                import json
+                from django.core.serializers.json import DjangoJSONEncoder
+                context['blocked_visit_dates'] = json.dumps(
+                    [date.strftime('%Y-%m-%d') for date in blocked_dates if date],
+                    cls=DjangoJSONEncoder
+                )
+                
+                # Count of people visiting this property
+                context['visit_count'] = PropertyBooking.objects.filter(
+                    property_ref=self.object,
+                    booking_type='visit',
+                    status__in=['pending', 'confirmed']
+                ).count()
                 
                 SearchHistory.objects.create(
                     user=self.request.user,

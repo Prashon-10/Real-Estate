@@ -259,6 +259,90 @@
         transform: scale(1.1);
     }
 
+    /* Booked Property Styles */
+    .property-card.booked {
+        opacity: 0.6;
+        filter: grayscale(40%);
+        position: relative;
+        pointer-events: auto;
+    }
+
+    .property-card.booked::after {
+        content: 'BOOKED';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(220, 53, 69, 0.95);
+        color: white;
+        padding: 8px 20px;
+        border-radius: 25px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+        backdrop-filter: blur(10px);
+        z-index: 10;
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.8);
+    }
+
+    /* Being Visited Property Styles */
+    .property-card.being-visited {
+        position: relative;
+        border: 2px solid #17a2b8;
+        box-shadow: 0 0 20px rgba(23, 162, 184, 0.3);
+    }
+
+    .property-card.being-visited::before {
+        content: '👁️ BEING VISITED';
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(23, 162, 184, 0.95);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        backdrop-filter: blur(10px);
+        z-index: 5;
+        box-shadow: 0 2px 10px rgba(23, 162, 184, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        animation: pulse-visited 2s infinite;
+    }
+
+    @keyframes pulse-visited {
+        0%, 100% { 
+            opacity: 1; 
+            transform: scale(1);
+        }
+        50% { 
+            opacity: 0.8; 
+            transform: scale(1.05);
+        }
+    }
+
+    .property-card.booked:hover {
+        transform: translateY(-5px); /* Reduced hover effect */
+        opacity: 0.7;
+    }
+
+    .property-card.booked .property-image {
+        filter: grayscale(60%);
+    }
+
+    .property-card.booked .property-actions .btn {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .property-card.booked .favorite-btn {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
     .property-badges {
         position: absolute;
         top: 1rem;
@@ -1186,7 +1270,7 @@
                 <div class="row g-4 align-items-stretch">
                     {% for property in properties %}
                     <div class="col-xl-4 col-lg-6 col-md-12 d-flex">
-                        <div class="property-card w-100">
+                        <div class="property-card w-100 {% if property.id in all_booked_property_ids %}booked{% elif property.id in all_visited_property_ids %}being-visited{% endif %}">
                             <!-- Property Image -->
                             <div class="property-image-container">
                                 {% if property.images.first %}
@@ -1271,8 +1355,10 @@
                                             <div class="btn btn-booked disabled" title="You have already booked this property">
                                                 <i class="fas fa-check-circle me-2"></i>Already Booked
                                             </div>
+                                        {% elif property.id in visited_property_ids %}
+                                            <!-- User has already requested a visit for this property -->
                                             <div class="btn btn-visited disabled" title="You have already requested a visit for this property">
-                                                <i class="fas fa-check-circle me-2"></i>Visit Requested
+                                                <i class="fas fa-calendar-check me-2"></i>Visit Requested
                                             </div>
                                         {% else %}
                                             <!-- Normal booking buttons -->

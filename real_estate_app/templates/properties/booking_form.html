@@ -403,6 +403,11 @@ Book Property - {{ property.title }}
 
 {% block extra_js %}
 <script>
+// Blocked visit dates from backend
+const blockedVisitDates = {{ blocked_visit_dates|safe }};
+// User's existing visit dates across all properties
+const userVisitDates = {{ user_visit_dates|safe }};
+
 function selectBookingType(type) {
     // Update radio button
     document.querySelector(`input[value="${type}"]`).checked = true;
@@ -483,6 +488,71 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectedPaymentMethod) {
         selectedPaymentMethod.closest('.payment-method-card').classList.add('selected');
     }
+    
+    // Setup blocked dates for visit date picker
+    const dateInput = document.querySelector('input[name="preferred_date"]');
+    if (dateInput && typeof blockedVisitDates !== 'undefined' && typeof userVisitDates !== 'undefined') {
+        setupBlockedDates(dateInput, blockedVisitDates);
+    }
 });
+
+// Setup blocked dates functionality
+function setupBlockedDates(dateInput, blockedDates) {
+    // Set minimum date to today
+    const today = new Date();
+    const minDate = today.toISOString().split('T')[0];
+    dateInput.setAttribute('min', minDate);
+    
+    // Add event listener to validate selected date
+    dateInput.addEventListener('change', function() {
+        const selectedDate = this.value.split('T')[0]; // Get just the date part
+        
+        // Check if date is blocked by other users for this property
+        if (blockedDates.includes(selectedDate)) {
+            alert('This date is already booked by another visitor for this property. Please select a different date.');
+            this.value = '';
+            this.focus();
+            return;
+        }
+        
+        // Check if user already has a visit on this date for any property
+        const userConflict = userVisitDates.find(visit => visit.date === selectedDate);
+        if (userConflict) {
+            alert(`You already have a visit scheduled for "${userConflict.property}" on this date at ${userConflict.time}. Please select a different date as you cannot visit multiple properties on the same day.`);
+            this.value = '';
+            this.focus();
+            return;
+        }
+        
+        // Check if date is in the past
+        const selectedDateTime = new Date(this.value);
+        const now = new Date();
+        
+        if (selectedDateTime <= now) {
+            alert('Please select a future date and time.');
+            this.value = '';
+            this.focus();
+            return;
+        }
+    });
+    
+    // Add visual indicators for blocked dates (if browser supports it)
+    const helpText = document.createElement('small');
+    helpText.className = 'form-text text-muted';
+    let helpTextContent = '<i class="fas fa-info-circle"></i> ';
+    
+    if (blockedDates.length > 0) {
+        helpTextContent += 'Some dates may be unavailable due to other visit requests. ';
+    }
+    
+    if (userVisitDates.length > 0) {
+        helpTextContent += 'You cannot schedule visits on dates when you already have other property visits.';
+    } else if (blockedDates.length === 0) {
+        helpTextContent += 'Select your preferred date and time for the visit.';
+    }
+    
+    helpText.innerHTML = helpTextContent;
+    dateInput.parentNode.appendChild(helpText);
+}
 </script>
 {% endblock %}

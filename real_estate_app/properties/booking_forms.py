@@ -73,13 +73,14 @@ class PropertyBookingForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
+        self.current_property = kwargs.pop('current_property', None)
         initial_booking_type = kwargs.pop('initial_booking_type', None)
         super().__init__(*args, **kwargs)
         
         # Pre-fill user data if authenticated
         if self.user and self.user.is_authenticated:
             if not self.initial.get('customer_name'):
-                self.initial['customer_name'] = f"{self.user.first_name} {self.user.last_name}".strip()
+                self.initial['customer_name'] = self.user.get_full_name() or self.user.username
             if not self.initial.get('customer_email'):
                 self.initial['customer_email'] = self.user.email
         
@@ -104,6 +105,26 @@ class PropertyBookingForm(forms.ModelForm):
         # Check if the date is too far in future (e.g., 6 months)
         if preferred_date and preferred_date > timezone.now() + timedelta(days=180):
             raise forms.ValidationError("Please select a date within the next 6 months.")
+        
+        # Check for conflicts with user's existing visit requests on the same date
+        if preferred_date and booking_type == 'visit' and hasattr(self, 'user') and self.user:
+            # Check if user has already booked a visit on the same date for ANY property
+            existing_visit_on_same_date = PropertyBooking.objects.filter(
+                customer=self.user,
+                booking_type='visit',
+                status__in=['pending', 'confirmed'],
+                preferred_date__date=preferred_date.date()  # Same date (ignoring time)
+            ).exclude(
+                property_ref=self.current_property  # Exclude current property
+            ).first()
+            
+            if existing_visit_on_same_date:
+                property_title = existing_visit_on_same_date.property_ref.title
+                existing_time = existing_visit_on_same_date.preferred_date.strftime('%I:%M %p')
+                raise forms.ValidationError(
+                    f"You already have a visit scheduled for '{property_title}' on {preferred_date.strftime('%B %d, %Y')} at {existing_time}. "
+                    f"Please select a different date as you cannot visit multiple properties on the same day."
+                )
         
         return preferred_date
     

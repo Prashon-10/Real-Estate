@@ -33,7 +33,7 @@ def property_booking_view(request, property_id):
     booking_type = request.GET.get('type', 'booking')  # 'booking' or 'visit'
     
     if request.method == 'POST':
-        form = PropertyBookingForm(request.POST, user=request.user, initial_booking_type=booking_type)
+        form = PropertyBookingForm(request.POST, user=request.user, initial_booking_type=booking_type, current_property=property_obj)
         
         if form.is_valid():
             # Calculate payment amount
@@ -60,16 +60,57 @@ def property_booking_view(request, property_id):
             else:
                 return redirect('properties:esewa_payment')
     else:
-        form = PropertyBookingForm(user=request.user, initial_booking_type=booking_type)
+        form = PropertyBookingForm(user=request.user, initial_booking_type=booking_type, current_property=property_obj)
     
     # Get current fees for display
     fees = BookingFee.get_current_fees()
+    
+    # Get blocked visit dates for this property (dates already taken by other users)
+    blocked_dates = list(
+        PropertyBooking.objects.filter(
+            property_ref=property_obj,
+            booking_type='visit',
+            status__in=['pending', 'confirmed'],
+            preferred_date__isnull=False
+        ).values_list('preferred_date', flat=True)
+    )
+    
+    # Convert datetime objects to date strings for JavaScript
+    import json
+    from django.core.serializers.json import DjangoJSONEncoder
+    blocked_dates_json = json.dumps(
+        [date.strftime('%Y-%m-%d') for date in blocked_dates if date],
+        cls=DjangoJSONEncoder
+    )
+    
+    # Get user's existing visit dates across ALL properties for conflict checking
+    user_visit_dates = []
+    if request.user.is_authenticated:
+        user_visits = PropertyBooking.objects.filter(
+            customer=request.user,
+            booking_type='visit',
+            status__in=['pending', 'confirmed'],
+            preferred_date__isnull=False
+        ).exclude(property_ref=property_obj)  # Exclude current property
+        
+        user_visit_dates = [
+            {
+                'date': visit.preferred_date.strftime('%Y-%m-%d'),
+                'time': visit.preferred_date.strftime('%I:%M %p'),
+                'property': visit.property_ref.title
+            }
+            for visit in user_visits
+        ]
+    
+    user_visit_dates_json = json.dumps(user_visit_dates, cls=DjangoJSONEncoder)
     
     context = {
         'form': form,
         'property': property_obj,
         'fees': fees,
         'booking_type': booking_type,
+        'blocked_visit_dates': blocked_dates_json,
+        'user_visit_dates': user_visit_dates_json,
     }
     return render(request, 'properties/booking_form.html', context)
 
