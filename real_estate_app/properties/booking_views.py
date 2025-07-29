@@ -281,6 +281,55 @@ class BookingDetailView(LoginRequiredMixin, DetailView):
         return booking
 
 
+class AgentBookingsView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """Agent view to manage bookings for their properties"""
+    model = PropertyBooking
+    template_name = 'properties/agent_bookings.html'
+    context_object_name = 'bookings'
+    paginate_by = 20
+    
+    def test_func(self):
+        return self.request.user.is_agent
+    
+    def get_queryset(self):
+        # Get bookings only for properties owned by this agent
+        queryset = PropertyBooking.objects.filter(
+            property_ref__agent=self.request.user
+        ).select_related(
+            'property_ref', 'customer', 'verified_by'
+        ).order_by('-created_at')
+        
+        # Filter by status if provided
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        # Filter by booking type if provided
+        type_filter = self.request.GET.get('booking_type')
+        if type_filter:
+            queryset = queryset.filter(booking_type=type_filter)
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add statistics for agent's properties
+        agent_bookings = PropertyBooking.objects.filter(property_ref__agent=self.request.user)
+        context['stats'] = {
+            'total_bookings': agent_bookings.count(),
+            'pending_bookings': agent_bookings.filter(status='pending').count(),
+            'confirmed_bookings': agent_bookings.filter(status='confirmed').count(),
+            'rejected_bookings': agent_bookings.filter(status='rejected').count(),
+        }
+        
+        # Add filters
+        context['current_status'] = self.request.GET.get('status', '')
+        context['current_booking_type'] = self.request.GET.get('booking_type', '')
+        
+        return context
+
+
 class AdminBookingsView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = PropertyBooking
     template_name = 'properties/admin_bookings.html'
@@ -359,6 +408,62 @@ class VerifyBookingView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['form'] = BookingVerificationForm(instance=self.get_object())
         return context
+
+
+@login_required
+def update_booking_status(request, booking_id):
+    """Update booking status - accessible by both Admin and Agent"""
+    booking = get_object_or_404(PropertyBooking, id=booking_id)
+    
+    # Permission check: Admin can update any booking, Agent can only update their property bookings
+    if not request.user.is_staff and booking.property_ref.agent != request.user:
+        raise PermissionDenied("You don't have permission to update this booking.")
+    
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        admin_notes = request.POST.get('admin_notes', '')
+        
+        if new_status in dict(PropertyBooking.STATUS_CHOICES):
+            old_status = booking.status
+            booking.status = new_status
+            booking.admin_notes = admin_notes
+            booking.verified_by = request.user
+            
+            if new_status in ['confirmed', 'rejected']:
+                from django.utils import timezone
+                booking.verified_at = timezone.now()
+            
+            booking.save()
+            
+            # Return JSON response for AJAX calls
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Booking status updated from {old_status} to {new_status}',
+                    'new_status': new_status,
+                    'new_status_display': booking.get_status_display(),
+                    'verified_by': request.user.get_full_name() or request.user.email,
+                    'verified_at': booking.verified_at.strftime('%Y-%m-%d %H:%M:%S') if booking.verified_at else None
+                })
+            else:
+                messages.success(request, f'Booking status updated to {booking.get_status_display()}')
+                
+                # Redirect based on user type
+                if request.user.is_staff:
+                    return redirect('properties:admin_bookings')
+                else:
+                    return redirect('properties:agent_bookings')
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'message': 'Invalid status'})
+            else:
+                messages.error(request, 'Invalid status provided')
+    
+    # For GET requests or invalid POST, redirect back
+    if request.user.is_staff:
+        return redirect('properties:admin_bookings')
+    else:
+        return redirect('properties:agent_bookings')
 
 
 @csrf_exempt

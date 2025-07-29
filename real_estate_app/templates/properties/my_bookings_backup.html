@@ -435,3 +435,365 @@ setInterval(function() {
 }, 30000);
 </script>
 {% endblock %}
+        font-size: 0.85rem;
+        color: #718096;
+    }
+
+    .status-badge {
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
+    .status-pending {
+        background: #ffd166;
+        color: #8b5a00;
+    }
+
+    .status-confirmed {
+        background: #06d6a0;
+        color: #003d32;
+    }
+
+    .status-rejected {
+        background: #ef476f;
+        color: white;
+    }
+
+    .status-cancelled {
+        background: #6c757d;
+        color: white;
+    }
+
+    .booking-content {
+        padding: 1.5rem;
+    }
+
+    .booking-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .property-image {
+        width: 80px;
+        height: 60px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #a0aec0;
+    }
+
+    .property-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .booking-details {
+        flex: 1;
+    }
+
+    .property-name {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+
+    .booking-type {
+        color: #667eea;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .booking-date {
+        color: #718096;
+        font-size: 0.85rem;
+    }
+
+    .booking-amount {
+        text-align: right;
+        color: #2d3748;
+    }
+
+    .amount-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+
+    .payment-method {
+        font-size: 0.8rem;
+        color: #718096;
+    }
+
+    .booking-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .btn-view {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-view:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-property {
+        background: transparent;
+        border: 2px solid #667eea;
+        color: #667eea;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-property:hover {
+        background: #667eea;
+        color: white;
+        text-decoration: none;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        color: #a0aec0;
+        margin-bottom: 1rem;
+    }
+
+    .filters {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+
+    .filter-group {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            padding: 2rem 0;
+        }
+        
+        .booking-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
+        .booking-info {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .booking-amount {
+            text-align: left;
+            margin-top: 1rem;
+        }
+        
+        .booking-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1 class="mb-2">
+            <i class="fas fa-calendar-check me-3"></i>My Bookings
+        </h1>
+        <p class="mb-0">Track your property bookings and visit requests</p>
+    </div>
+</div>
+
+<div class="bookings-container">
+    <div class="container">
+        <!-- Filters -->
+        <div class="filters">
+            <form method="get" class="filter-group">
+                <label class="form-label mb-0">Filter by:</label>
+                <select name="status" class="filter-select" onchange="this.form.submit()">
+                    <option value="">All Status</option>
+                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="confirmed" {% if request.GET.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                    <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+                
+                <select name="booking_type" class="filter-select" onchange="this.form.submit()">
+                    <option value="">All Types</option>
+                    <option value="booking" {% if request.GET.booking_type == 'booking' %}selected{% endif %}>Property Booking</option>
+                    <option value="visit" {% if request.GET.booking_type == 'visit' %}selected{% endif %}>Visit Request</option>
+                </select>
+                
+                {% if request.GET.status or request.GET.booking_type %}
+                <a href="{% url 'properties:my_bookings' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-times me-1"></i>Clear Filters
+                </a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Bookings List -->
+        {% if bookings %}
+            {% for booking in bookings %}
+            <div class="booking-card">
+                <div class="booking-header">
+                    <div>
+                        <div class="booking-title">{{ booking.property_ref.title }}</div>
+                        <div class="booking-id">ID: {{ booking.transaction_id }}</div>
+                    </div>
+                    <div class="status-badge status-{{ booking.status }}">
+                        {% if booking.status == 'pending' %}
+                            <i class="fas fa-clock me-1"></i>Pending Verification
+                        {% elif booking.status == 'confirmed' %}
+                            <i class="fas fa-check-circle me-1"></i>Confirmed
+                        {% elif booking.status == 'rejected' %}
+                            <i class="fas fa-times-circle me-1"></i>Rejected
+                        {% else %}
+                            <i class="fas fa-ban me-1"></i>Cancelled
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="booking-content">
+                    <div class="booking-info">
+                        <div class="property-image">
+                            {% if booking.property_ref.images.first %}
+                                <img src="{{ booking.property_ref.images.first.image.url }}" alt="{{ booking.property_ref.title }}">
+                            {% else %}
+                                <i class="fas fa-home"></i>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="booking-details">
+                            <div class="property-name">{{ booking.property_ref.title }}</div>
+                            <div class="booking-type">
+                                {% if booking.is_visit_request %}
+                                    <i class="fas fa-eye me-1"></i>Property Visit Request
+                                    {% if booking.preferred_date %}
+                                        - {{ booking.preferred_date|date:"M d, Y H:i" }}
+                                    {% endif %}
+                                {% else %}
+                                    <i class="fas fa-calendar-check me-1"></i>Property Booking
+                                {% endif %}
+                            </div>
+                            <div class="booking-date">
+                                <i class="fas fa-calendar me-1"></i>Booked on {{ booking.created_at|date:"M d, Y H:i" }}
+                            </div>
+                        </div>
+                        
+                        <div class="booking-amount">
+                            <div class="amount-value">NPR {{ booking.payment_amount }}</div>
+                            <div class="payment-method">
+                                {% if booking.payment_method == 'stripe' %}
+                                    <i class="fab fa-stripe me-1"></i>Stripe
+                                {% else %}
+                                    <i class="fas fa-wallet me-1"></i>eSewa
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="booking-actions">
+                        <a href="{% url 'properties:booking_detail' booking.id %}" class="btn-view">
+                            <i class="fas fa-eye me-1"></i>View Details
+                        </a>
+                        <a href="{% url 'properties:property_detail' booking.property_ref.id %}" class="btn-property">
+                            <i class="fas fa-home me-1"></i>View Property
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Pagination if needed -->
+            {% if bookings.has_other_pages %}
+            <nav aria-label="Bookings pagination">
+                <ul class="pagination justify-content-center">
+                    {% if bookings.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ bookings.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">{{ bookings.number }} of {{ bookings.paginator.num_pages }}</span>
+                    </li>
+                    
+                    {% if bookings.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ bookings.next_page_number }}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-calendar-times"></i>
+                </div>
+                <h4>No Bookings Found</h4>
+                <p class="text-muted mb-4">
+                    {% if request.GET.status or request.GET.booking_type %}
+                        No bookings match your current filters.
+                    {% else %}
+                        You haven't made any property bookings yet.
+                    {% endif %}
+                </p>
+                <div class="d-flex gap-2 justify-content-center">
+                    {% if request.GET.status or request.GET.booking_type %}
+                        <a href="{% url 'properties:my_bookings' %}" class="btn btn-primary">
+                            <i class="fas fa-times me-2"></i>Clear Filters
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'properties:property_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-2"></i>Browse Properties
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

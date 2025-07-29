@@ -1,0 +1,613 @@
+{% extends 'base.html' %}
+
+{% block title %}Agent Bookings - RealEstate{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bookings-container {
+        padding: 2rem 0;
+        background: #f8fafc;
+        min-height: 100vh;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 25px 25px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .stat-total { color: #3b82f6; }
+    .stat-pending { color: #f59e0b; }
+    .stat-confirmed { color: #10b981; }
+    .stat-rejected { color: #ef4444; }
+
+    .filters-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+
+    .booking-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .booking-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    .booking-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .customer-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .customer-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+
+    .customer-details h6 {
+        margin: 0;
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    .customer-details small {
+        color: #64748b;
+    }
+
+    .status-management {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #d97706;
+        border: 1px solid #f59e0b;
+    }
+
+    .status-confirmed {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #10b981;
+    }
+
+    .status-rejected {
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #ef4444;
+    }
+
+    .status-cancelled {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #94a3b8;
+    }
+
+    .status-dropdown {
+        min-width: 120px;
+    }
+
+    .booking-body {
+        padding: 1.5rem;
+    }
+
+    .property-info {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: 10px;
+        border-left: 4px solid #4f46e5;
+    }
+
+    .property-image {
+        width: 80px;
+        height: 60px;
+        border-radius: 8px;
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+    }
+
+    .property-details h6 {
+        margin: 0 0 0.25rem 0;
+        color: #1e293b;
+        font-weight: 600;
+    }
+
+    .property-details small {
+        color: #64748b;
+    }
+
+    .booking-details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .detail-item {
+        padding: 0.75rem;
+        background: #f8fafc;
+        border-radius: 8px;
+        border-left: 3px solid #e2e8f0;
+    }
+
+    .detail-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+        margin-bottom: 0.25rem;
+    }
+
+    .detail-value {
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .actions-section {
+        display: flex;
+        gap: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .btn-status {
+        flex: 1;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+        transition: all 0.3s ease;
+    }
+
+    .btn-accept {
+        background: #10b981;
+        color: white;
+    }
+
+    .btn-accept:hover {
+        background: #059669;
+        color: white;
+    }
+
+    .btn-reject {
+        background: #ef4444;
+        color: white;
+    }
+
+    .btn-reject:hover {
+        background: #dc2626;
+        color: white;
+    }
+
+    .btn-pending {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .btn-pending:hover {
+        background: #d97706;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #64748b;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #cbd5e1;
+    }
+
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .loading-spinner {
+        background: white;
+        padding: 2rem;
+        border-radius: 10px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bookings-container">
+    <div class="page-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <h1 class="mb-0">
+                        <i class="fas fa-user-tie me-3"></i>
+                        Agent Booking Management
+                    </h1>
+                    <p class="mb-0 mt-2 opacity-75">Manage bookings for your listed properties</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number stat-total">{{ stats.total_bookings }}</div>
+                <div class="stat-label">Total Bookings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number stat-pending">{{ stats.pending_bookings }}</div>
+                <div class="stat-label">Pending Review</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number stat-confirmed">{{ stats.confirmed_bookings }}</div>
+                <div class="stat-label">Confirmed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number stat-rejected">{{ stats.rejected_bookings }}</div>
+                <div class="stat-label">Rejected</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-section">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Filter by Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="confirmed" {% if current_status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                        <option value="rejected" {% if current_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                        <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="booking_type" class="form-label">Filter by Type</label>
+                    <select name="booking_type" id="booking_type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="booking" {% if current_booking_type == 'booking' %}selected{% endif %}>Property Booking</option>
+                        <option value="visit" {% if current_booking_type == 'visit' %}selected{% endif %}>Visit Request</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
+                            <i class="fas fa-filter me-2"></i>Apply Filters
+                        </button>
+                        <a href="{% url 'properties:agent_bookings' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Bookings List -->
+        {% if bookings %}
+            {% for booking in bookings %}
+            <div class="booking-card" data-booking-id="{{ booking.id }}">
+                <div class="booking-header">
+                    <div class="customer-info">
+                        <div class="customer-avatar">
+                            {{ booking.customer_name|make_list|first|upper }}
+                        </div>
+                        <div class="customer-details">
+                            <h6>{{ booking.customer_name }}</h6>
+                            <small>{{ booking.customer_email }} • {{ booking.customer_phone }}</small>
+                        </div>
+                    </div>
+                    <div class="status-management">
+                        <span class="status-badge status-{{ booking.status }}">
+                            {{ booking.get_status_display }}
+                        </span>
+                        <span class="text-muted small">ID: #{{ booking.id }}</span>
+                    </div>
+                </div>
+
+                <div class="booking-body">
+                    <!-- Property Information -->
+                    <div class="property-info">
+                        <div class="property-image">
+                            {% if booking.property_ref.images.first %}
+                                <img src="{{ booking.property_ref.images.first.image.url }}" alt="{{ booking.property_ref.title }}" 
+                                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                            {% else %}
+                                <i class="fas fa-home"></i>
+                            {% endif %}
+                        </div>
+                        <div class="property-details">
+                            <h6>{{ booking.property_ref.title }}</h6>
+                            <small>{{ booking.property_ref.address }}</small><br>
+                            <small><strong>Type:</strong> {{ booking.get_booking_type_display }}</small>
+                        </div>
+                    </div>
+
+                    <!-- Booking Details -->
+                    <div class="booking-details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Booking Date</div>
+                            <div class="detail-value">{{ booking.created_at|date:"M d, Y H:i" }}</div>
+                        </div>
+                        {% if booking.preferred_date %}
+                        <div class="detail-item">
+                            <div class="detail-label">Preferred Visit Date</div>
+                            <div class="detail-value">{{ booking.preferred_date|date:"M d, Y H:i" }}</div>
+                        </div>
+                        {% endif %}
+                        <div class="detail-item">
+                            <div class="detail-label">Payment Amount</div>
+                            <div class="detail-value">NPR {{ booking.payment_amount|floatformat:2 }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Payment Method</div>
+                            <div class="detail-value">{{ booking.get_payment_method_display }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Transaction ID</div>
+                            <div class="detail-value"><code>{{ booking.transaction_id|truncatechars:20 }}</code></div>
+                        </div>
+                        {% if booking.verified_by %}
+                        <div class="detail-item">
+                            <div class="detail-label">Last Updated By</div>
+                            <div class="detail-value">{{ booking.verified_by.get_full_name|default:booking.verified_by.email }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if booking.message %}
+                    <div class="alert alert-info">
+                        <strong>Customer Message:</strong><br>
+                        {{ booking.message }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Status Management Actions -->
+                    <div class="actions-section">
+                        {% if booking.status == 'pending' %}
+                            <button type="button" class="btn btn-status btn-accept" onclick="updateStatus({{ booking.id }}, 'confirmed')">
+                                <i class="fas fa-check me-2"></i>Accept Booking
+                            </button>
+                            <button type="button" class="btn btn-status btn-reject" onclick="updateStatus({{ booking.id }}, 'rejected')">
+                                <i class="fas fa-times me-2"></i>Reject Booking
+                            </button>
+                        {% elif booking.status == 'confirmed' %}
+                            <button type="button" class="btn btn-status btn-pending" onclick="updateStatus({{ booking.id }}, 'pending')">
+                                <i class="fas fa-undo me-2"></i>Mark as Pending
+                            </button>
+                            <button type="button" class="btn btn-status btn-reject" onclick="updateStatus({{ booking.id }}, 'rejected')">
+                                <i class="fas fa-times me-2"></i>Reject Booking
+                            </button>
+                        {% elif booking.status == 'rejected' %}
+                            <button type="button" class="btn btn-status btn-accept" onclick="updateStatus({{ booking.id }}, 'confirmed')">
+                                <i class="fas fa-check me-2"></i>Accept Booking
+                            </button>
+                            <button type="button" class="btn btn-status btn-pending" onclick="updateStatus({{ booking.id }}, 'pending')">
+                                <i class="fas fa-undo me-2"></i>Mark as Pending
+                            </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'properties:booking_detail' booking.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-eye me-2"></i>View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Bookings pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if current_status %}&status={{ current_status }}{% endif %}{% if current_booking_type %}&booking_type={{ current_booking_type }}{% endif %}">&laquo; First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_booking_type %}&booking_type={{ current_booking_type }}{% endif %}">Previous</a>
+                        </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_booking_type %}&booking_type={{ current_booking_type }}{% endif %}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_booking_type %}&booking_type={{ current_booking_type }}{% endif %}">Last &raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <h3>No Bookings Found</h3>
+                <p>No customers have booked your properties yet. Make sure your properties are visible and attractive!</p>
+                <a href="{% url 'properties:agent_properties' %}" class="btn btn-primary">
+                    <i class="fas fa-home me-2"></i>Manage My Properties
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Updating booking status...</p>
+    </div>
+</div>
+
+<script>
+function updateStatus(bookingId, newStatus) {
+    // Show loading overlay
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('status', newStatus);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    
+    // Make AJAX request
+    fetch(`/properties/booking/update-status/${bookingId}/`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Hide loading overlay
+        document.getElementById('loadingOverlay').style.display = 'none';
+        
+        if (data.success) {
+            // Show success message
+            showMessage('success', data.message);
+            
+            // Refresh the page to show updated status
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showMessage('error', data.message || 'Error updating booking status');
+        }
+    })
+    .catch(error => {
+        // Hide loading overlay
+        document.getElementById('loadingOverlay').style.display = 'none';
+        showMessage('error', 'Network error occurred. Please try again.');
+        console.error('Error:', error);
+    });
+}
+
+function showMessage(type, message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Add to page
+    document.body.appendChild(alertDiv);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Auto refresh every 2 minutes for real-time updates
+setInterval(() => {
+    // Only refresh if no modal is open or AJAX request is in progress
+    if (!document.querySelector('.modal.show') && !document.getElementById('loadingOverlay').style.display === 'flex') {
+        window.location.reload();
+    }
+}, 120000);
+</script>
+{% endblock %}

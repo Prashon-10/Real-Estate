@@ -35,6 +35,10 @@ urlpatterns = [
     path('admin/bookings/', booking_views.AdminBookingsView.as_view(), name='admin_bookings'),
     path('admin/booking/verify/<int:booking_id>/', booking_views.VerifyBookingView.as_view(), name='verify_booking'),
     
+    # Agent booking management
+    path('agent/bookings/', booking_views.AgentBookingsView.as_view(), name='agent_bookings'),
+    path('booking/update-status/<int:booking_id>/', booking_views.update_booking_status, name='update_booking_status'),
+    
     # Webhook
     path('webhook/stripe/', booking_views.stripe_webhook_view, name='stripe_webhook'),
 ]
