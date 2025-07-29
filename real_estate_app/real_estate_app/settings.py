@@ -46,13 +46,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     # 'sentence_transformers',  # Temporarily commented out
     'accounts',
     'properties',
     'search',
     'core',
+    'chat',
     # 'channels',  # Temporarily commented out
-    # 'chat',
 ]
 
 MIDDLEWARE = [
@@ -78,7 +79,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                # 'properties.context_processors.unread_message_count',
+                'properties.context_processors.unread_message_count',
             ],
         },
     },

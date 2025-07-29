@@ -1,157 +1,533 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Property Chats - {{ property.title }} - RealEstate{% endblock %}
+{% block title %}Customer Conversations - Agent Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --chat-primary: #667eea;
+        --chat-secondary: #764ba2;
+        --message-sent: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --message-received: #f8f9fa;
+        --chat-bg: #f5f7fa;
+        --border-radius: 20px;
+        --shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    body {
+        background: var(--chat-bg);
+    }
+
+    .dashboard-header {
+        background: var(--message-sent);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 30px 30px;
+    }
+
+    .stats-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        transition: transform 0.3s ease;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        background: var(--message-sent);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .properties-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .property-card {
+        background: white;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .property-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .property-image {
+        height: 200px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 3rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .property-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .conversation-count {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(255,255,255,0.9);
+        color: #333;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    .property-info {
+        padding: 1.5rem;
+    }
+
+    .property-title {
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+
+    .property-price {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--chat-primary);
+        margin-bottom: 1rem;
+    }
+
+    .conversation-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .conversation-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .conversation-item:hover {
+        background: #f8f9fa;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .conversation-item:last-child {
+        border-bottom: none;
+    }
+
+    .customer-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--message-sent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .conversation-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .customer-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: #333;
+    }
+
+    .last-message {
+        color: #666;
+        font-size: 0.9rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .conversation-meta {
+        text-align: right;
+        color: #999;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+
+    .unread-badge {
+        background: #dc3545;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 8px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        margin-top: 0.25rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #666;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+
+    .search-box {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+    }
+
+    .search-input {
+        border: 2px solid #e9ecef;
+        border-radius: 15px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+        border-color: var(--chat-primary);
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        outline: none;
+    }
+
+    .time-ago {
+        font-size: 0.7rem;
+        color: #999;
+    }
+
+    @media (max-width: 768px) {
+        .properties-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .conversation-item {
+            padding: 0.75rem;
+        }
+        
+        .customer-avatar {
+            width: 40px;
+            height: 40px;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'properties:agent_properties' %}">My Properties</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'properties:property_detail' property.id %}">{{ property.title }}</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Customer Chats</li>
-    </ol>
-</nav>
-
-<div class="row mb-4">
-    <div class="col-md-8">
-        <div class="d-flex align-items-center">
-            <h2 class="me-3 mb-0">Chats for "{{ property.title }}"</h2>
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">Customer Conversations</h1>
+                <p class="mb-0 opacity-75">Manage all your property inquiries and conversations</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="d-flex justify-content-md-end gap-3">
+                    <div class="text-center">
+                        <div class="h4 mb-0">{{ total_conversations }}</div>
+                        <small class="opacity-75">Total Chats</small>
+                    </div>
+                    <div class="text-center">
+                        <div class="h4 mb-0">{{ unread_count }}</div>
+                        <small class="opacity-75">Unread</small>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="col-md-4 text-md-end">
-        <a href="{% url 'properties:property_detail' property.id %}" class="btn btn-outline-primary">
-            <i class="fas fa-arrow-left me-2"></i> Back to Property
-        </a>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-header bg-white py-3">
-                <h5 class="card-title mb-0">Customer Inquiries</h5>
+<div class="container">
+    <!-- Search Box -->
+    <div class="search-box">
+        <div class="row">
+            <div class="col-md-6">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search properties or customers...">
             </div>
-            <div class="card-body p-0">
-                <div class="list-group list-group-flush">
-                    {% for chat_room in chat_rooms %}
-                        <a href="{% url 'chat:property_chat' property.id %}?customer_id={{ chat_room.customer.id }}" class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <div class="d-flex align-items-center">
-                                    <div class="profile-circle me-3" style="width: 40px; height: 40px;">
-                                        {% if chat_room.customer.profile_image %}
-                                            <img src="{{ chat_room.customer.profile_image.url }}" alt="{{ chat_room.customer.username }}">
+            <div class="col-md-6">
+                <select id="filterSelect" class="search-input">
+                    <option value="">All Properties</option>
+                    <option value="unread">With Unread Messages</option>
+                    <option value="recent">Recent Activity</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Properties Grid -->
+    <div class="properties-grid" id="propertiesGrid">
+        {% for property in properties %}
+            <div class="property-card" data-property-title="{{ property.title|lower }}" 
+                 data-has-unread="{% if property.has_unread_messages %}true{% else %}false{% endif %}">
+                
+                <!-- Property Image -->
+                <div class="property-image">
+                    {% if property.featured_image %}
+                        <img src="{{ property.featured_image.url }}" alt="{{ property.title }}">
+                    {% else %}
+                        <i class="fas fa-home"></i>
+                    {% endif %}
+                    {% if property.conversation_count > 0 %}
+                        <div class="conversation-count">
+                            {{ property.conversation_count }} conversation{{ property.conversation_count|pluralize }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Property Info -->
+                <div class="property-info">
+                    <h3 class="property-title">{{ property.title }}</h3>
+                    <div class="property-price">${{ property.price|floatformat:0 }}</div>
+                    
+                    {% if property.chatrooms.exists %}
+                        <div class="conversation-list">
+                            {% for chatroom in property.chatrooms.all %}
+                                <a href="{% url 'chat:property_chat' property.id %}?customer_id={{ chatroom.customer.id }}" 
+                                   class="conversation-item" data-customer-name="{{ chatroom.customer.get_full_name|default:chatroom.customer.username|lower }}">
+                                    
+                                    <div class="customer-avatar">
+                                        {% if chatroom.customer.profile_image %}
+                                            <img src="{{ chatroom.customer.profile_image.url }}" alt="{{ chatroom.customer.username }}" 
+                                                 style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
                                         {% else %}
-                                            <span>{{ chat_room.customer.username|make_list|first|upper }}</span>
+                                            {{ chatroom.customer.username|make_list|first|upper }}
                                         {% endif %}
                                     </div>
-                                    <div>
-                                        <h6 class="mb-1">{{ chat_room.customer.get_full_name|default:chat_room.customer.username }}</h6>
-                                        <small class="text-muted">
-                                            {% with last_message=chat_room.messages.last %}
+                                    
+                                    <div class="conversation-info">
+                                        <div class="customer-name">
+                                            {{ chatroom.customer.get_full_name|default:chatroom.customer.username }}
+                                        </div>
+                                        <div class="last-message">
+                                            {% with last_message=chatroom.messages.last %}
                                                 {% if last_message %}
-                                                    {{ last_message.content|truncatechars:50 }}
+                                                    {% if last_message.sender == user %}
+                                                        You: {{ last_message.content|truncatechars:40 }}
+                                                    {% else %}
+                                                        {{ last_message.content|truncatechars:40 }}
+                                                    {% endif %}
                                                 {% else %}
                                                     No messages yet
                                                 {% endif %}
                                             {% endwith %}
-                                        </small>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="text-end">
-                                    <small class="text-muted">
-                                        {% with last_message=chat_room.messages.last %}
+                                    
+                                    <div class="conversation-meta">
+                                        {% with last_message=chatroom.messages.last %}
                                             {% if last_message %}
-                                                {{ last_message.timestamp|timesince }} ago
-                                            {% else %}
-                                                {{ chat_room.created_at|timesince }} ago
+                                                <div class="time-ago">{{ last_message.timestamp|timesince }} ago</div>
                                             {% endif %}
                                         {% endwith %}
-                                    </small>
-                                    <div>
-                                        <span class="badge bg-primary rounded-pill">
-                                            {{ chat_room.messages.count }} messages
-                                        </span>
+                                        
+                                        {% with unread_count=chatroom.messages.filter:read=False.exclude:sender=user.count %}
+                                            {% if unread_count > 0 %}
+                                                <div class="unread-badge">{{ unread_count }}</div>
+                                            {% endif %}
+                                        {% endwith %}
                                     </div>
-                                </div>
-                            </div>
-                        </a>
-                    {% empty %}
-                        <div class="list-group-item text-center py-5">
-                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-                            <h5>No customer inquiries yet</h5>
-                            <p class="text-muted">Customers will appear here when they initiate a chat about this property.</p>
+                                </a>
+                            {% endfor %}
                         </div>
-                    {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-comments"></i>
+                            <h6>No conversations yet</h6>
+                            <small class="text-muted">Customer inquiries will appear here</small>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
-        </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="empty-state py-5">
+                    <i class="fas fa-home"></i>
+                    <h4>No properties found</h4>
+                    <p class="text-muted">Add some properties to start receiving customer inquiries.</p>
+                    <a href="{% url 'properties:add_property' %}" class="btn btn-primary mt-3">
+                        <i class="fas fa-plus me-2"></i>Add Property
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
     </div>
+</div>
 
-    <div class="col-md-4">
-        <div class="card shadow mb-4">
-            <div class="card-header bg-white py-3">
-                <h5 class="card-title mb-0">Property Overview</h5>
-            </div>
-            <div class="card-body">
-                {% if property.images.first %}
-                    <img src="{{ property.images.first.image.url }}" class="img-fluid rounded mb-3" alt="{{ property.title }}">
-                {% else %}
-                    <div class="bg-light rounded text-center py-5 mb-3">
-                        <i class="fas fa-home fa-3x text-muted"></i>
-                    </div>
-                {% endif %}
-                
-                <h5>{{ property.title }}</h5>
-                <p class="text-muted mb-2"><i class="fas fa-map-marker-alt me-2"></i>{{ property.address }}</p>
-                <h5 class="text-primary">${{ property.price|floatformat:0 }}</h5>
-                
-                <div class="d-flex mb-3">
-                    <div class="me-3">
-                        <span class="badge bg-light text-dark"><i class="fas fa-bed me-1"></i>{{ property.bedrooms }}</span>
-                    </div>
-                    <div class="me-3">
-                        <span class="badge bg-light text-dark"><i class="fas fa-bath me-1"></i>{{ property.bathrooms }}</span>
-                    </div>
-                    <div>
-                        <span class="badge bg-light text-dark"><i class="fas fa-ruler me-1"></i>{{ property.square_footage }} sq ft</span>
-                    </div>
-                </div>
-                
-                <div class="d-grid gap-2">
-                    <a href="{% url 'properties:property_detail' property.id %}" class="btn btn-outline-primary">
-                        <i class="fas fa-home me-2"></i> View Property
-                    </a>
-                    <a href="{% url 'properties:property_update' property.id %}" class="btn btn-outline-secondary">
-                        <i class="fas fa-edit me-2"></i> Edit Property
-                    </a>
-                </div>
+<!-- Quick Stats -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3 col-6">
+            <div class="stats-card text-center">
+                <div class="stat-number">{{ total_properties }}</div>
+                <div class="text-muted">Properties</div>
             </div>
         </div>
-
-        <div class="card shadow">
-            <div class="card-header bg-white py-3">
-                <h5 class="card-title mb-0">Chat Statistics</h5>
+        <div class="col-md-3 col-6">
+            <div class="stats-card text-center">
+                <div class="stat-number">{{ total_conversations }}</div>
+                <div class="text-muted">Conversations</div>
             </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-6">
-                        <div class="py-3">
-                            <h3 class="text-primary mb-1">{{ chat_rooms|length }}</h3>
-                            <p class="text-muted mb-0">Total Inquiries</p>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="py-3">
-                            <h3 class="text-primary mb-1">{{ chat_rooms|length|default:"0" }}</h3>
-                            <p class="text-muted mb-0">Active Chats</p>
-                        </div>
-                    </div>
-                </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stats-card text-center">
+                <div class="stat-number">{{ unread_count }}</div>
+                <div class="text-muted">Unread Messages</div>
             </div>
-            <div class="card-footer bg-white text-center">
-                <small class="text-muted">Last updated: May 31, 2025 11:28 AM</small>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stats-card text-center">
+                <div class="stat-number">{{ active_today }}</div>
+                <div class="text-muted">Active Today</div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const filterSelect = document.getElementById('filterSelect');
+    const propertiesGrid = document.getElementById('propertiesGrid');
+    const propertyCards = propertiesGrid.querySelectorAll('.property-card');
+
+    // Search functionality
+    function filterProperties() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filterValue = filterSelect.value;
+
+        propertyCards.forEach(card => {
+            const propertyTitle = card.dataset.propertyTitle;
+            const customerNames = Array.from(card.querySelectorAll('.conversation-item'))
+                .map(item => item.dataset.customerName || '').join(' ');
+            const hasUnread = card.dataset.hasUnread === 'true';
+            
+            let showCard = true;
+
+            // Apply search filter
+            if (searchTerm && !propertyTitle.includes(searchTerm) && !customerNames.includes(searchTerm)) {
+                showCard = false;
+            }
+
+            // Apply dropdown filter
+            if (filterValue === 'unread' && !hasUnread) {
+                showCard = false;
+            } else if (filterValue === 'recent') {
+                // Show properties with recent activity (last 24 hours)
+                const hasRecentActivity = card.querySelector('.time-ago');
+                if (!hasRecentActivity) {
+                    showCard = false;
+                }
+            }
+
+            card.style.display = showCard ? 'block' : 'none';
+        });
+    }
+
+    // Event listeners
+    searchInput.addEventListener('input', filterProperties);
+    filterSelect.addEventListener('change', filterProperties);
+
+    // Auto-refresh unread counts every 30 seconds
+    setInterval(function() {
+        fetch('/chat/unread-counts/', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateUnreadCounts(data.counts);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching unread counts:', error);
+        });
+    }, 30000);
+
+    function updateUnreadCounts(counts) {
+        // Update individual conversation badges
+        document.querySelectorAll('.conversation-item').forEach(item => {
+            const href = item.getAttribute('href');
+            if (href) {
+                const match = href.match(/customer_id=(\d+)/);
+                if (match) {
+                    const customerId = match[1];
+                    const propertyMatch = href.match(/property\/(\d+)/);
+                    if (propertyMatch) {
+                        const propertyId = propertyMatch[1];
+                        const key = `${propertyId}_${customerId}`;
+                        const badge = item.querySelector('.unread-badge');
+                        const count = counts[key] || 0;
+                        
+                        if (count > 0) {
+                            if (!badge) {
+                                const meta = item.querySelector('.conversation-meta');
+                                const newBadge = document.createElement('div');
+                                newBadge.className = 'unread-badge';
+                                newBadge.textContent = count;
+                                meta.appendChild(newBadge);
+                            } else {
+                                badge.textContent = count;
+                            }
+                        } else if (badge) {
+                            badge.remove();
+                        }
+                    }
+                }
+            }
+        });
+
+        // Update header counts
+        const totalUnread = Object.values(counts).reduce((sum, count) => sum + count, 0);
+        const unreadElement = document.querySelector('.dashboard-header .h4');
+        if (unreadElement && unreadElement.textContent !== totalUnread.toString()) {
+            unreadElement.textContent = totalUnread;
+        }
+    }
+});
+</script>
 {% endblock %}

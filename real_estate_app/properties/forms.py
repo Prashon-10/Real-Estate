@@ -9,7 +9,10 @@ class PropertyForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
-            field.widget.attrs.update({'class': 'form-control'})
+            if field_name == 'is_featured':
+                field.widget.attrs.update({'class': 'form-check-input'})
+            else:
+                field.widget.attrs.update({'class': 'form-control'})
 
 class PropertyImageForm(forms.Form):
     image1 = forms.ImageField(label='Image 1', required=False, 

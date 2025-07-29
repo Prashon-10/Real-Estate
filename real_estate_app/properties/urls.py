@@ -19,4 +19,5 @@ urlpatterns = [
     #Testing
     path('property/<int:property_id>/send-message/', views.send_message, name='send_message'),
     path('messages/', views.message_inbox, name='message_inbox'),
+    path('messages/<int:message_id>/mark-read/', views.mark_message_read, name='mark_message_read'),
 ]

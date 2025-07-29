@@ -46,6 +46,9 @@ class UserAdmin(BaseUserAdmin):
     def get_queryset(self, request):
         return super().get_queryset(request).select_related()
 
+# Register User model with the default admin
+admin.site.register(User, UserAdmin)
+
 # Customize admin site headers
 admin.site.site_header = "RealEstate Administration"
 admin.site.site_title = "RealEstate Admin"

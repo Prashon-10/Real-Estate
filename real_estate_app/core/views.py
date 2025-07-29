@@ -33,6 +33,20 @@ def dashboard(request):
         )['total'] or 0
         context['total_value'] = total_value
         
+        # Get recent messages for agent's properties
+        from properties.models import PropertyMessage
+        recent_messages = PropertyMessage.objects.filter(
+            property__agent=request.user
+        ).select_related('sender', 'property').order_by('-timestamp')[:5]
+        context['recent_messages'] = recent_messages
+        context['unread_messages_count'] = PropertyMessage.objects.filter(
+            property__agent=request.user,
+            read=False
+        ).count()
+        context['total_messages'] = PropertyMessage.objects.filter(
+            property__agent=request.user
+        ).count()
+        
     else:
         # For customers, show recommendations and favorites
         try:

@@ -246,15 +246,15 @@
                                 <a class="nav-link" href="{% url 'search:recommendations' %}">Recommendations</a>
                             </li>
                         {% endif %}
-                      {% if user.is_authenticated %}
-    <!-- <li class="nav-item">
+                      {% if user.is_authenticated and user.is_agent %}
+    <li class="nav-item">
         <a class="nav-link" href="{% url 'properties:message_inbox' %}">
             Messages
             {% if unread_message_count > 0 %}
                 <span class="badge bg-danger ms-1">{{ unread_message_count }}</span>
             {% endif %}
         </a>
-    </li> -->
+    </li>
 {% endif %}
 </li>
                     {% endif %}

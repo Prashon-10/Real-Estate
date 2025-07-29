@@ -88,6 +88,119 @@
         box-shadow: 0 8px 25px rgba(0,0,0,0.15);
     }
     
+    .stat-card.message-stat {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .stat-card.message-stat::before {
+        display: none;
+    }
+    
+    .stat-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #ff4757;
+        color: white;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: bold;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    
+    /* Message styles */
+    .message-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .message-item {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: white;
+        transition: all 0.3s ease;
+    }
+    
+    .message-item:hover {
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    
+    .message-item.unread {
+        border-left: 4px solid #667eea;
+        background: #f8f9ff;
+    }
+    
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
+    }
+    
+    .sender-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .sender-info i {
+        font-size: 1.2rem;
+    }
+    
+    .message-time {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.25rem;
+    }
+    
+    .new-badge {
+        background: #667eea;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
+    
+    .message-property {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .message-content {
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+    
+    .message-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+    }
+    
     .stat-number {
         font-size: 2.5rem;
         font-weight: 700;
@@ -364,9 +477,12 @@
                 <div class="stat-number">{{ sold_properties|default:"0" }}</div>
                 <div class="stat-label">Sold Properties</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ pending_properties|default:"0" }}</div>
-                <div class="stat-label">Pending Sales</div>
+            <div class="stat-card message-stat">
+                <div class="stat-number">{{ unread_messages_count|default:"0" }}</div>
+                <div class="stat-label">New Messages</div>
+                {% if unread_messages_count > 0 %}
+                <div class="stat-badge">!</div>
+                {% endif %}
             </div>
         </div>
         {% else %}
@@ -406,6 +522,13 @@
                             <a href="{% url 'properties:agent_properties' %}" class="quick-action-btn">
                                 <i class="fas fa-list"></i>
                                 My Listings
+                            </a>
+                            <a href="{% url 'properties:message_inbox' %}" class="quick-action-btn">
+                                <i class="fas fa-envelope"></i>
+                                Messages
+                                {% if unread_messages_count > 0 %}
+                                    <span class="badge bg-danger">{{ unread_messages_count }}</span>
+                                {% endif %}
                             </a>
                         {% else %}
                             <a href="{% url 'search:search' %}" class="quick-action-btn">
@@ -527,6 +650,68 @@
                             <a href="{% url 'properties:agent_properties' %}" class="btn btn-outline-primary btn-sm">View All Properties</a>
                         </div>
                     </div>
+
+                    <!-- Recent Messages for Agent -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-envelope"></i>Recent Messages
+                                {% if unread_messages_count > 0 %}
+                                    <span class="badge bg-danger ms-2">{{ unread_messages_count }} new</span>
+                                {% endif %}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_messages %}
+                                <div class="message-list">
+                                    {% for message in recent_messages %}
+                                    <div class="message-item {% if not message.read %}unread{% endif %}" data-message-id="{{ message.id }}">
+                                        <div class="message-header">
+                                            <div class="sender-info">
+                                                <i class="fas fa-user-circle text-primary"></i>
+                                                <strong>{{ message.sender.first_name }} {{ message.sender.last_name }}</strong>
+                                                <small class="text-muted">{{ message.sender.email }}</small>
+                                            </div>
+                                            <div class="message-time">
+                                                <small class="text-muted">{{ message.timestamp|timesince }} ago</small>
+                                                {% if not message.read %}
+                                                    <span class="new-badge">New</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="message-property">
+                                            <i class="fas fa-home text-muted"></i>
+                                            <span>{{ message.property.title }}</span>
+                                        </div>
+                                        <div class="message-content">
+                                            {{ message.content|truncatechars:120 }}
+                                        </div>
+                                        <div class="message-actions">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="replyToMessage('{{ message.id }}')">
+                                                <i class="fas fa-reply"></i> Reply
+                                            </button>
+                                            {% if not message.read %}
+                                                <button class="btn btn-sm btn-outline-success" onclick="markAsRead('{{ message.id }}')">
+                                                    <i class="fas fa-check"></i> Mark Read
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-state">
+                                    <i class="fas fa-inbox"></i>
+                                    <h6>No messages yet</h6>
+                                    <p>When customers contact you about properties, their messages will appear here.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-white">
+                            <a href="{% url 'properties:message_inbox' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-envelope-open me-2"></i>View All Messages
+                            </a>
+                        </div>
+                    </div>
                 {% else %}
                     <!-- Recent Favorites for Customer -->
                     <div class="dashboard-card">
@@ -634,6 +819,7 @@
         </div>
     </div>
 </div>
+{% csrf_token %}
 {% endblock %}
 
 {% block extra_js %}
@@ -644,5 +830,95 @@
             document.querySelector('.welcome-animation').classList.add('welcome-animation');
         }, 100);
     });
+
+    // Message functionality for agents
+    function markAsRead(messageId) {
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        const button = event.target.closest('button');
+        
+        // Add loading state
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+
+        // Make AJAX request
+        fetch(`/properties/messages/${messageId}/mark-read/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove unread styling
+                if (messageElement) {
+                    messageElement.classList.remove('unread');
+                }
+                
+                // Remove the button
+                button.remove();
+                
+                // Update unread count in stats
+                const unreadStat = document.querySelector('.stat-card.message-stat .stat-number');
+                if (unreadStat) {
+                    const currentCount = parseInt(unreadStat.textContent);
+                    if (currentCount > 0) {
+                        unreadStat.textContent = currentCount - 1;
+                        
+                        // Remove the notification badge if count reaches 0
+                        if (currentCount - 1 === 0) {
+                            const badge = document.querySelector('.stat-badge');
+                            if (badge) badge.remove();
+                        }
+                    }
+                }
+                
+                showToast('Message marked as read!', 'success');
+            } else {
+                showToast('Error marking message as read', 'error');
+                // Restore button
+                button.innerHTML = originalHTML;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error marking message as read', 'error');
+            // Restore button
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+        });
+    }
+
+    function replyToMessage(messageId) {
+        // This could open a modal or redirect to email
+        // For now, let's redirect to the full message inbox
+        window.location.href = '{% url "properties:message_inbox" %}';
+    }
+
+    function showToast(message, type = 'success') {
+        // Create a simple toast notification
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'error' ? 'danger' : 'success'} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
+    }
 </script>
 {% endblock %}

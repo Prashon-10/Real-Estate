@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db.models import Q
-from .models import Property, PropertyImage, Favorite
+from .models import Property, PropertyImage, Favorite, PropertyMessage
 from .forms import PropertyForm, PropertyImageForm
 from search.models import SearchHistory
 
@@ -35,30 +35,58 @@ class PropertyListView(LoginRequiredMixin, ListView):
     paginate_by = 9
     
     def get_queryset(self):
-        queryset = Property.objects.filter(status='available')
+        queryset = Property.objects.filter(status='available').select_related('agent')
         
-        if self.request.GET.get('price_min'):
-            queryset = queryset.filter(price__gte=self.request.GET.get('price_min'))
-        if self.request.GET.get('price_max'):
-            queryset = queryset.filter(price__lte=self.request.GET.get('price_max'))
-        if self.request.GET.get('bedrooms'):
-            queryset = queryset.filter(bedrooms__gte=self.request.GET.get('bedrooms'))
-        if self.request.GET.get('bathrooms'):
-            queryset = queryset.filter(bathrooms__gte=self.request.GET.get('bathrooms'))
-        if self.request.GET.get('sqft_min'):
-            queryset = queryset.filter(square_footage__gte=self.request.GET.get('sqft_min'))
-        if self.request.GET.get('sqft_max'):
-            queryset = queryset.filter(square_footage__lte=self.request.GET.get('sqft_max'))
+        # Search functionality
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search) | 
+                Q(address__icontains=search) |
+                Q(description__icontains=search)
+            )
         
-        sort = self.request.GET.get('sort', 'newest')
-        if sort == 'price_asc':
+        # Property type filter
+        property_type = self.request.GET.get('property_type')
+        if property_type:
+            queryset = queryset.filter(property_type=property_type)
+        
+        # Listing type filter
+        listing_type = self.request.GET.get('listing_type')
+        if listing_type:
+            queryset = queryset.filter(listing_type=listing_type)
+        
+        # Price filters
+        min_price = self.request.GET.get('min_price')
+        if min_price:
+            queryset = queryset.filter(price__gte=min_price)
+        max_price = self.request.GET.get('max_price')
+        if max_price:
+            queryset = queryset.filter(price__lte=max_price)
+            
+        # Bedroom filter
+        bedrooms = self.request.GET.get('bedrooms')
+        if bedrooms:
+            queryset = queryset.filter(bedrooms__gte=bedrooms)
+            
+        # Bathroom filter
+        bathrooms = self.request.GET.get('bathrooms')
+        if bathrooms:
+            queryset = queryset.filter(bathrooms__gte=bathrooms)
+        
+        # Sorting
+        sort = self.request.GET.get('sort')
+        if sort == 'price_low':
             queryset = queryset.order_by('price')
-        elif sort == 'price_desc':
+        elif sort == 'price_high':
             queryset = queryset.order_by('-price')
-        elif sort == 'bedrooms':
-            queryset = queryset.order_by('-bedrooms')
+        elif sort == 'newest':
+            queryset = queryset.order_by('-created_at')
+        elif sort == 'oldest':
+            queryset = queryset.order_by('created_at')
         else:  
             queryset = queryset.order_by('-created_at')
+            
         return queryset
     
     def get_context_data(self, **kwargs):
@@ -70,6 +98,10 @@ class PropertyListView(LoginRequiredMixin, ListView):
                 .values_list('property__id', flat=True)
             )
         context['favorite_property_ids'] = favorite_property_ids
+        
+        # Add total count for debugging
+        context['total_properties'] = self.get_queryset().count()
+        
         return context
 
 class PropertyDetailView(LoginRequiredMixin, DetailView):
@@ -223,6 +255,19 @@ def toggle_favorite(request, pk):
     else:
         is_favorite = True
         action = "added to"
+        
+        # Update recommendations when user adds a favorite
+        if request.user.is_customer():
+            from search.views import update_recommendations
+            # Get similar properties based on the favorited property
+            similar_properties = Property.objects.filter(
+                status='available',
+                property_type=property_obj.property_type,
+                listing_type=property_obj.listing_type
+            ).exclude(id=property_obj.id)[:10]
+            
+            if similar_properties:
+                update_recommendations(request.user, f"Properties like {property_obj.title}", similar_properties)
     
     return JsonResponse({
         'success': True,
@@ -308,34 +353,46 @@ def similar_properties(request, pk):
 
 
 #Testing
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from .models import Property, PropertyMessage
-from django.views.decorators.http import require_POST
-
 @require_POST
 @login_required
 def send_message(request, property_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Only POST method allowed'})
+        
     property = get_object_or_404(Property, id=property_id)
     content = request.POST.get('message')
 
     if not content:
-        messages.error(request, "Message cannot be empty.")
-        return redirect('properties:property_detail', pk=property_id)
+        return JsonResponse({'success': False, 'message': 'Message cannot be empty'})
 
-    if not request.user.is_customer and not request.user == property.agent:
-        messages.error(request, "You are not authorized to send a message.")
-        return redirect('properties:property_detail', pk=property_id)
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'message': 'Please log in to send messages'})
 
-    PropertyMessage.objects.create(
-        property=property,
-        sender=request.user,
-        content=content
-    )
-    messages.success(request, "Your message has been sent.")
-    return redirect('properties:property_detail', pk=property_id)
+    # Allow both customers and other users to send messages to agents
+    try:
+        PropertyMessage.objects.create(
+            property=property,
+            sender=request.user,
+            content=content
+        )
+        
+        # If this is an AJAX request, return JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
+            return JsonResponse({
+                'success': True, 
+                'message': 'Your message has been sent successfully!',
+                'agent_name': property.agent.get_full_name() or property.agent.username
+            })
+        else:
+            messages.success(request, "Your message has been sent.")
+            return redirect('properties:property_detail', pk=property_id)
+            
+    except Exception as e:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
+            return JsonResponse({'success': False, 'message': 'Failed to send message. Please try again.'})
+        else:
+            messages.error(request, "Failed to send message. Please try again.")
+            return redirect('properties:property_detail', pk=property_id)
 
 
 
@@ -345,21 +402,64 @@ def get_context_data(self, **kwargs):
     context['messages'] = self.object.messages.order_by('timestamp').all()
     return context
 
-
-
-
-from django.db.models import Q
-
 @login_required
 def message_inbox(request):
-    # Get all properties where the user is either agent or customer who favorited it
-    properties = Property.objects.filter(
-        Q(agent=request.user) | Q(favorites__user=request.user)
-    ).distinct()
+    """
+    Agent's message inbox - shows all messages for their properties
+    """
+    if not request.user.is_agent():
+        messages.warning(request, "This feature is only available to agents.")
+        return redirect('properties:property_list')
+    
+    # Get all messages for agent's properties
+    agent_messages = PropertyMessage.objects.filter(
+        property__agent=request.user
+    ).select_related('sender', 'property').order_by('-timestamp')
+    
+    # Filter by status if requested
+    status_filter = request.GET.get('status')
+    if status_filter == 'unread':
+        agent_messages = agent_messages.filter(read=False)
+    elif status_filter == 'read':
+        agent_messages = agent_messages.filter(read=True)
+    
+    # Search functionality
+    search = request.GET.get('search')
+    if search:
+        agent_messages = agent_messages.filter(
+            Q(content__icontains=search) |
+            Q(sender__first_name__icontains=search) |
+            Q(sender__last_name__icontains=search) |
+            Q(property__title__icontains=search)
+        )
+    
+    context = {
+        'messages': agent_messages,
+        'unread_count': agent_messages.filter(read=False).count(),
+        'total_count': agent_messages.count(),
+        'status_filter': status_filter,
+        'search': search,
+    }
+    
+    return render(request, 'properties/message_inbox.html', context)
 
-    # Get all messages related to those properties
-    messages = PropertyMessage.objects.filter(property__in=properties).select_related('sender', 'property')
-
-    return render(request, 'properties/message_inbox.html', {
-        'messages': messages,
-    })
+@login_required
+@require_POST
+def mark_message_read(request, message_id):
+    """
+    Mark a message as read (AJAX endpoint)
+    """
+    try:
+        message = get_object_or_404(PropertyMessage, id=message_id, property__agent=request.user)
+        message.read = True
+        message.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Message marked as read'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)

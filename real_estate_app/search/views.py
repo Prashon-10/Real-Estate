@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from sentence_transformers import SentenceTransformer
@@ -65,6 +65,10 @@ def search_properties(request):
             Favorite.objects.filter(user=request.user)
             .values_list('property__id', flat=True)
         )
+        
+        # Update recommendations based on search query and results
+        if query and results:
+            update_recommendations(request.user, query, results)
     
     return render(request, 'search/search_results.html', {
         'query': query,
@@ -75,15 +79,19 @@ def search_properties(request):
 
 @login_required
 def recommendations_view(request):
+    if not request.user.is_authenticated:
+        return redirect('accounts:login')
+        
     recommendations = Recommendation.objects.filter(user=request.user).order_by('-score')
     
     # Get favorite property IDs for the current user
     favorite_property_ids = []
-    if request.user.is_authenticated and hasattr(request.user, 'is_customer') and request.user.is_customer():
-        favorite_property_ids = list(
-            Favorite.objects.filter(user=request.user)
-            .values_list('property__id', flat=True)
-        )
+    if hasattr(request.user, 'is_customer') and callable(getattr(request.user, 'is_customer', None)):
+        if request.user.is_customer():
+            favorite_property_ids = list(
+                Favorite.objects.filter(user=request.user)
+                .values_list('property__id', flat=True)
+            )
     
     return render(request, 'search/recommendations.html', {
         'recommendations': recommendations,

@@ -10,6 +10,18 @@ class Property(models.Model):
         ('pending', 'Pending'),
     )
     
+    LISTING_TYPE_CHOICES = (
+        ('sale', 'For Sale'),
+        ('rent', 'For Rent'),
+    )
+    
+    PROPERTY_TYPE_CHOICES = (
+        ('house', 'House'),
+        ('apartment', 'Apartment'),
+        ('condo', 'Condo'),
+        ('villa', 'Villa'),
+    )
+    
     title = models.CharField(max_length=255)
     address = models.CharField(max_length=500)
     price = models.DecimalField(max_digits=12, decimal_places=2)
@@ -18,6 +30,9 @@ class Property(models.Model):
     square_footage = models.PositiveIntegerField()
     description = models.TextField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='available')
+    listing_type = models.CharField(max_length=10, choices=LISTING_TYPE_CHOICES, default='sale')
+    property_type = models.CharField(max_length=20, choices=PROPERTY_TYPE_CHOICES, default='house')
+    is_featured = models.BooleanField(default=False)
     agent = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='properties')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

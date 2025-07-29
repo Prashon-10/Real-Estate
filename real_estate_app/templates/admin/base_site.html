@@ -31,6 +31,20 @@
             font-family: 'Inter', sans-serif !important;
             background-color: var(--light-bg) !important;
             color: var(--text-color) !important;
+            overflow-x: hidden !important;
+            min-width: 320px !important;
+        }
+        
+        /* Ensure body and html don't cause horizontal overflow */
+        html, body {
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
+        
+        /* Container fixes */
+        .container, .container-fluid {
+            max-width: 100% !important;
+            overflow-x: hidden !important;
         }
         
         /* Style the default Django admin header */
@@ -73,6 +87,20 @@
         #content {
             background: transparent !important;
             padding: 2rem !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
+        
+        /* Main content wrapper */
+        #content-main {
+            max-width: 100% !important;
+            overflow-x: auto !important;
+        }
+        
+        /* Results wrapper */
+        .results {
+            max-width: 100% !important;
+            overflow-x: auto !important;
         }
         
         /* Module styling */
@@ -82,6 +110,8 @@
             border-radius: 12px !important;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
             margin-bottom: 2rem !important;
+            overflow-x: auto !important;
+            max-width: 100% !important;
         }
         
         .module h2 {
@@ -97,21 +127,39 @@
         .module table {
             border: none !important;
             border-radius: 0 0 12px 12px !important;
-            overflow: hidden !important;
+            overflow: visible !important;
+            width: 100% !important;
+            table-layout: auto !important;
+            /* Removed min-width for true responsiveness */
         }
         
         .module th {
             background: #f8fafc !important;
             color: var(--text-color) !important;
             font-weight: 600 !important;
-            padding: 1rem !important;
+            padding: 0.75rem !important;
             border-bottom: 1px solid var(--border-color) !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
         }
         
         .module td {
-            padding: 1rem !important;
+            padding: 0.75rem !important;
             border-bottom: 1px solid #f1f5f9 !important;
             vertical-align: middle !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            max-width: 200px !important;
+        }
+        
+        /* Allow specific columns to wrap */
+        .module td:nth-child(1), 
+        .module th:nth-child(1),
+        .module td:nth-child(2), 
+        .module th:nth-child(2) {
+            white-space: normal !important;
+            max-width: 150px !important;
         }
         
         .module tr:hover {
@@ -245,12 +293,66 @@
             background: linear-gradient(135deg, var(--success-color), #047857) !important;
         }
         
+        /* Responsive Design - Fix zoom issues */
+        @media (max-width: 1400px) {
+            #content {
+                padding: 1.5rem !important;
+            }
+            
+            .module table {
+                min-width: 700px !important;
+            }
+            
+            .module td, .module th {
+                padding: 0.5rem !important;
+                font-size: 0.875rem !important;
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            #content {
+                padding: 1rem !important;
+            }
+            
+            .module table {
+                min-width: 600px !important;
+                font-size: 0.875rem !important;
+            }
+            
+            .module td, .module th {
+                padding: 0.5rem !important;
+                max-width: 120px !important;
+            }
+        }
+        
+        @media (max-width: 1000px) {
+            .module table {
+                min-width: 500px !important;
+                font-size: 0.8rem !important;
+            }
+            
+            .module td, .module th {
+                padding: 0.4rem !important;
+                max-width: 100px !important;
+            }
+        }
+        
         /* Mobile responsiveness for filter */
         @media (max-width: 768px) {
             #changelist-filter {
                 width: 200px !important;
                 max-height: 300px !important;
                 right: 10px !important;
+            }
+            
+            .module table {
+                min-width: 400px !important;
+                font-size: 0.75rem !important;
+            }
+            
+            .module td, .module th {
+                padding: 0.3rem !important;
+                max-width: 80px !important;
             }
         }
     </style>

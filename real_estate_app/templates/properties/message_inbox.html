@@ -1,27 +1,614 @@
 {% extends 'base.html' %}
-{% block title %}Messages - RealEstate{% endblock %}
-{% block content %}
-<h2 class="mb-4">Your Messages</h2>
+{% load static %}
 
-<div class="card shadow">
-    <div class="card-body">
+{% block title %}Messages - Real Estate App{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --glass-bg: rgba(255, 255, 255, 0.1);
+        --glass-border: rgba(255, 255, 255, 0.2);
+        --text-dark: #2d3748;
+        --text-light: #718096;
+    }
+
+    .page-header {
+        background: var(--primary-gradient);
+        padding: 3rem 0 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.1"><path d="m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/></g></g></svg>') repeat;
+        animation: float 20s infinite linear;
+    }
+
+    @keyframes float {
+        0% { transform: translate(0, 0); }
+        100% { transform: translate(-60px, -60px); }
+    }
+
+    .page-header h1 {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .page-subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.1rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .stats-row {
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: var(--text-light);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .filters-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .filter-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .filter-btn {
+        border: 2px solid #e9ecef;
+        background: white;
+        color: var(--text-dark);
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+        background: var(--primary-gradient);
+        border-color: transparent;
+        color: white;
+    }
+
+    .search-box {
+        position: relative;
+    }
+
+    .search-box input {
+        border-radius: 25px;
+        padding: 0.75rem 1rem 0.75rem 3rem;
+        border: 2px solid #e9ecef;
+        background: #f8f9fa;
+    }
+
+    .search-box i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-light);
+    }
+
+    .messages-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .message-item {
+        border-bottom: 1px solid #e9ecef;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .message-item:last-child {
+        border-bottom: none;
+    }
+
+    .message-item:hover {
+        background: #f8f9fa;
+    }
+
+    .message-item.unread {
+        background: #f8f9ff;
+        border-left: 4px solid var(--primary-gradient);
+    }
+
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .sender-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .sender-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--primary-gradient);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+
+    .sender-details h6 {
+        margin: 0;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .sender-details small {
+        color: var(--text-light);
+    }
+
+    .message-time {
+        text-align: right;
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+
+    .new-badge {
+        background: #ff4757;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        margin-top: 0.5rem;
+        display: inline-block;
+    }
+
+    .property-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .property-info i {
+        color: var(--primary-gradient);
+    }
+
+    .message-content {
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        color: var(--text-dark);
+    }
+
+    .message-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-primary {
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 25px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-success {
+        background: var(--success-gradient);
+        border: none;
+        border-radius: 25px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        color: var(--text-light);
+        margin-bottom: 1.5rem;
+    }
+
+    .empty-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 1rem;
+    }
+
+    .empty-text {
+        color: var(--text-light);
+        margin-bottom: 2rem;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .stagger-animation {
+        animation-delay: var(--delay);
+    }
+
+    @media (max-width: 768px) {
+        .message-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .message-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="fade-in">Message Inbox</h1>
+                <p class="page-subtitle fade-in">Manage all customer inquiries about your properties</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Statistics -->
+    <div class="row stats-row">
+        <div class="col-md-3">
+            <div class="stat-card fade-in">
+                <div class="stat-number">{{ total_count }}</div>
+                <div class="stat-label">Total Messages</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card fade-in" style="--delay: 0.1s;">
+                <div class="stat-number">{{ unread_count }}</div>
+                <div class="stat-label">Unread Messages</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card fade-in" style="--delay: 0.2s;">
+                <div class="stat-number">{{ messages|length }}</div>
+                <div class="stat-label">Showing Now</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card fade-in" style="--delay: 0.3s;">
+                <div class="stat-number">{% widthratio unread_count total_count 100 %}%</div>
+                <div class="stat-label">Response Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-card fade-in">
+        <form method="GET" id="filterForm">
+            <div class="row align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label">Filter by Status</label>
+                    <div class="filter-buttons">
+                        <a href="?" class="btn filter-btn {% if not status_filter %}active{% endif %}">All</a>
+                        <a href="?status=unread" class="btn filter-btn {% if status_filter == 'unread' %}active{% endif %}">Unread</a>
+                        <a href="?status=read" class="btn filter-btn {% if status_filter == 'read' %}active{% endif %}">Read</a>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Search Messages</label>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="search" class="form-control" 
+                               placeholder="Search by sender, property, or content..." 
+                               value="{{ search }}">
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages-container fade-in">
         {% if messages %}
-            <ul class="list-group list-group-flush">
-                {% for msg in messages %}
-                    <li class="list-group-item">
-                        <strong>{{ msg.sender }}</strong> on 
-                        <a href="{% url 'properties:property_detail' msg.property.id %}">
-                            {{ msg.property.title }}
+            {% for message in messages %}
+                <div class="message-item {% if not message.read %}unread{% endif %} stagger-animation" 
+                     style="animation-delay: {{ forloop.counter0|add:1 }}00ms;" 
+                     id="message-{{ message.id }}">
+                    
+                    <div class="message-header">
+                        <div class="sender-info">
+                            <div class="sender-avatar">
+                                {{ message.sender.first_name.0|default:"?" }}{{ message.sender.last_name.0|default:"" }}
+                            </div>
+                            <div class="sender-details">
+                                <h6>{{ message.sender.first_name }} {{ message.sender.last_name }}</h6>
+                                <small>{{ message.sender.email }}</small>
+                            </div>
+                        </div>
+                        <div class="message-time">
+                            {{ message.timestamp|timesince }} ago
+                            {% if not message.read %}
+                                <div class="new-badge">New</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="property-info">
+                        <i class="fas fa-home"></i>
+                        <strong>Property:</strong>
+                        <a href="{% url 'properties:property_detail' message.property.pk %}">
+                            {{ message.property.title }}
                         </a>
-                        <br>
-                        "{{ msg.content|truncatewords:15 }}"
-                        <small class="text-muted d-block">{{ msg.timestamp|date:"M j, Y g:i A" }}</small>
-                    </li>
-                {% endfor %}
-            </ul>
+                    </div>
+
+                    <div class="message-content">
+                        {{ message.content }}
+                    </div>
+
+                    <div class="message-actions">
+                        <a href="mailto:{{ message.sender.email }}?subject=Re: {{ message.property.title }}" 
+                           class="btn btn-primary btn-sm">
+                            <i class="fas fa-reply me-2"></i>Reply via Email
+                        </a>
+                        <a href="{% url 'properties:property_detail' message.property.pk %}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye me-2"></i>View Property
+                        </a>
+                        {% if not message.read %}
+                            <button class="btn btn-success btn-sm" onclick="markAsRead('{{ message.id }}')">
+                                <i class="fas fa-check me-2"></i>Mark as Read
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
         {% else %}
-            <p class="text-muted">You have no messages yet.</p>
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h2 class="empty-title">No Messages Found</h2>
+                <p class="empty-text">
+                    {% if status_filter or search %}
+                        No messages match your current filters. Try adjusting your search criteria.
+                    {% else %}
+                        You haven't received any messages yet. When customers contact you about your properties, their messages will appear here.
+                    {% endif %}
+                </p>
+                {% if status_filter or search %}
+                    <a href="{% url 'properties:message_inbox' %}" class="btn btn-primary">
+                        <i class="fas fa-refresh me-2"></i>Clear Filters
+                    </a>
+                {% endif %}
+            </div>
         {% endif %}
     </div>
 </div>
+
+<!-- Success Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="successToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <i class="fas fa-check-circle me-2"></i>
+            <strong class="me-auto">Success</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Message marked as read successfully!
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize animations
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animationPlayState = 'running';
+            }
+        });
+    });
+
+    document.querySelectorAll('.stagger-animation').forEach(el => {
+        observer.observe(el);
+    });
+
+    // Auto-submit search form
+    const searchInput = document.querySelector('input[name="search"]');
+    let debounceTimer;
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                document.getElementById('filterForm').submit();
+            }, 500);
+        });
+    }
+});
+
+function markAsRead(messageId) {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    const button = event.target.closest('button');
+    
+    // Add loading state
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Marking...';
+    button.disabled = true;
+
+    // Make AJAX request
+    fetch(`/properties/messages/${messageId}/mark-read/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove unread styling
+            messageElement.classList.remove('unread');
+            
+            // Remove the "New" badge
+            const newBadge = messageElement.querySelector('.new-badge');
+            if (newBadge) {
+                newBadge.remove();
+            }
+            
+            // Remove the "Mark as Read" button
+            button.remove();
+            
+            // Show success message
+            showToast('Message marked as read successfully!');
+            
+            // Update unread count (optional - could reload page instead)
+            const unreadCountElement = document.querySelector('.stat-card .stat-number');
+            if (unreadCountElement) {
+                const currentCount = parseInt(unreadCountElement.textContent);
+                if (currentCount > 0) {
+                    unreadCountElement.textContent = currentCount - 1;
+                }
+            }
+        } else {
+            showToast('Error marking message as read', 'error');
+            // Restore button
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error marking message as read', 'error');
+        // Restore button
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+    });
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('successToast');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastHeader = toast.querySelector('.toast-header');
+    
+    // Update message
+    toastMessage.textContent = message;
+    
+    // Update styling based on type
+    if (type === 'error') {
+        toastHeader.className = 'toast-header bg-danger text-white';
+        toastHeader.querySelector('i').className = 'fas fa-exclamation-circle me-2';
+    } else {
+        toastHeader.className = 'toast-header bg-success text-white';
+        toastHeader.querySelector('i').className = 'fas fa-check-circle me-2';
+    }
+    
+    // Show toast
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+</script>
 {% endblock %}

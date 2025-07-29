@@ -2,219 +2,1532 @@
 
 {% block title %}Properties - RealEstate{% endblock %}
 
+{% block extra_css %}
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        --dark-gradient: linear-gradient(135deg, #434343 0%, #000000 100%);
+        --light-bg: #f8fafc;
+        --card-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        --hover-shadow: 0 30px 60px rgba(0,0,0,0.15);
+        --border-radius: 20px;
+        --animation-speed: 0.3s;
+    }
+
+    body {
+        background: var(--light-bg);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* Hero Section */
+    .properties-hero {
+        background: var(--primary-gradient);
+        padding: 8rem 0 4rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .properties-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        animation: float 20s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+    }
+
+    .hero-title {
+        font-size: 4rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        background: linear-gradient(45deg, #ffffff, #f0f8ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: fadeInUp 1s ease-out;
+    }
+
+    .hero-subtitle {
+        font-size: 1.3rem;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+        animation: fadeInUp 1s ease-out 0.2s both;
+    }
+
+    .breadcrumb-modern {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50px;
+        padding: 0.8rem 2rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        animation: fadeInUp 1s ease-out 0.4s both;
+    }
+
+    .breadcrumb-modern .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .breadcrumb-modern a {
+        color: rgba(255, 255, 255, 0.9);
+        text-decoration: none;
+        transition: all var(--animation-speed) ease;
+    }
+
+    .breadcrumb-modern a:hover {
+        color: white;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    /* Filter Sidebar */
+    .filter-sidebar {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        padding: 2rem;
+        position: sticky;
+        top: 2rem;
+        height: fit-content;
+        animation: slideInLeft 1s ease-out;
+    }
+
+    .filter-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .filter-title i {
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.8rem 1rem;
+        font-size: 1rem;
+        transition: all var(--animation-speed) ease;
+        background: #f8fafc;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        background: white;
+        transform: translateY(-1px);
+    }
+
+    .btn-filter {
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 12px;
+        padding: 0.8rem 2rem;
+        font-weight: 600;
+        color: white;
+        width: 100%;
+        transition: all var(--animation-speed) ease;
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .btn-clear {
+        background: transparent;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.8rem 2rem;
+        font-weight: 600;
+        color: #64748b;
+        width: 100%;
+        margin-top: 0.5rem;
+        transition: all var(--animation-speed) ease;
+    }
+
+    .btn-clear:hover {
+        border-color: #64748b;
+        color: #64748b;
+        transform: translateY(-1px);
+    }
+
+    /* Properties Grid */
+    .properties-container {
+        padding: 3rem 0;
+    }
+
+    .properties-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .results-info {
+        font-size: 1.1rem;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .sort-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .sort-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        background: white;
+        min-width: 180px;
+    }
+
+    /* Property Cards */
+    .property-card {
+        background: white;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        transition: all var(--animation-speed) ease;
+        border: none;
+        height: 100%;
+        position: relative;
+        animation: fadeInUp 1s ease-out;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .property-card:hover {
+        transform: translateY(-10px);
+        box-shadow: var(--hover-shadow);
+    }
+
+    .property-image-container {
+        position: relative;
+        height: 220px;
+        overflow: hidden;
+    }
+
+    .property-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform var(--animation-speed) ease;
+    }
+
+    .property-card:hover .property-image {
+        transform: scale(1.1);
+    }
+
+    .property-badges {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .property-badge {
+        background: rgba(255, 255, 255, 0.95);
+        color: #667eea;
+        border: none;
+        border-radius: 20px;
+        padding: 0.3rem 0.8rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .property-badge.featured {
+        background: var(--warning-gradient);
+        color: white;
+    }
+
+    .property-badge.sale {
+        background: var(--success-gradient);
+        color: white;
+    }
+
+    .property-badge.rent {
+        background: var(--secondary-gradient);
+        color: white;
+    }
+
+    .favorite-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        transition: all var(--animation-speed) ease;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .favorite-btn:hover {
+        background: #667eea;
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .favorite-btn.favorited {
+        background: #e53e3e;
+        color: white;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    .property-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+        line-height: 1.3;
+        min-height: 2.5rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .property-location {
+        color: #64748b;
+        margin-bottom: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-height: 1.5rem;
+        line-height: 1.4;
+        font-size: 0.9rem;
+    }
+
+    .property-price {
+        font-size: 1.6rem;
+        font-weight: 800;
+        background: var(--success-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1rem;
+        min-height: 2rem;
+        display: flex;
+        align-items: center;
+        line-height: 1.2;
+    }
+
+    .property-features {
+        display: flex;
+        gap: 0.8rem;
+        margin-bottom: 1.2rem;
+        flex-wrap: wrap;
+        min-height: 2.5rem;
+        align-content: flex-start;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        color: #64748b;
+        font-size: 0.85rem;
+        background: #f8fafc;
+        padding: 0.25rem 0.6rem;
+        border-radius: 15px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .feature-item i {
+        color: #667eea;
+    }
+
+    .property-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: auto;
+        padding-top: 0.8rem;
+    }
+
+    .btn-view {
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        color: white;
+        flex: 1;
+        transition: all var(--animation-speed) ease;
+        min-height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .btn-view:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    .btn-contact {
+        background: transparent;
+        border: 2px solid #667eea;
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        color: #667eea;
+        flex: 1;
+        transition: all var(--animation-speed) ease;
+        min-height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+
+    .btn-contact:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    /* No Results */
+    .no-results {
+        text-align: center;
+        padding: 5rem 2rem;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--card-shadow);
+        margin: 2rem 0;
+    }
+
+    .no-results i {
+        font-size: 4rem;
+        color: #cbd5e0;
+        margin-bottom: 1.5rem;
+    }
+
+    .no-results h3 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 1rem;
+    }
+
+    .no-results p {
+        color: #64748b;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+
+    .btn-browse {
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 12px;
+        padding: 1rem 2rem;
+        font-weight: 600;
+        color: white;
+        text-decoration: none;
+        display: inline-block;
+        transition: all var(--animation-speed) ease;
+    }
+
+    .btn-browse:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 2.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .pagination {
+        background: white;
+        border-radius: 15px;
+        padding: 0.8rem;
+        box-shadow: var(--card-shadow);
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .page-link {
+        border: none;
+        color: #64748b;
+        font-weight: 600;
+        padding: 0.6rem 1rem;
+        margin: 0 0.1rem;
+        border-radius: 8px;
+        transition: all var(--animation-speed) ease;
+        background: transparent;
+        min-width: 2.5rem;
+        text-align: center;
+    }
+    
+
+    .page-link:hover {
+        background: var(--primary-gradient);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .page-item.active .page-link {
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+        
+        .filter-sidebar {
+            position: static;
+            margin-bottom: 2rem;
+        }
+        
+        .properties-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .sort-controls {
+            justify-content: stretch;
+        }
+        
+        .sort-select {
+            width: 100%;
+        }
+        
+        .property-features {
+            gap: 0.5rem;
+        }
+        
+        .property-actions {
+            flex-direction: column;
+        }
+    }
+
+    /* Animation Delays */
+    .property-card:nth-child(1) { animation-delay: 0.1s; }
+    .property-card:nth-child(2) { animation-delay: 0.2s; }
+    .property-card:nth-child(3) { animation-delay: 0.3s; }
+    .property-card:nth-child(4) { animation-delay: 0.4s; }
+    .property-card:nth-child(5) { animation-delay: 0.5s; }
+    .property-card:nth-child(6) { animation-delay: 0.6s; }
+
+    /* Keyframe Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Contact Modal Styles */
+    .contact-modal {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        overflow: hidden;
+    }
+
+    .contact-header {
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        padding: 1.5rem 2rem;
+        position: relative;
+    }
+
+    .contact-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="white" opacity="0.1"/><circle cx="80" cy="80" r="1.5" fill="white" opacity="0.1"/></svg>');
+        animation: float 15s ease-in-out infinite;
+    }
+
+    .contact-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+        position: relative;
+        z-index: 2;
+    }
+
+    .contact-body {
+        padding: 2rem;
+        background: #f8fafc;
+    }
+
+    .agent-info {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        text-align: center;
+        height: 100%;
+    }
+
+    .agent-avatar-container {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 1.5rem;
+    }
+
+    .agent-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid white;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .agent-status-badge {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        background: #10b981;
+        color: white;
+        border-radius: 15px;
+        padding: 0.2rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .agent-status-badge i {
+        font-size: 0.6rem;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .agent-name {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.3rem;
+    }
+
+    .agent-title {
+        color: #667eea;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .agent-bio {
+        color: #64748b;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 1.5rem;
+    }
+
+    .agent-contact-info {
+        text-align: left;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 0.8rem;
+        padding: 0.5rem;
+        border-radius: 8px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .contact-item i {
+        color: #667eea;
+        width: 16px;
+        text-align: center;
+    }
+
+    .contact-item span {
+        color: #4a5568;
+        font-size: 0.9rem;
+    }
+
+    .message-form-container {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        height: 100%;
+    }
+
+    .message-form-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .message-form-title i {
+        color: #667eea;
+    }
+
+    .message-form-subtitle {
+        color: #64748b;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+    }
+
+    .contact-input, .contact-textarea {
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.8rem 1rem;
+        font-size: 0.95rem;
+        transition: all var(--animation-speed) ease;
+        background: #f8fafc;
+    }
+
+    .contact-input:focus, .contact-textarea:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        background: white;
+        transform: translateY(-1px);
+    }
+
+    .contact-textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .btn-send-message {
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 10px;
+        padding: 0.8rem 1.5rem;
+        font-weight: 600;
+        color: white;
+        transition: all var(--animation-speed) ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-send-message:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    /* Modal Animation */
+    .modal.fade .modal-dialog {
+        transform: scale(0.8) translateY(-50px);
+        transition: all 0.3s ease;
+    }
+
+    .modal.show .modal-dialog {
+        transform: scale(1) translateY(0);
+    }
+
+    /* Success Animation */
+    @keyframes successPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    .success-sent {
+        animation: successPulse 0.6s ease;
+    }
+</style>
+{% endblock %}
+
 {% block header %}
-<div class="bg-light py-4 mb-4">
+<!-- Properties Hero Section -->
+<section class="properties-hero">
     <div class="container">
-        <h1 class="mb-0">Browse Properties</h1>
+        <div class="hero-content">
+            <h1 class="hero-title">Discover Properties</h1>
+            <p class="hero-subtitle">Find your perfect home from our extensive collection of premium properties</p>
+            
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb breadcrumb-modern justify-content-center mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'index' %}">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Properties</li>
+                </ol>
+            </nav>
+        </div>
     </div>
-</div>
+</section>
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h5 class="card-title mb-0">Filter Properties</h5>
-            </div>
-            <div class="card-body">
-                <form method="get">
-                    <div class="mb-3">
-                        <label for="priceMin" class="form-label">Price Range</label>
-                        <div class="d-flex align-items-center">
-                            <input type="number" class="form-control form-control-sm" id="priceMin" name="price_min" placeholder="Min" value="{{ request.GET.price_min }}">
-                            <span class="mx-2">-</span>
-                            <input type="number" class="form-control form-control-sm" id="priceMax" name="price_max" placeholder="Max" value="{{ request.GET.price_max }}">
+<!-- Properties Container -->
+<section class="properties-container">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Filter Sidebar -->
+            <div class="col-lg-3 col-md-4">
+                <div class="filter-sidebar">
+                    <h3 class="filter-title">
+                        <i class="fas fa-filter"></i>
+                        Filter Properties
+                    </h3>
+                    
+                    <form method="get" id="filterForm">
+                        <!-- Search -->
+                        <div class="form-group">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   placeholder="Property name, location..." value="{{ request.GET.search }}">
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="bedrooms" class="form-label">Bedrooms</label>
-                        <select class="form-select form-select-sm" id="bedrooms" name="bedrooms">
-                            <option value="">Any</option>
-                            <option value="1" {% if request.GET.bedrooms == '1' %}selected{% endif %}>1+</option>
-                            <option value="2" {% if request.GET.bedrooms == '2' %}selected{% endif %}>2+</option>
-                            <option value="3" {% if request.GET.bedrooms == '3' %}selected{% endif %}>3+</option>
-                            <option value="4" {% if request.GET.bedrooms == '4' %}selected{% endif %}>4+</option>
-                            <option value="5" {% if request.GET.bedrooms == '5' %}selected{% endif %}>5+</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="bathrooms" class="form-label">Bathrooms</label>
-                        <select class="form-select form-select-sm" id="bathrooms" name="bathrooms">
-                            <option value="">Any</option>
-                            <option value="1" {% if request.GET.bathrooms == '1' %}selected{% endif %}>1+</option>
-                            <option value="2" {% if request.GET.bathrooms == '2' %}selected{% endif %}>2+</option>
-                            <option value="3" {% if request.GET.bathrooms == '3' %}selected{% endif %}>3+</option>
-                            <option value="4" {% if request.GET.bathrooms == '4' %}selected{% endif %}>4+</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="sqft" class="form-label">Square Footage</label>
-                        <div class="d-flex align-items-center">
-                            <input type="number" class="form-control form-control-sm" id="sqftMin" name="sqft_min" placeholder="Min" value="{{ request.GET.sqft_min }}">
-                            <span class="mx-2">-</span>
-                            <input type="number" class="form-control form-control-sm" id="sqftMax" name="sqft_max" placeholder="Max" value="{{ request.GET.sqft_max }}">
+
+                        <!-- Property Type -->
+                        <div class="form-group">
+                            <label for="property_type" class="form-label">Property Type</label>
+                            <select class="form-select" id="property_type" name="property_type">
+                                <option value="">All Types</option>
+                                <option value="house" {% if request.GET.property_type == 'house' %}selected{% endif %}>House</option>
+                                <option value="apartment" {% if request.GET.property_type == 'apartment' %}selected{% endif %}>Apartment</option>
+                                <option value="condo" {% if request.GET.property_type == 'condo' %}selected{% endif %}>Condo</option>
+                                <option value="villa" {% if request.GET.property_type == 'villa' %}selected{% endif %}>Villa</option>
+                            </select>
                         </div>
-                    </div>
-                    
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
-                    </div>
-                </form>
+
+                        <!-- Listing Type -->
+                        <div class="form-group">
+                            <label for="listing_type" class="form-label">Listing Type</label>
+                            <select class="form-select" id="listing_type" name="listing_type">
+                                <option value="">All Listings</option>
+                                <option value="sale" {% if request.GET.listing_type == 'sale' %}selected{% endif %}>For Sale</option>
+                                <option value="rent" {% if request.GET.listing_type == 'rent' %}selected{% endif %}>For Rent</option>
+                            </select>
+                        </div>
+
+                        <!-- Price Range -->
+                        <div class="form-group">
+                            <label for="min_price" class="form-label">Min Price</label>
+                            <input type="number" class="form-control" id="min_price" name="min_price" 
+                                   placeholder="Minimum price" value="{{ request.GET.min_price }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="max_price" class="form-label">Max Price</label>
+                            <input type="number" class="form-control" id="max_price" name="max_price" 
+                                   placeholder="Maximum price" value="{{ request.GET.max_price }}">
+                        </div>
+
+                        <!-- Bedrooms -->
+                        <div class="form-group">
+                            <label for="bedrooms" class="form-label">Bedrooms</label>
+                            <select class="form-select" id="bedrooms" name="bedrooms">
+                                <option value="">Any</option>
+                                <option value="1" {% if request.GET.bedrooms == '1' %}selected{% endif %}>1+</option>
+                                <option value="2" {% if request.GET.bedrooms == '2' %}selected{% endif %}>2+</option>
+                                <option value="3" {% if request.GET.bedrooms == '3' %}selected{% endif %}>3+</option>
+                                <option value="4" {% if request.GET.bedrooms == '4' %}selected{% endif %}>4+</option>
+                                <option value="5" {% if request.GET.bedrooms == '5' %}selected{% endif %}>5+</option>
+                            </select>
+                        </div>
+
+                        <!-- Bathrooms -->
+                        <div class="form-group">
+                            <label for="bathrooms" class="form-label">Bathrooms</label>
+                            <select class="form-select" id="bathrooms" name="bathrooms">
+                                <option value="">Any</option>
+                                <option value="1" {% if request.GET.bathrooms == '1' %}selected{% endif %}>1+</option>
+                                <option value="2" {% if request.GET.bathrooms == '2' %}selected{% endif %}>2+</option>
+                                <option value="3" {% if request.GET.bathrooms == '3' %}selected{% endif %}>3+</option>
+                                <option value="4" {% if request.GET.bathrooms == '4' %}selected{% endif %}>4+</option>
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <button type="submit" class="btn btn-filter">
+                            <i class="fas fa-search me-2"></i>Apply Filters
+                        </button>
+                        <a href="{% url 'properties:property_list' %}" class="btn btn-clear">
+                            <i class="fas fa-times me-2"></i>Clear All
+                        </a>
+                    </form>
+                </div>
             </div>
-        </div>
-        
-        <div class="card shadow-sm">
-            <div class="card-header bg-white py-3">
-                <h5 class="card-title mb-0">Looking for something specific?</h5>
-            </div>
-            <div class="card-body">
-                <p class="card-text">Try our advanced semantic search to find properties that match your preferences.</p>
-                <a href="{% url 'search:search' %}" class="btn btn-outline-primary btn-sm">Advanced Search</a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-9">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <p class="mb-0">Showing <strong>{{ paginator.count }}</strong> properties</p>
-            <div class="dropdown">
-                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    Sort By
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdown">
-                    <li><a class="dropdown-item" href="?sort=price_asc">Price (Low to High)</a></li>
-                    <li><a class="dropdown-item" href="?sort=price_desc">Price (High to Low)</a></li>
-                    <li><a class="dropdown-item" href="?sort=newest">Newest</a></li>
-                    <li><a class="dropdown-item" href="?sort=bedrooms">Most Bedrooms</a></li>
-                </ul>
-            </div>
-        </div>
-        
-        {% if properties %}
-            <div class="row g-4">
-                {% for property in properties %}
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card property-card h-100 shadow-sm">
-                            {% if property.images.first %}
-                                <img src="{{ property.images.first.image.url }}" class="card-img-top property-image" alt="{{ property.title }}">
+
+            <!-- Properties Grid -->
+            <div class="col-lg-9 col-md-8">
+                <!-- Properties Header -->
+                <div class="properties-header">
+                    <div class="results-info">
+                        <strong>
+                            {% if properties.paginator %}
+                                {{ properties.paginator.count }}
+                            {% elif total_properties %}
+                                {{ total_properties }}
                             {% else %}
-                                <div class="card-img-top property-image bg-light d-flex justify-content-center align-items-center">
-                                    <i class="fas fa-home fa-3x text-muted"></i>
-                                </div>
+                                {{ properties|length|default:0 }}
                             {% endif %}
-                            <div class="card-body">
-                                <h5 class="card-title">{{ property.title }}</h5>
-                                <p class="card-text text-muted small mb-2">{{ property.address }}</p>
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <span class="fw-bold text-primary">Rs.{{ property.price|floatformat:0 }}</span>
-                                    <div>
-                                        <span class="badge bg-light text-dark me-1"><i class="fas fa-bed me-1"></i>{{ property.bedrooms }}</span>
-                                        <span class="badge bg-light text-dark me-1"><i class="fas fa-bath me-1"></i>{{ property.bathrooms }}</span>
-                                        <span class="badge bg-light text-dark"><i class="fas fa-ruler me-1"></i>{{ property.square_footage }} sq ft</span>
-                                    </div>
-                                </div>
-                                <div class="d-grid">
-                                    <a href="{% url 'properties:property_detail' property.id %}" class="btn btn-outline-primary btn-sm">View Details</a>
-                                </div>
-                                {% if user.is_authenticated and user.is_customer %}
-                                    <div class="text-center mt-2">
-                                        <button class="btn btn-link btn-sm favorite-toggle" data-property-id="{{ property.id }}">
-                                            <i class="{% if property.id in favorite_property_ids %}fas{% else %}far{% endif %} fa-heart favorite-icon"></i>
-                                        </button>
+                        </strong> properties found
+                        {% if properties.paginator and properties.has_other_pages %}
+                            <span class="text-muted"> • Showing {{ properties.start_index }}-{{ properties.end_index }} of {{ properties.paginator.count }}</span>
+                        {% endif %}
+                        {% if request.GET.search %}
+                            for "<strong>{{ request.GET.search }}</strong>"
+                        {% endif %}
+                    </div>
+                    
+                    <div class="sort-controls">
+                        <label for="sort" class="form-label mb-0 me-2">Sort by:</label>
+                        <select class="form-select sort-select" id="sort" name="sort">
+                            <option value="">Default</option>
+                            <option value="price_low" {% if request.GET.sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                            <option value="price_high" {% if request.GET.sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                            <option value="newest" {% if request.GET.sort == 'newest' %}selected{% endif %}>Newest First</option>
+                            <option value="oldest" {% if request.GET.sort == 'oldest' %}selected{% endif %}>Oldest First</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Properties Grid -->
+                {% if properties %}
+                <div class="row g-4 align-items-stretch">
+                    {% for property in properties %}
+                    <div class="col-xl-4 col-lg-6 col-md-12 d-flex">
+                        <div class="property-card w-100">
+                            <!-- Property Image -->
+                            <div class="property-image-container">
+                                {% if property.images.first %}
+                                    <img src="{{ property.images.first.image.url }}" class="property-image" alt="{{ property.title }}">
+                                {% else %}
+                                    <div class="property-image bg-light d-flex justify-content-center align-items-center">
+                                        <i class="fas fa-home fa-4x text-muted"></i>
                                     </div>
                                 {% endif %}
+
+                                <!-- Property Badges -->
+                                <div class="property-badges">
+                                    {% if property.is_featured %}
+                                        <span class="property-badge featured">
+                                            <i class="fas fa-star me-1"></i>Featured
+                                        </span>
+                                    {% endif %}
+                                    <span class="property-badge {{ property.listing_type|lower }}">
+                                        {{ property.get_listing_type_display }}
+                                    </span>
+                                </div>
+
+                                <!-- Favorite Button -->
+                                {% if user.is_authenticated %}
+                                <button class="favorite-btn {% if property.id in favorite_property_ids %}favorited{% endif %}" 
+                                        data-property-id="{{ property.id }}" 
+                                        onclick="toggleFavorite(this, '{{ property.id }}')"
+                                        title="{% if property.id in favorite_property_ids %}Remove from favorites{% else %}Add to favorites{% endif %}">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+
+                            <!-- Property Details -->
+                            <div class="card-body">
+                                <h5 class="property-title">{{ property.title }}</h5>
+                                
+                                <p class="property-location">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    {{ property.address }}
+                                </p>
+
+                                <div class="property-price">
+                                    Rs. {{ property.price|floatformat:0 }}
+                                    {% if property.listing_type == 'rent' %}
+                                        <small class="text-muted">/month</small>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Property Features -->
+                                <div class="property-features">
+                                    {% if property.bedrooms %}
+                                    <div class="feature-item">
+                                        <i class="fas fa-bed"></i>
+                                        <span>{{ property.bedrooms }} Beds</span>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if property.bathrooms %}
+                                    <div class="feature-item">
+                                        <i class="fas fa-bath"></i>
+                                        <span>{{ property.bathrooms }} Baths</span>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if property.square_footage %}
+                                    <div class="feature-item">
+                                        <i class="fas fa-ruler"></i>
+                                        <span>{{ property.square_footage }} sq ft</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Property Actions -->
+                                <div class="property-actions">
+                                    <a href="{% url 'properties:property_detail' property.id %}" class="btn btn-view">
+                                        <i class="fas fa-eye me-2"></i>View Details
+                                    </a>
+                                    <button class="btn btn-contact" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#contactModal"
+                                            data-property-id="{{ property.id }}"
+                                            data-property-title="{{ property.title }}"
+                                            data-agent-name="{{ property.agent.get_full_name|default:property.agent.username }}"
+                                            data-agent-phone="{{ property.agent.phone_number|default:'Not available' }}"
+                                            data-agent-bio="{{ property.agent.bio|default:'Professional real estate agent' }}"
+                                            data-agent-image="{% if property.agent.profile_image %}{{ property.agent.profile_image.url }}{% else %}https://via.placeholder.com/150/667eea/ffffff?text={{ property.agent.first_name|first|default:property.agent.username|first }}{% endif %}">
+                                        <i class="fas fa-envelope me-2"></i>Contact Agent
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                {% endfor %}
-            </div>
-            
-            {% if is_paginated %}
-                <nav aria-label="Page navigation" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        {% if page_obj.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page=1">&laquo; First</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                            </li>
-                        {% endif %}
-                        
-                        {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                                <li class="page-item active">
-                                    <span class="page-link">{{ num }}</span>
-                                </li>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <!-- No Results -->
+                <div class="no-results">
+                    <i class="fas fa-search"></i>
+                    <h3>No Properties Found</h3>
+                    <p>We couldn't find any properties matching your criteria. Try adjusting your filters or search terms.</p>
+                    <a href="{% url 'properties:property_list' %}" class="btn-browse">
+                        <i class="fas fa-home me-2"></i>Browse All Properties
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Pagination -->
+                {% if properties and properties.paginator.num_pages > 1 %}
+                <div class="pagination-container">
+                    <nav aria-label="Properties pagination">
+                        <ul class="pagination">
+                            {% if properties.has_previous %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" title="First page">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ properties.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" title="Previous page">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
                                 </li>
                             {% endif %}
-                        {% endfor %}
-                        
-                        {% if page_obj.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            {% endif %}
-        {% else %}
-            <div class="alert alert-info">
-                No properties found matching your criteria. Try adjusting your filters or search for something else.
+
+                            {% for num in properties.paginator.page_range %}
+                                {% if properties.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if properties.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ properties.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" title="Next page">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ properties.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" title="Last page">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
             </div>
-        {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Contact Agent Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content contact-modal">
+            <div class="modal-header contact-header">
+                <h5 class="modal-title contact-title" id="contactModalLabel">
+                    <i class="fas fa-user-tie me-2"></i>Contact Agent
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body contact-body">
+                <div class="row">
+                    <!-- Agent Info Section -->
+                    <div class="col-md-5">
+                        <div class="agent-info">
+                            <div class="agent-avatar-container">
+                                <img id="agentImage" src="" alt="Agent" class="agent-avatar">
+                                <div class="agent-status-badge">
+                                    <i class="fas fa-circle"></i>
+                                    <span>Online</span>
+                                </div>
+                            </div>
+                            <div class="agent-details">
+                                <h4 id="agentName" class="agent-name"></h4>
+                                <p class="agent-title">Licensed Real Estate Agent</p>
+                                <p id="agentBio" class="agent-bio"></p>
+                                
+                                <div class="agent-contact-info">
+                                    <div class="contact-item">
+                                        <i class="fas fa-phone"></i>
+                                        <span id="agentPhone"></span>
+                                    </div>
+                                    <div class="contact-item">
+                                        <i class="fas fa-envelope"></i>
+                                        <span>Available for messages</span>
+                                    </div>
+                                    <div class="contact-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>Responds within 1 hour</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Message Form Section -->
+                    <div class="col-md-7">
+                        <div class="message-form-container">
+                            <h6 class="message-form-title">
+                                <i class="fas fa-paper-plane me-2"></i>Send a Message
+                            </h6>
+                            <p class="message-form-subtitle">Get in touch about <strong id="propertyTitle"></strong></p>
+                            
+                            <form id="contactForm" class="contact-form">
+                                {% csrf_token %}
+                                <input type="hidden" id="propertyId" name="property_id">
+                                
+                                <div class="form-group mb-3">
+                                    <label for="senderName" class="form-label">Your Name</label>
+                                    <input type="text" class="form-control contact-input" id="senderName" name="sender_name" 
+                                           value="{% if user.is_authenticated %}{{ user.get_full_name|default:user.username }}{% endif %}" required>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="senderEmail" class="form-label">Your Email</label>
+                                    <input type="email" class="form-control contact-input" id="senderEmail" name="sender_email" 
+                                           value="{% if user.is_authenticated %}{{ user.email }}{% endif %}" required>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="senderPhone" class="form-label">Your Phone (Optional)</label>
+                                    <input type="tel" class="form-control contact-input" id="senderPhone" name="sender_phone" 
+                                           value="{% if user.is_authenticated %}{{ user.phone_number }}{% endif %}">
+                                </div>
+                                
+                                <div class="form-group mb-4">
+                                    <label for="messageContent" class="form-label">Message</label>
+                                    <textarea class="form-control contact-textarea" id="messageContent" name="message" rows="4" 
+                                              placeholder="Hi! I'm interested in this property. Could you please provide more information?" required></textarea>
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </button>
+                                    <button type="submit" class="btn btn-primary btn-send-message">
+                                        <i class="fas fa-paper-plane me-2"></i>Send Message
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-{% if user.is_authenticated and user.is_customer %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const favoriteButtons = document.querySelectorAll('.favorite-toggle');
+    // Intersection Observer for animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
     
-    favoriteButtons.forEach(button => {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animationPlayState = 'running';
+            }
+        });
+    }, observerOptions);
+    
+    // Observe property cards
+    document.querySelectorAll('.property-card').forEach(card => {
+        observer.observe(card);
+    });
+    
+    // Sort functionality
+    const sortSelect = document.getElementById('sort');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (this.value) {
+                urlParams.set('sort', this.value);
+            } else {
+                urlParams.delete('sort');
+            }
+            window.location.search = urlParams.toString();
+        });
+    }
+    
+    // Favorite functionality with AJAX
+    function toggleFavorite(button, propertyId) {
+        const isFavorited = button.classList.contains('favorited');
+        
+        // Add loading state
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+        
+        // Make AJAX request to toggle favorite
+        fetch(`/properties/favorite/${propertyId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update button state
+                if (data.is_favorite) {
+                    button.classList.add('favorited');
+                    button.title = 'Remove from favorites';
+                } else {
+                    button.classList.remove('favorited');
+                    button.title = 'Add to favorites';
+                }
+                
+                // Show success message
+                showToast(data.message, 'success');
+            } else {
+                showToast('Error updating favorites', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error updating favorites', 'error');
+        })
+        .finally(() => {
+            // Restore button
+            button.innerHTML = '<i class="fas fa-heart"></i>';
+            button.disabled = false;
+        });
+    }
+    
+    // Legacy favorite button click handler for old structure
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const propertyId = this.dataset.propertyId;
+            toggleFavorite(this, propertyId);
+        });
+    });
+    
+    // Auto-submit filter form with debounce
+    const filterForm = document.getElementById('filterForm');
+    const filterInputs = filterForm.querySelectorAll('input, select');
+    
+    let debounceTimer;
+    filterInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                if (this.type !== 'submit') {
+                    filterForm.submit();
+                }
+            }, 800);
+        });
+    });
+    
+    // Contact Modal functionality
+    const contactModal = document.getElementById('contactModal');
+    const contactButtons = document.querySelectorAll('.btn-contact');
+    
+    contactButtons.forEach(button => {
         button.addEventListener('click', function() {
             const propertyId = this.dataset.propertyId;
-            const heartIcon = this.querySelector('.favorite-icon');
+            const propertyTitle = this.dataset.propertyTitle;
+            const agentName = this.dataset.agentName;
+            const agentPhone = this.dataset.agentPhone;
+            const agentBio = this.dataset.agentBio;
+            const agentImage = this.dataset.agentImage;
             
-            fetch(`/properties/favorite/${propertyId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({}),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    if (data.is_favorite) {
-                        heartIcon.classList.replace('far', 'fas');
-                        showToast(`${data.message}`, 'success');
-                    } else {
-                        heartIcon.classList.replace('fas', 'far');
-                        showToast(`${data.message}`, 'info');
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('An error occurred. Please try again.', 'error');
-            });
+            // Populate modal with agent information
+            document.getElementById('propertyId').value = propertyId;
+            document.getElementById('propertyTitle').textContent = propertyTitle;
+            document.getElementById('agentName').textContent = agentName;
+            document.getElementById('agentPhone').textContent = agentPhone;
+            document.getElementById('agentBio').textContent = agentBio;
+            document.getElementById('agentImage').src = agentImage;
+            
+            // Set default message
+            const defaultMessage = `Hi ${agentName}! I'm interested in the property "${propertyTitle}". Could you please provide more information about it? I'd love to schedule a viewing at your convenience.`;
+            document.getElementById('messageContent').value = defaultMessage;
+        });
+    });
+    
+    // Contact form submission
+    const contactForm = document.getElementById('contactForm');
+    contactForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = this.querySelector('.btn-send-message');
+        const originalText = submitBtn.innerHTML;
+        
+        // Show loading state
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+        submitBtn.disabled = true;
+        
+        // Get form data
+        const formData = new FormData(this);
+        const propertyId = document.getElementById('propertyId').value;
+        
+        // Make AJAX request
+        fetch(`/properties/property/${propertyId}/send-message/`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success state
+                submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Message Sent!';
+                submitBtn.classList.add('success-sent');
+                
+                // Show success toast
+                showToast('Your message has been sent to the agent successfully!', 'success');
+                
+                // Close modal after 2 seconds
+                setTimeout(() => {
+                    const modal = bootstrap.Modal.getInstance(contactModal);
+                    modal.hide();
+                    
+                    // Reset form and button
+                    this.reset();
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('success-sent');
+                }, 2000);
+            } else {
+                throw new Error(data.message || 'Failed to send message');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            submitBtn.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Try Again';
+            submitBtn.disabled = false;
+            showToast('Failed to send message. Please try again.', 'error');
+            
+            // Reset button after 3 seconds
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+            }, 3000);
+        });
+    });
+    
+    // Enhanced loading states
+    document.querySelectorAll('.btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (this.type === 'submit' || (this.href && !this.href.includes('#'))) {
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+                this.disabled = true;
+                
+                // Re-enable after 3 seconds as fallback
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 3000);
+            }
+        });
+    });
+    
+    // Smooth scrolling for pagination
+    document.querySelectorAll('.pagination a').forEach(link => {
+        link.addEventListener('click', function() {
+            setTimeout(() => {
+                document.querySelector('.properties-header').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 100);
         });
     });
 });
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `
+        <div class="toast-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+            ${message}
+        </div>
+    `;
+    
+    // Toast styles
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#10b981' : '#ef4444'};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        z-index: 9999;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
 </script>
-{% endif %}
 {% endblock %}
