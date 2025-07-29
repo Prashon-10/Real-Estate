@@ -180,12 +180,23 @@
                 <!-- For customers: favorite button -->
                 {% if user.is_authenticated and user.is_customer %}
                     <div class="d-grid gap-2 mb-3">
-                        <a href="{% url 'properties:property_booking' property.id %}?type=booking" class="btn btn-success">
-                            <i class="fas fa-calendar-plus me-2"></i>Book Property
-                        </a>
-                        <a href="{% url 'properties:property_booking' property.id %}?type=visit" class="btn btn-info">
-                            <i class="fas fa-eye me-2"></i>Request Visit
-                        </a>
+                        {% if has_booking %}
+                            <!-- User has already booked this property -->
+                            <div class="btn btn-success disabled" style="opacity: 0.7; cursor: not-allowed; pointer-events: none;">
+                                <i class="fas fa-check-circle me-2"></i>Already Booked
+                            </div>
+                            <div class="btn btn-info disabled" style="opacity: 0.7; cursor: not-allowed; pointer-events: none;">
+                                <i class="fas fa-check-circle me-2"></i>Visit Requested
+                            </div>
+                        {% else %}
+                            <!-- Normal booking buttons -->
+                            <a href="{% url 'properties:property_booking' property.id %}?type=booking" class="btn btn-success">
+                                <i class="fas fa-calendar-plus me-2"></i>Book Property
+                            </a>
+                            <a href="{% url 'properties:property_booking' property.id %}?type=visit" class="btn btn-info">
+                                <i class="fas fa-eye me-2"></i>Request Visit
+                            </a>
+                        {% endif %}
                         <button class="btn {% if is_favorite %}btn-danger{% else %}btn-outline-danger{% endif %} favorite-toggle" data-property-id="{{ property.id }}">
                             <i class="{% if is_favorite %}fas{% else %}far{% endif %} fa-heart me-2"></i>
                             {% if is_favorite %}Remove from{% else %}Add to{% endif %} Favorites

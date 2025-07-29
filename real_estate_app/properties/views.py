@@ -92,12 +92,25 @@ class PropertyListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         favorite_property_ids = []
+        booked_property_ids = []
+        
         if self.request.user.is_authenticated and self.request.user.is_customer():
             favorite_property_ids = list(
                 Favorite.objects.filter(user=self.request.user)
                 .values_list('property__id', flat=True)
             )
+            
+            # Get properties that the user has already booked
+            from .models import PropertyBooking
+            booked_property_ids = list(
+                PropertyBooking.objects.filter(
+                    customer=self.request.user,
+                    status__in=['pending', 'confirmed']  # Don't show button if booking is pending or confirmed
+                ).values_list('property_ref__id', flat=True)
+            )
+            
         context['favorite_property_ids'] = favorite_property_ids
+        context['booked_property_ids'] = booked_property_ids
         
         # Add total count for debugging
         context['total_properties'] = self.get_queryset().count()
@@ -117,7 +130,15 @@ class PropertyDetailView(LoginRequiredMixin, DetailView):
                 property=self.object
             ).exists()
             
+            # Check if user has already booked this property
             if self.request.user.is_customer():
+                from .models import PropertyBooking
+                context['has_booking'] = PropertyBooking.objects.filter(
+                    customer=self.request.user,
+                    property_ref=self.object,
+                    status__in=['pending', 'confirmed']  # Don't show button if booking is pending or confirmed
+                ).exists()
+                
                 SearchHistory.objects.create(
                     user=self.request.user,
                     query=self.object.title,
