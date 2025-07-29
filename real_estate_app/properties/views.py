@@ -349,10 +349,12 @@ def similar_properties(request, pk):
     try:
         property_obj = get_object_or_404(Property, pk=pk)
         
+        # Get similar properties based on bedrooms, bathrooms, and property type
         similar = Property.objects.filter(
             status='available',
             bedrooms=property_obj.bedrooms,
-        ).exclude(id=property_obj.id)[:4]
+            property_type=property_obj.property_type
+        ).exclude(id=property_obj.id).select_related('agent').prefetch_related('images')[:4]
         
         data = []
         for prop in similar:
@@ -363,6 +365,8 @@ def similar_properties(request, pk):
                 'price': float(prop.price),
                 'bedrooms': prop.bedrooms,
                 'bathrooms': float(prop.bathrooms),
+                'thumbnail': prop.get_thumbnail(),
+                'agent': prop.agent.get_full_name() or prop.agent.username,
                 'has_image': prop.images.exists()
             })
         

@@ -1,6 +1,45 @@
- {% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}{% if form.instance.id %}Edit{% else %}Add{% endif %} Property - RealEstate{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""/>
+<style>
+    .map-container {
+        position: relative;
+    }
+    
+    .map-instructions {
+        background: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 4px;
+        border-left: 4px solid #007bff;
+    }
+    
+    .coordinates-display .form-control {
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+    
+    .search-container {
+        max-width: 500px;
+    }
+    
+    .leaflet-container {
+        font-family: inherit;
+    }
+    
+    .custom-marker {
+        background-color: #007bff;
+        border: 3px solid #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -44,6 +83,58 @@
                                     {% endfor %}
                                 </div>
                             {% endif %}
+                        </div>
+                        
+                        <!-- Map Location Section -->
+                        <div class="col-md-12 mb-4">
+                            <label class="form-label">Property Location on Map</label>
+                            <div class="map-container">
+                                <div id="map" style="height: 400px; border: 2px solid #dee2e6; border-radius: 8px;"></div>
+                                <div class="map-instructions mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Click on the map to set the property location, or search for an address below.
+                                    </small>
+                                </div>
+                                <div class="search-container mt-2">
+                                    <div class="input-group">
+                                        <input type="text" id="addressSearch" class="form-control" 
+                                               placeholder="Search for address to locate on map...">
+                                        <button type="button" id="searchBtn" class="btn btn-outline-primary">
+                                            <i class="fas fa-search"></i> Search
+                                        </button>
+                                        <button type="button" id="getCurrentLocation" class="btn btn-outline-success">
+                                            <i class="fas fa-crosshairs"></i> My Location
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="coordinates-display mt-2">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="{{ form.latitude.id_for_label }}" class="form-label">Latitude</label>
+                                            {{ form.latitude }}
+                                            {% if form.latitude.errors %}
+                                                <div class="text-danger small">
+                                                    {% for error in form.latitude.errors %}
+                                                        {{ error }}
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="{{ form.longitude.id_for_label }}" class="form-label">Longitude</label>
+                                            {{ form.longitude }}
+                                            {% if form.longitude.errors %}
+                                                <div class="text-danger small">
+                                                    {% for error in form.longitude.errors %}
+                                                        {{ error }}
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -217,4 +308,224 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map centered on Nepal (Kathmandu)
+    const map = L.map('map').setView([27.7172, 85.3240], 12);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Get form inputs
+    const latInput = document.getElementById('{{ form.latitude.id_for_label }}');
+    const lngInput = document.getElementById('{{ form.longitude.id_for_label }}');
+    const addressInput = document.getElementById('{{ form.address.id_for_label }}');
+    const searchInput = document.getElementById('addressSearch');
+    const searchBtn = document.getElementById('searchBtn');
+    const getCurrentLocationBtn = document.getElementById('getCurrentLocation');
+    
+    let marker = null;
+    
+    // Function to add/update marker
+    function addMarker(lat, lng) {
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        
+        // Create custom icon
+        const customIcon = L.divIcon({
+            className: 'custom-marker',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+        
+        marker = L.marker([lat, lng], { 
+            icon: customIcon,
+            draggable: true 
+        }).addTo(map);
+        
+        // Update coordinates when marker is dragged
+        marker.on('dragend', function(e) {
+            const position = e.target.getLatLng();
+            updateCoordinates(position.lat, position.lng);
+        });
+        
+        updateCoordinates(lat, lng);
+    }
+    
+    // Function to update coordinate inputs
+    function updateCoordinates(lat, lng) {
+        latInput.value = lat.toFixed(8);
+        lngInput.value = lng.toFixed(8);
+    }
+    
+    // Initialize marker if coordinates exist
+    {% if form.instance.latitude and form.instance.longitude %}
+        const initialLat = {{ form.instance.latitude }};
+        const initialLng = {{ form.instance.longitude }};
+        map.setView([initialLat, initialLng], 15);
+        addMarker(initialLat, initialLng);
+    {% endif %}
+    
+    // Add marker on map click
+    map.on('click', function(e) {
+        addMarker(e.latlng.lat, e.latlng.lng);
+    });
+    
+    // Search functionality using Nominatim (OpenStreetMap geocoding)
+    function searchAddress(query) {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=np`;
+        
+        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+        searchBtn.disabled = true;
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const result = data[0];
+                    const lat = parseFloat(result.lat);
+                    const lng = parseFloat(result.lon);
+                    
+                    map.setView([lat, lng], 16);
+                    addMarker(lat, lng);
+                    
+                    // Update address field if it's empty or different
+                    if (!addressInput.value || addressInput.value.trim() === '') {
+                        addressInput.value = result.display_name;
+                    }
+                    
+                    showToast('Location found and marked on map!', 'success');
+                } else {
+                    showToast('Location not found. Please try a different search term.', 'warning');
+                }
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                showToast('Error searching for location. Please try again.', 'error');
+            })
+            .finally(() => {
+                searchBtn.innerHTML = '<i class="fas fa-search"></i> Search';
+                searchBtn.disabled = false;
+            });
+    }
+    
+    // Search button click event
+    searchBtn.addEventListener('click', function() {
+        const query = searchInput.value.trim();
+        if (query) {
+            searchAddress(query);
+        } else {
+            showToast('Please enter an address to search.', 'warning');
+        }
+    });
+    
+    // Enter key search
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchBtn.click();
+        }
+    });
+    
+    // Get current location
+    getCurrentLocationBtn.addEventListener('click', function() {
+        if (navigator.geolocation) {
+            getCurrentLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting Location...';
+            getCurrentLocationBtn.disabled = true;
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    map.setView([lat, lng], 16);
+                    addMarker(lat, lng);
+                    
+                    showToast('Current location marked on map!', 'success');
+                },
+                function(error) {
+                    console.error('Geolocation error:', error);
+                    showToast('Unable to get your current location.', 'error');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000
+                }
+            );
+            
+            getCurrentLocationBtn.innerHTML = '<i class="fas fa-crosshairs"></i> My Location';
+            getCurrentLocationBtn.disabled = false;
+        } else {
+            showToast('Geolocation is not supported by this browser.', 'error');
+        }
+    });
+    
+    // Auto-search when address field changes (with debounce)
+    let addressTimeout;
+    addressInput.addEventListener('input', function() {
+        clearTimeout(addressTimeout);
+        addressTimeout = setTimeout(() => {
+            const address = this.value.trim();
+            if (address.length > 10 && !latInput.value) { // Only auto-search if no coordinates set
+                searchInput.value = address;
+                searchAddress(address);
+            }
+        }, 2000); // Wait 2 seconds after user stops typing
+    });
+    
+    // Manual coordinate input handlers
+    latInput.addEventListener('change', function() {
+        const lat = parseFloat(this.value);
+        const lng = parseFloat(lngInput.value);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+            map.setView([lat, lng], 16);
+            addMarker(lat, lng);
+        }
+    });
+    
+    lngInput.addEventListener('change', function() {
+        const lat = parseFloat(latInput.value);
+        const lng = parseFloat(this.value);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+            map.setView([lat, lng], 16);
+            addMarker(lat, lng);
+        }
+    });
+    
+    // Toast notification function
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
 {% endblock %}

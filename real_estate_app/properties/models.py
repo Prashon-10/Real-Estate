@@ -24,6 +24,8 @@ class Property(models.Model):
     
     title = models.CharField(max_length=255)
     address = models.CharField(max_length=500)
+    latitude = models.DecimalField(max_digits=10, decimal_places=8, null=True, blank=True, help_text="Latitude coordinate")
+    longitude = models.DecimalField(max_digits=11, decimal_places=8, null=True, blank=True, help_text="Longitude coordinate")
     price = models.DecimalField(max_digits=12, decimal_places=2)
     bedrooms = models.PositiveSmallIntegerField()
     bathrooms = models.DecimalField(max_digits=3, decimal_places=1)
@@ -43,6 +45,17 @@ class Property(models.Model):
     
     def __str__(self):
         return self.title
+    
+    def get_thumbnail(self):
+        """Get the first image as thumbnail"""
+        first_image = self.images.first()
+        if first_image:
+            return first_image.image.url
+        return None
+    
+    def get_display_price(self):
+        """Get formatted price for display"""
+        return f"Rs. {self.price:,.0f}"
 
 class PropertyImage(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='images')
