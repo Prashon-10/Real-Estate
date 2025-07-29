@@ -1,0 +1,383 @@
+{% extends 'base.html' %}
+
+{% block title %}Stripe Payment - {{ property.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+
+    .payment-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        overflow: hidden;
+        max-width: 800px;
+        margin: 2rem auto;
+    }
+
+    .payment-header {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .payment-body {
+        padding: 2rem;
+    }
+
+    .booking-summary {
+        background: #f8fafc;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border-left: 4px solid #667eea;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: #2d3748;
+    }
+
+    #card-element {
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    #card-element.StripeElement--focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .btn-pay {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 15px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .btn-pay:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    .btn-pay:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .payment-loader {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .security-badges {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .security-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #4a5568;
+        font-size: 0.9rem;
+    }
+
+    .error-message {
+        background: #fed7d7;
+        border: 1px solid #fc8181;
+        color: #c53030;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        display: none;
+    }
+
+    @media (max-width: 768px) {
+        .payment-container {
+            padding: 1rem;
+        }
+        
+        .payment-card {
+            margin: 1rem;
+        }
+        
+        .payment-header,
+        .payment-body {
+            padding: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-container">
+    <div class="container">
+        <div class="payment-card">
+            <div class="payment-header">
+                <h2><i class="fab fa-stripe me-2"></i>Secure Payment with Stripe</h2>
+                <p class="mb-0">Complete your booking payment securely</p>
+            </div>
+            
+            <div class="payment-body">
+                <!-- Booking Summary -->
+                <div class="booking-summary">
+                    <h5 class="mb-3"><i class="fas fa-receipt me-2"></i>Booking Summary</h5>
+                    
+                    <div class="summary-row">
+                        <span>Property:</span>
+                        <strong>{{ property.title }}</strong>
+                    </div>
+                    
+                    <div class="summary-row">
+                        <span>Customer:</span>
+                        <strong>{{ booking_data.customer_name }}</strong>
+                    </div>
+                    
+                    <div class="summary-row">
+                        <span>Booking Type:</span>
+                        <strong>
+                            {% if booking_data.booking_type == 'visit' %}
+                                Property Visit Request
+                            {% else %}
+                                Property Booking
+                            {% endif %}
+                        </strong>
+                    </div>
+                    
+                    {% if booking_data.preferred_date %}
+                    <div class="summary-row">
+                        <span>Preferred Date:</span>
+                        <strong>{{ booking_data.preferred_date|date:"M d, Y H:i" }}</strong>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="summary-row">
+                        <span>Payment Amount:</span>
+                        <strong>NPR {{ booking_data.payment_amount }}</strong>
+                    </div>
+                </div>
+                
+                <!-- Payment Form -->
+                <form id="payment-form">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-credit-card me-2"></i>Card Information
+                        </label>
+                        <div id="card-element">
+                            <!-- Stripe Elements will create form elements here -->
+                        </div>
+                    </div>
+                    
+                    <div class="error-message" id="card-errors"></div>
+                    
+                    <button type="submit" id="submit-button" class="btn btn-pay">
+                        <i class="fas fa-lock me-2"></i>
+                        <span id="button-text">Pay NPR {{ booking_data.payment_amount }}</span>
+                        <span id="spinner" class="spinner" style="display: none;"></span>
+                    </button>
+                    
+                    <div class="security-badges">
+                        <div class="security-badge">
+                            <i class="fas fa-shield-alt text-success"></i>
+                            <span>SSL Secured</span>
+                        </div>
+                        <div class="security-badge">
+                            <i class="fas fa-lock text-success"></i>
+                            <span>256-bit Encryption</span>
+                        </div>
+                        <div class="security-badge">
+                            <i class="fab fa-stripe text-primary"></i>
+                            <span>Powered by Stripe</span>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Payment Loader -->
+                <div class="payment-loader" id="payment-loader">
+                    <div class="spinner"></div>
+                    <p>Processing your payment...</p>
+                    <small class="text-muted">Please do not close this window</small>
+                </div>
+                
+                <!-- Test Card Information -->
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h6><i class="fas fa-info-circle me-2"></i>Test Card Information</h6>
+                    <p class="mb-2"><strong>Card Number:</strong> 4242 4242 4242 4242</p>
+                    <p class="mb-2"><strong>Expiry:</strong> Any future date (e.g., 12/25)</p>
+                    <p class="mb-2"><strong>CVC:</strong> Any 3 digits</p>
+                    <p class="mb-0"><small class="text-muted">This is a test environment. Use only test card numbers.</small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Stripe
+    const stripe = Stripe('{{ stripe_publishable_key }}');
+    const elements = stripe.elements();
+    
+    // Create card element
+    const style = {
+        base: {
+            fontSize: '16px',
+            color: '#424770',
+            '::placeholder': {
+                color: '#aab7c4',
+            },
+        },
+        invalid: {
+            color: '#9e2146',
+        },
+    };
+    
+    const card = elements.create('card', {style: style});
+    card.mount('#card-element');
+    
+    // Handle real-time validation errors from the card Element
+    card.on('change', function(event) {
+        const displayError = document.getElementById('card-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+            displayError.style.display = 'block';
+        } else {
+            displayError.textContent = '';
+            displayError.style.display = 'none';
+        }
+    });
+    
+    // Handle form submission
+    const form = document.getElementById('payment-form');
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        setLoading(true);
+        
+        // Create payment intent
+        fetch('{% url "properties:stripe_payment" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: JSON.stringify({
+                'confirm': true
+            })
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.success) {
+                return stripe.confirmCardPayment(data.client_secret, {
+                    payment_method: {
+                        card: card,
+                        billing_details: {
+                            name: '{{ booking_data.customer_name }}',
+                            email: '{{ booking_data.customer_email }}',
+                        }
+                    }
+                });
+            } else {
+                throw new Error(data.error || 'Payment setup failed');
+            }
+        })
+        .then(function(result) {
+            if (result.error) {
+                // Show error to customer
+                showError(result.error.message);
+                setLoading(false);
+            } else {
+                // Payment succeeded
+                if (result.paymentIntent.status === 'succeeded') {
+                    // Redirect to success page
+                    window.location.href = '{% url "properties:stripe_success" %}?payment_intent=' + result.paymentIntent.id;
+                }
+            }
+        })
+        .catch(function(error) {
+            showError(error.message || 'An unexpected error occurred.');
+            setLoading(false);
+        });
+    });
+    
+    function setLoading(loading) {
+        const submitButton = document.getElementById('submit-button');
+        const buttonText = document.getElementById('button-text');
+        const spinner = document.getElementById('spinner');
+        
+        if (loading) {
+            submitButton.disabled = true;
+            buttonText.style.display = 'none';
+            spinner.style.display = 'inline-block';
+        } else {
+            submitButton.disabled = false;
+            buttonText.style.display = 'inline';
+            spinner.style.display = 'none';
+        }
+    }
+    
+    function showError(message) {
+        const errorElement = document.getElementById('card-errors');
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        
+        // Scroll to error
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
+</script>
+{% endblock %}

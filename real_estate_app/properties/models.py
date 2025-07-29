@@ -93,3 +93,124 @@ class PropertyMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender} on {self.property.title}"
+
+
+class PropertyBooking(models.Model):
+    """Model to store property booking information with payment details"""
+    
+    PAYMENT_METHOD_CHOICES = [
+        ('stripe', 'Stripe (International)'),
+        ('esewa', 'eSewa (Nepal)'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending Verification'),
+        ('confirmed', 'Confirmed'),
+        ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    BOOKING_TYPE_CHOICES = [
+        ('booking', 'Property Booking'),
+        ('visit', 'Property Visit Request'),
+    ]
+    
+    # Basic Information
+    property_ref = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='bookings')
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
+    booking_type = models.CharField(max_length=20, choices=BOOKING_TYPE_CHOICES, default='booking')
+    
+    # Customer Details
+    customer_name = models.CharField(max_length=255)
+    customer_email = models.EmailField()
+    customer_phone = models.CharField(max_length=20)
+    
+    # Visit Details (for visit requests)
+    preferred_date = models.DateTimeField(null=True, blank=True)
+    message = models.TextField(blank=True, help_text="Additional message or requirements")
+    
+    # Payment Information
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
+    transaction_id = models.CharField(max_length=255, unique=True)
+    payment_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_status = models.CharField(max_length=20, default='completed')
+    payment_data = models.JSONField(blank=True, null=True, help_text="Store payment gateway response")
+    
+    # Booking Status
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_notes = models.TextField(blank=True, help_text="Admin verification notes")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    verified_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='verified_bookings'
+    )
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Property Booking'
+        verbose_name_plural = 'Property Bookings'
+    
+    def __str__(self):
+        return f"{self.customer_name} - {self.property_ref.title} ({self.get_booking_type_display()})"
+    
+    def save(self, *args, **kwargs):
+        from django.utils import timezone
+        if self.status in ['confirmed', 'rejected'] and not self.verified_at:
+            self.verified_at = timezone.now()
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_visit_request(self):
+        return self.booking_type == 'visit'
+    
+    @property
+    def can_be_verified(self):
+        return self.status == 'pending'
+
+
+class BookingFee(models.Model):
+    """Model to store booking fee configuration"""
+    
+    booking_fee = models.DecimalField(
+        max_digits=8, 
+        decimal_places=2, 
+        default=500.00,
+        help_text="Booking fee amount in NPR"
+    )
+    visit_fee = models.DecimalField(
+        max_digits=8, 
+        decimal_places=2, 
+        default=200.00,
+        help_text="Visit request fee amount in NPR"
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Booking Fee Configuration'
+        verbose_name_plural = 'Booking Fee Configurations'
+    
+    def __str__(self):
+        return f"Booking: NPR {self.booking_fee} | Visit: NPR {self.visit_fee}"
+    
+    @classmethod
+    def get_current_fees(cls):
+        """Get the current active booking fees"""
+        fee_config = cls.objects.filter(is_active=True).first()
+        if fee_config:
+            return {
+                'booking_fee': fee_config.booking_fee,
+                'visit_fee': fee_config.visit_fee
+            }
+        return {
+            'booking_fee': 500.00,  # Default values
+            'visit_fee': 200.00
+        }

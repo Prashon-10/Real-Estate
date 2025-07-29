@@ -1,0 +1,488 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if booking_type == 'visit' %}
+Request Visit - {{ property.title }}
+{% else %}
+Book Property - {{ property.title }}
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .booking-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+
+    .booking-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        overflow: hidden;
+        margin: 2rem auto;
+        max-width: 1200px;
+    }
+
+    .property-info {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 2rem;
+    }
+
+    .property-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .property-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .detail-item {
+        background: rgba(255,255,255,0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        font-size: 0.9rem;
+    }
+
+    .booking-form {
+        padding: 2rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: #f8fafc;
+        border-radius: 15px;
+        border-left: 4px solid #667eea;
+    }
+
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-control {
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .form-check-input {
+        width: 1.2rem;
+        height: 1.2rem;
+        margin-right: 0.5rem;
+    }
+
+    .payment-method-card {
+        border: 2px solid #e2e8f0;
+        border-radius: 15px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .payment-method-card:hover,
+    .payment-method-card.selected {
+        border-color: #667eea;
+        background: #f7fafc;
+    }
+
+    .payment-info {
+        background: #e6fffa;
+        border: 1px solid #81e6d9;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .fee-display {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .fee-amount {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .btn-book {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 15px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .btn-book:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    .btn-book:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    @media (max-width: 768px) {
+        .booking-container {
+            padding: 1rem;
+        }
+        
+        .booking-card {
+            margin: 1rem;
+        }
+        
+        .property-info,
+        .booking-form {
+            padding: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="booking-container">
+    <div class="container">
+        <div class="booking-card">
+            <div class="row g-0">
+                <!-- Property Information -->
+                <div class="col-lg-5">
+                    <div class="property-info h-100">
+                        <div class="property-title">{{ property.title }}</div>
+                        <p class="mb-2">
+                            <i class="fas fa-map-marker-alt me-2"></i>{{ property.address }}
+                        </p>
+                        <div class="h4 mb-3">NPR {{ property.price|floatformat:0 }}</div>
+                        
+                        <div class="property-details">
+                            <div class="detail-item">
+                                <i class="fas fa-bed me-1"></i>{{ property.bedrooms }} Beds
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-bath me-1"></i>{{ property.bathrooms }} Baths
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-ruler me-1"></i>{{ property.square_footage }} sq ft
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-home me-1"></i>{{ property.get_property_type_display }}
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6>Agent Information</h6>
+                            <p class="mb-1">{{ property.agent.get_full_name|default:property.agent.username }}</p>
+                            {% if property.agent.email %}
+                            <p class="mb-0">
+                                <i class="fas fa-envelope me-1"></i>{{ property.agent.email }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Booking Form -->
+                <div class="col-lg-7">
+                    <div class="booking-form">
+                        <h3 class="mb-4">
+                            {% if booking_type == 'visit' %}
+                            <i class="fas fa-eye me-2"></i>Request Property Visit
+                            {% else %}
+                            <i class="fas fa-calendar-check me-2"></i>Book This Property
+                            {% endif %}
+                        </h3>
+                        
+                        <form method="post" id="bookingForm">
+                            {% csrf_token %}
+                            
+                            <!-- Booking Type Selection -->
+                            <div class="form-section">
+                                <div class="section-title">
+                                    <i class="fas fa-tasks"></i>
+                                    Booking Type
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="payment-method-card" onclick="selectBookingType('booking')">
+                                            <div class="form-check">
+                                                {{ form.booking_type.0 }}
+                                                <label class="form-check-label">
+                                                    <strong>Property Booking</strong><br>
+                                                    <small class="text-muted">Book this property with payment</small>
+                                                </label>
+                                            </div>
+                                            <div class="fee-display mt-2">
+                                                <div class="fee-amount">NPR {{ fees.booking_fee }}</div>
+                                                <small>Booking Fee</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="payment-method-card" onclick="selectBookingType('visit')">
+                                            <div class="form-check">
+                                                {{ form.booking_type.1 }}
+                                                <label class="form-check-label">
+                                                    <strong>Visit Request</strong><br>
+                                                    <small class="text-muted">Schedule a property visit</small>
+                                                </label>
+                                            </div>
+                                            <div class="fee-display mt-2">
+                                                <div class="fee-amount">NPR {{ fees.visit_fee }}</div>
+                                                <small>Visit Fee</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Customer Information -->
+                            <div class="form-section">
+                                <div class="section-title">
+                                    <i class="fas fa-user"></i>
+                                    Your Information
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Full Name *</label>
+                                        {{ form.customer_name }}
+                                        {% if form.customer_name.errors %}
+                                            <div class="text-danger small">{{ form.customer_name.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Email Address *</label>
+                                        {{ form.customer_email }}
+                                        {% if form.customer_email.errors %}
+                                            <div class="text-danger small">{{ form.customer_email.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">Phone Number *</label>
+                                        {{ form.customer_phone }}
+                                        {% if form.customer_phone.errors %}
+                                            <div class="text-danger small">{{ form.customer_phone.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Visit Details (shown only for visit requests) -->
+                            <div class="form-section" id="visitDetails" style="display: none;">
+                                <div class="section-title">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Visit Details
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Preferred Date & Time *</label>
+                                    {{ form.preferred_date }}
+                                    {% if form.preferred_date.errors %}
+                                        <div class="text-danger small">{{ form.preferred_date.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Additional Message -->
+                            <div class="form-section">
+                                <div class="section-title">
+                                    <i class="fas fa-comment"></i>
+                                    Additional Message (Optional)
+                                </div>
+                                
+                                {{ form.message }}
+                                {% if form.message.errors %}
+                                    <div class="text-danger small">{{ form.message.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Payment Method -->
+                            <div class="form-section">
+                                <div class="section-title">
+                                    <i class="fas fa-credit-card"></i>
+                                    Payment Method
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="payment-method-card" onclick="selectPaymentMethod('stripe')">
+                                            <div class="form-check">
+                                                {{ form.payment_method.0 }}
+                                                <label class="form-check-label">
+                                                    <strong>Stripe (International)</strong><br>
+                                                    <small class="text-muted">Credit/Debit Card Payment</small>
+                                                </label>
+                                            </div>
+                                            <div class="mt-2">
+                                                <i class="fab fa-cc-visa fa-2x text-primary me-2"></i>
+                                                <i class="fab fa-cc-mastercard fa-2x text-warning me-2"></i>
+                                                <i class="fab fa-cc-amex fa-2x text-info"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="payment-method-card" onclick="selectPaymentMethod('esewa')">
+                                            <div class="form-check">
+                                                {{ form.payment_method.1 }}
+                                                <label class="form-check-label">
+                                                    <strong>eSewa (Nepal)</strong><br>
+                                                    <small class="text-muted">Digital Wallet Payment</small>
+                                                </label>
+                                            </div>
+                                            <div class="mt-2">
+                                                <span class="badge bg-success">Nepal Digital Wallet</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="payment-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Payment Information:</strong> This is a booking fee to secure your interest in the property. 
+                                    The actual property payment will be handled separately through bank transfers or as agreed with the agent.
+                                </div>
+                            </div>
+                            
+                            <!-- Terms and Conditions -->
+                            <div class="form-section">
+                                <div class="form-check">
+                                    {{ form.terms_accepted }}
+                                    <label class="form-check-label">
+                                        I agree to the terms and conditions and booking policies *
+                                    </label>
+                                </div>
+                                {% if form.terms_accepted.errors %}
+                                    <div class="text-danger small">{{ form.terms_accepted.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-book">
+                                <i class="fas fa-lock me-2"></i>Proceed to Payment
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectBookingType(type) {
+    // Update radio button
+    document.querySelector(`input[value="${type}"]`).checked = true;
+    
+    // Show/hide visit details
+    const visitDetails = document.getElementById('visitDetails');
+    if (type === 'visit') {
+        visitDetails.style.display = 'block';
+        visitDetails.querySelector('input[type="datetime-local"]').required = true;
+    } else {
+        visitDetails.style.display = 'none';
+        visitDetails.querySelector('input[type="datetime-local"]').required = false;
+    }
+    
+    // Update payment method cards styling
+    document.querySelectorAll('.payment-method-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    event.currentTarget.classList.add('selected');
+}
+
+function selectPaymentMethod(method) {
+    // Update radio button
+    document.querySelector(`input[value="${method}"]`).checked = true;
+    
+    // Update payment method cards styling
+    document.querySelectorAll('.payment-method-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    event.currentTarget.classList.add('selected');
+}
+
+// Form validation
+document.getElementById('bookingForm').addEventListener('submit', function(e) {
+    const bookingType = document.querySelector('input[name="booking_type"]:checked');
+    const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+    const termsAccepted = document.querySelector('input[name="terms_accepted"]');
+    
+    if (!bookingType) {
+        e.preventDefault();
+        alert('Please select a booking type.');
+        return;
+    }
+    
+    if (!paymentMethod) {
+        e.preventDefault();
+        alert('Please select a payment method.');
+        return;
+    }
+    
+    if (!termsAccepted.checked) {
+        e.preventDefault();
+        alert('Please accept the terms and conditions.');
+        return;
+    }
+    
+    // If visit request, check preferred date
+    if (bookingType.value === 'visit') {
+        const preferredDate = document.querySelector('input[name="preferred_date"]');
+        if (!preferredDate.value) {
+            e.preventDefault();
+            alert('Please select a preferred date and time for your visit.');
+            return;
+        }
+    }
+});
+
+// Initialize form
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if any booking type is pre-selected
+    const selectedBookingType = document.querySelector('input[name="booking_type"]:checked');
+    if (selectedBookingType) {
+        selectBookingType(selectedBookingType.value);
+    }
+    
+    // Check if any payment method is pre-selected
+    const selectedPaymentMethod = document.querySelector('input[name="payment_method"]:checked');
+    if (selectedPaymentMethod) {
+        selectedPaymentMethod.closest('.payment-method-card').classList.add('selected');
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,350 @@
+{% extends 'base.html' %}
+
+{% block title %}eSewa Payment - {{ property.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-container {
+        background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+
+    .payment-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        overflow: hidden;
+        max-width: 600px;
+        margin: 2rem auto;
+    }
+
+    .payment-header {
+        background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .payment-body {
+        padding: 2rem;
+    }
+
+    .booking-summary {
+        background: #f8fafc;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border-left: 4px solid #4caf50;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: #2d3748;
+    }
+
+    .demo-notice {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .payment-process {
+        background: #e8f5e8;
+        border: 1px solid #c8e6c9;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .process-step {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
+    }
+
+    .process-step:last-child {
+        margin-bottom: 0;
+    }
+
+    .step-number {
+        background: #4caf50;
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: bold;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .btn-pay {
+        background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+        border: none;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 15px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+
+    .btn-pay:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(76, 175, 80, 0.3);
+        color: white;
+    }
+
+    .btn-back {
+        background: #6c757d;
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        width: 100%;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .test-environment {
+        background: #e3f2fd;
+        border: 1px solid #90caf9;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .test-credentials {
+        background: #f5f5f5;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+
+    .secure-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        color: #2d3748;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .payment-container {
+            padding: 1rem;
+        }
+        
+        .payment-card {
+            margin: 1rem;
+        }
+        
+        .payment-body {
+            padding: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-container">
+    <div class="container">
+        <div class="payment-card">
+            <div class="payment-header">
+                <h2><i class="fas fa-wallet me-2"></i>eSewa Digital Wallet Payment</h2>
+                <p class="mb-0">Secure Digital Wallet Payment for Nepal</p>
+            </div>
+            
+            <div class="payment-body">
+                <!-- Demo Mode Notice -->
+                {% if demo_mode %}
+                <div class="demo-notice">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Demo Mode:</strong> This is a demonstration. Click "Pay with eSewa" to simulate a successful payment.
+                </div>
+                {% endif %}
+
+                <!-- Booking Summary -->
+                <div class="booking-summary">
+                    <h5 class="mb-3"><i class="fas fa-receipt me-2"></i>Booking Summary</h5>
+                    
+                    <div class="summary-row">
+                        <span>Property:</span>
+                        <span><strong>{{ property.title }}</strong></span>
+                    </div>
+                    
+                    <div class="summary-row">
+                        <span>Customer:</span>
+                        <span>{{ booking_data.customer_name }}</span>
+                    </div>
+                    
+                    <div class="summary-row">
+                        <span>Booking Type:</span>
+                        <span>
+                            {% if booking_data.booking_type == 'visit' %}
+                                Property Visit Request
+                            {% else %}
+                                Property Booking
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="summary-row">
+                        <span>Payment Amount:</span>
+                        <span><strong>NPR {{ booking_data.payment_amount }}</strong></span>
+                    </div>
+                    
+                    {% if not demo_mode %}
+                    <div class="summary-row">
+                        <span>Transaction ID:</span>
+                        <span><code>{{ transaction_uuid }}</code></span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Payment Process -->
+                <div class="payment-process">
+                    <h6><i class="fas fa-list-ol me-2"></i>Payment Process</h6>
+                    
+                    <div class="process-step">
+                        <div class="step-number">1</div>
+                        <span>{% if demo_mode %}Click "Pay with eSewa" button below{% else %}You will be redirected to eSewa payment gateway{% endif %}</span>
+                    </div>
+                    
+                    <div class="process-step">
+                        <div class="step-number">2</div>
+                        <span>{% if demo_mode %}Payment will be simulated successfully{% else %}Enter your eSewa credentials and complete payment{% endif %}</span>
+                    </div>
+                    
+                    <div class="process-step">
+                        <div class="step-number">3</div>
+                        <span>{% if demo_mode %}You'll be redirected back with success message{% else %}You will be redirected back to our site with payment confirmation{% endif %}</span>
+                    </div>
+                    
+                    <div class="process-step">
+                        <div class="step-number">4</div>
+                        <span>Return to our site with payment confirmation</span>
+                    </div>
+                </div>
+
+                {% if not demo_mode %}
+                <!-- Test Environment Info -->
+                <div class="test-environment">
+                    <h6><i class="fas fa-flask me-2"></i>Test Environment</h6>
+                    <p class="mb-2">This is eSewa's test/sandbox environment.</p>
+                    
+                    <div class="test-credentials">
+                        <strong>Test eSewa ID:</strong> 9806800001<br>
+                        <strong>Password:</strong> nepal123<br>
+                        <strong>MPIN:</strong> 1234
+                    </div>
+                    
+                    <p class="mt-2 mb-0"><small>Use these credentials in eSewa test environment for payment testing.</small></p>
+                </div>
+                {% endif %}
+
+                <!-- Payment Form -->
+                {% if demo_mode %}
+                    <form method="post" id="demo-payment-form">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-pay" id="demo-pay-btn">
+                            <i class="fas fa-wallet me-2"></i>Pay NPR {{ booking_data.payment_amount }} with eSewa (Demo)
+                        </button>
+                    </form>
+                {% else %}
+                    <form action="https://uat.esewa.com.np/epay/main" method="POST" id="esewa-form">
+                        <input value="{{ amount }}" name="tAmt" type="hidden">
+                        <input value="{{ amount }}" name="amt" type="hidden">
+                        <input value="0" name="txAmt" type="hidden">
+                        <input value="0" name="psc" type="hidden">
+                        <input value="0" name="pdc" type="hidden">
+                        <input value="{{ merchant_id }}" name="scd" type="hidden">
+                        <input value="{{ transaction_uuid }}" name="pid" type="hidden">
+                        <input value="{{ success_url }}?oid={{ transaction_uuid }}&amt={{ amount }}&refId=demo_ref_123" name="su" type="hidden">
+                        <input value="{{ failure_url }}" name="fu" type="hidden">
+                        
+                        <button type="submit" class="btn-pay">
+                            <i class="fas fa-wallet me-2"></i>Pay NPR {{ amount }} with eSewa
+                        </button>
+                    </form>
+                {% endif %}
+
+                <!-- Back Button -->
+                <a href="{% url 'properties:property_detail' property.id %}" class="btn-back">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Property
+                </a>
+
+                <!-- Security Badge -->
+                <div class="secure-badge">
+                    <i class="fas fa-shield-check"></i>
+                    <span>Secure Payment</span>
+                    <span>•</span>
+                    <i class="fas fa-lock"></i>
+                    <span>eSewa Protected</span>
+                    <span>•</span>
+                    <span>Nepal's #1 Digital Wallet</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if demo_mode %}
+    const form = document.getElementById('demo-payment-form');
+    const btn = document.getElementById('demo-pay-btn');
+    
+    form.addEventListener('submit', function(e) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing eSewa Payment...';
+        
+        // Simulate payment processing delay
+        setTimeout(() => {
+            // Form will submit normally
+        }, 1000);
+    });
+    {% else %}
+    const form = document.getElementById('esewa-form');
+    const btn = form.querySelector('button[type="submit"]');
+    
+    form.addEventListener('submit', function(e) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Redirecting to eSewa...';
+        
+        // Form will submit normally after a brief delay
+        setTimeout(() => {
+            // Allow form submission
+        }, 500);
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

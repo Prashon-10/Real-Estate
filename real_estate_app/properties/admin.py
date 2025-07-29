@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.db import models
-from .models import Property, PropertyImage, PropertyMessage, Favorite
+from .models import Property, PropertyImage, PropertyMessage, Favorite, PropertyBooking, BookingFee
 
 class PropertyImageInline(admin.TabularInline):
     model = PropertyImage
@@ -195,3 +195,103 @@ class FavoriteAdmin(admin.ModelAdmin):
         return obj.added_at.strftime("%Y-%m-%d %H:%M")
     added_at_formatted.short_description = "Added"
     added_at_formatted.admin_order_field = 'added_at'
+
+
+class PropertyBookingAdmin(admin.ModelAdmin):
+    list_display = (
+        'customer_name',
+        'property_title',
+        'booking_type_display',
+        'payment_method_display',
+        'payment_amount_formatted',
+        'status_colored',
+        'created_at_formatted'
+    )
+    list_filter = ('status', 'booking_type', 'payment_method', 'created_at')
+    search_fields = ('customer_name', 'customer_email', 'property_ref__title', 'transaction_id')
+    ordering = ('-created_at',)
+    date_hierarchy = 'created_at'
+    
+    fieldsets = (
+        ('Customer Information', {
+            'fields': ('customer', 'customer_name', 'customer_email', 'customer_phone')
+        }),
+        ('Booking Details', {
+            'fields': ('property_ref', 'booking_type', 'preferred_date', 'message')
+        }),
+        ('Payment Information', {
+            'fields': ('payment_method', 'transaction_id', 'payment_amount', 'payment_status', 'payment_data')
+        }),
+        ('Status & Verification', {
+            'fields': ('status', 'admin_notes', 'verified_by', 'verified_at')
+        }),
+    )
+    readonly_fields = ('created_at', 'updated_at', 'verified_at')
+    
+    def property_title(self, obj):
+        return obj.property_ref.title
+    property_title.short_description = "Property"
+    
+    def booking_type_display(self, obj):
+        return obj.get_booking_type_display()
+    booking_type_display.short_description = "Type"
+    
+    def payment_method_display(self, obj):
+        return obj.get_payment_method_display()
+    payment_method_display.short_description = "Payment Method"
+    
+    def payment_amount_formatted(self, obj):
+        return f"NPR {obj.payment_amount:,.2f}"
+    payment_amount_formatted.short_description = "Amount"
+    
+    def status_colored(self, obj):
+        colors = {
+            'pending': 'orange',
+            'confirmed': 'green',
+            'rejected': 'red',
+            'cancelled': 'gray'
+        }
+        color = colors.get(obj.status, 'black')
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            obj.get_status_display()
+        )
+    status_colored.short_description = "Status"
+    
+    def created_at_formatted(self, obj):
+        return obj.created_at.strftime("%Y-%m-%d %H:%M")
+    created_at_formatted.short_description = "Created"
+    created_at_formatted.admin_order_field = 'created_at'
+
+
+class BookingFeeAdmin(admin.ModelAdmin):
+    list_display = (
+        'booking_fee_formatted',
+        'visit_fee_formatted',
+        'is_active',
+        'created_at_formatted'
+    )
+    list_filter = ('is_active', 'created_at')
+    ordering = ('-created_at',)
+    
+    def booking_fee_formatted(self, obj):
+        return f"NPR {obj.booking_fee:,.2f}"
+    booking_fee_formatted.short_description = "Booking Fee"
+    
+    def visit_fee_formatted(self, obj):
+        return f"NPR {obj.visit_fee:,.2f}"
+    visit_fee_formatted.short_description = "Visit Fee"
+    
+    def created_at_formatted(self, obj):
+        return obj.created_at.strftime("%Y-%m-%d %H:%M")
+    created_at_formatted.short_description = "Created"
+    created_at_formatted.admin_order_field = 'created_at'
+
+
+# Register models
+admin.site.register(Property, PropertyAdmin)
+admin.site.register(PropertyMessage, PropertyMessageAdmin)
+admin.site.register(Favorite, FavoriteAdmin)
+admin.site.register(PropertyBooking, PropertyBookingAdmin)
+admin.site.register(BookingFee, BookingFeeAdmin)

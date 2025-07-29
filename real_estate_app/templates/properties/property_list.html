@@ -447,6 +447,54 @@
         transform: translateY(-2px);
     }
 
+    .btn-book {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        color: white;
+        flex: 1;
+        transition: all var(--animation-speed) ease;
+        min-height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .btn-book:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+        color: white;
+        background: linear-gradient(135deg, #218838, #1e9f5c);
+    }
+
+    .btn-visit {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        border: none;
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        color: white;
+        flex: 1;
+        transition: all var(--animation-speed) ease;
+        min-height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .btn-visit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(23, 162, 184, 0.3);
+        color: white;
+        background: linear-gradient(135deg, #138496, #0f6674);
+    }
+
     /* No Results */
     .no-results {
         text-align: center;
@@ -1079,6 +1127,14 @@
                                     <a href="{% url 'properties:property_detail' property.id %}" class="btn btn-view">
                                         <i class="fas fa-eye me-2"></i>View Details
                                     </a>
+                                    {% if user.is_authenticated %}
+                                    <a href="{% url 'properties:property_booking' property.id %}?type=booking" class="btn btn-book">
+                                        <i class="fas fa-calendar-plus me-2"></i>Book Property
+                                    </a>
+                                    <a href="{% url 'properties:property_booking' property.id %}?type=visit" class="btn btn-visit">
+                                        <i class="fas fa-eye me-2"></i>Request Visit
+                                    </a>
+                                    {% endif %}
                                     <button class="btn btn-contact" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#contactModal"

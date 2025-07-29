@@ -1,0 +1,523 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify Booking - {{ booking.property_ref_ref.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .verify-container {
+        padding: 2rem 0;
+        background: #f8fafc;
+        min-height: 100vh;
+    }
+
+    .verify-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        overflow: hidden;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .verify-header {
+        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .verify-content {
+        padding: 2rem;
+    }
+
+    .booking-summary {
+        background: #f8fafc;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border-left: 4px solid #667eea;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+    }
+
+    .summary-label {
+        font-weight: 600;
+        color: #4a5568;
+    }
+
+    .summary-value {
+        color: #2d3748;
+    }
+
+    .property-preview {
+        display: flex;
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 15px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .property-image {
+        width: 200px;
+        height: 140px;
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #a0aec0;
+    }
+
+    .property-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .property-info {
+        flex: 1;
+        padding: 1.5rem;
+    }
+
+    .property-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #2d3748;
+    }
+
+    .property-address {
+        color: #718096;
+        margin-bottom: 1rem;
+    }
+
+    .property-price {
+        color: #667eea;
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
+
+    .property-agent {
+        color: #4a5568;
+        font-size: 0.9rem;
+    }
+
+    .verification-form {
+        background: #f8fafc;
+        border-radius: 15px;
+        padding: 2rem;
+        border-left: 4px solid #ffd166;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .verification-options {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .option-card {
+        flex: 1;
+        border: 2px solid #e2e8f0;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .option-card:hover,
+    .option-card.selected {
+        border-color: #667eea;
+        background: #f7fafc;
+    }
+
+    .option-card.confirm {
+        border-color: #06d6a0;
+    }
+
+    .option-card.confirm:hover,
+    .option-card.confirm.selected {
+        border-color: #06d6a0;
+        background: #e6fffa;
+    }
+
+    .option-card.reject {
+        border-color: #ef476f;
+    }
+
+    .option-card.reject:hover,
+    .option-card.reject.selected {
+        border-color: #ef476f;
+        background: #fed7d7;
+    }
+
+    .option-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .option-card.confirm .option-icon {
+        color: #06d6a0;
+    }
+
+    .option-card.reject .option-icon {
+        color: #ef476f;
+    }
+
+    .option-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .option-description {
+        font-size: 0.9rem;
+        color: #718096;
+    }
+
+    .form-control {
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .btn-verify {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 15px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .btn-verify:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    .payment-verification {
+        background: #e6fffa;
+        border: 1px solid #81e6d9;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .alert-warning {
+        background: #fef5e7;
+        border: 1px solid #f6e05e;
+        color: #744210;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .verify-container {
+            padding: 1rem;
+        }
+        
+        .verify-content {
+            padding: 1.5rem;
+        }
+        
+        .property-preview {
+            flex-direction: column;
+        }
+        
+        .property-image {
+            width: 100%;
+            height: 200px;
+        }
+        
+        .verification-options {
+            flex-direction: column;
+        }
+        
+        .summary-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verify-container">
+    <div class="container">
+        <div class="verify-card">
+            <div class="verify-header">
+                <h2><i class="fas fa-shield-check me-2"></i>Verify Booking</h2>
+                <p class="mb-0">Review and verify the booking payment and details</p>
+            </div>
+            
+            <div class="verify-content">
+                <!-- Booking Summary -->
+                <div class="booking-summary">
+                    <h5 class="mb-3"><i class="fas fa-receipt me-2"></i>Booking Summary</h5>
+                    
+                    <div class="summary-row">
+                        <span class="summary-label">Booking ID:</span>
+                        <span class="summary-value">{{ booking.transaction_id }}</span>
+                    </div>
+                    
+                    <div class="summary-row">
+                        <span class="summary-label">Customer:</span>
+                        <span class="summary-value">{{ booking.customer_name }} ({{ booking.customer_email }})</span>
+                    </div>
+                    
+                    <div class="summary-row">
+                        <span class="summary-label">Phone:</span>
+                        <span class="summary-value">{{ booking.customer_phone }}</span>
+                    </div>
+                    
+                    <div class="summary-row">
+                        <span class="summary-label">Booking Type:</span>
+                        <span class="summary-value">
+                            {% if booking.is_visit_request %}
+                                <i class="fas fa-eye me-1"></i>Property Visit Request
+                            {% else %}
+                                <i class="fas fa-calendar-check me-1"></i>Property Booking
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    {% if booking.preferred_date %}
+                    <div class="summary-row">
+                        <span class="summary-label">Preferred Date:</span>
+                        <span class="summary-value">{{ booking.preferred_date|date:"M d, Y H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="summary-row">
+                        <span class="summary-label">Booking Date:</span>
+                        <span class="summary-value">{{ booking.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    
+                    {% if booking.message %}
+                    <div class="summary-row">
+                        <span class="summary-label">Customer Message:</span>
+                        <span class="summary-value">{{ booking.message }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Property Information -->
+                <div class="property-preview">
+                    <div class="property-image">
+                        {% if booking.property_ref_ref.images.first %}
+                            <img src="{{ booking.property_ref_ref.images.first.image.url }}" alt="{{ booking.property_ref_ref.title }}">
+                        {% else %}
+                            <i class="fas fa-home fa-3x"></i>
+                        {% endif %}
+                    </div>
+                    <div class="property-info">
+                        <div class="property-title">{{ booking.property_ref_ref.title }}</div>
+                        <div class="property-address">
+                            <i class="fas fa-map-marker-alt me-1"></i>{{ booking.property_ref_ref.address }}
+                        </div>
+                        <div class="property-price">NPR {{ booking.property_ref_ref.price|floatformat:0 }}</div>
+                        <div class="property-agent">
+                            <i class="fas fa-user-tie me-1"></i>Agent: {{ booking.property_ref_ref.agent.get_full_name|default:booking.property_ref_ref.agent.username }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Information -->
+                <div class="payment-verification">
+                    <h6><i class="fas fa-credit-card me-2"></i>Payment Verification</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Payment Method:</strong><br>
+                            {% if booking.payment_method == 'stripe' %}
+                                <i class="fab fa-stripe me-1"></i>Stripe (Card Payment)
+                            {% else %}
+                                <i class="fas fa-wallet me-1"></i>eSewa (Digital Wallet)
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Amount Paid:</strong><br>
+                            NPR {{ booking.payment_amount }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Payment Status:</strong><br>
+                            <span class="badge bg-success">{{ booking.payment_status|title }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Transaction ID:</strong><br>
+                            {{ booking.transaction_id }}
+                        </div>
+                    </div>
+                </div>
+
+                {% if booking.status == 'pending' %}
+                <!-- Verification Form -->
+                <div class="verification-form">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="form-section">
+                            <div class="section-title">
+                                <i class="fas fa-gavel"></i>
+                                Verification Decision
+                            </div>
+                            
+                            <div class="verification-options">
+                                <div class="option-card confirm" onclick="selectOption('confirmed', this)">
+                                    <div class="option-icon">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                    <div class="option-title">Confirm Booking</div>
+                                    <div class="option-description">
+                                        Payment verified successfully. Approve the booking.
+                                    </div>
+                                    {{ form.status.0 }}
+                                </div>
+                                
+                                <div class="option-card reject" onclick="selectOption('rejected', this)">
+                                    <div class="option-icon">
+                                        <i class="fas fa-times-circle"></i>
+                                    </div>
+                                    <div class="option-title">Reject Booking</div>
+                                    <div class="option-description">
+                                        Payment issue or other problems. Reject the booking.
+                                    </div>
+                                    {{ form.status.1 }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <div class="section-title">
+                                <i class="fas fa-comment"></i>
+                                Verification Notes
+                            </div>
+                            
+                            {{ form.admin_notes }}
+                            <small class="form-text text-muted">
+                                Add any notes about the verification process or rejection reason (optional for confirmations, recommended for rejections).
+                            </small>
+                        </div>
+                        
+                        <button type="submit" class="btn-verify">
+                            <i class="fas fa-save me-2"></i>Save Verification Decision
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <div class="alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Booking Already Processed:</strong> This booking has already been {{ booking.get_status_display|lower }}.
+                    {% if booking.verified_by %}
+                        Verified by {{ booking.verified_by.get_full_name|default:booking.verified_by.username }} 
+                        on {{ booking.verified_at|date:"M d, Y H:i" }}.
+                    {% endif %}
+                    {% if booking.admin_notes %}
+                        <br><br><strong>Admin Notes:</strong> {{ booking.admin_notes }}
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Action Buttons -->
+                <div class="text-center mt-4">
+                    <a href="{% url 'properties:admin_bookings' %}" class="btn btn-outline-secondary me-3">
+                        <i class="fas fa-arrow-left me-2"></i>Back to All Bookings
+                    </a>
+                    <a href="{% url 'properties:booking_detail' booking.id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-eye me-2"></i>View Full Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectOption(value, element) {
+    // Remove selected class from all options
+    document.querySelectorAll('.option-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked option
+    element.classList.add('selected');
+    
+    // Update radio button
+    document.querySelector(`input[value="${value}"]`).checked = true;
+    
+    // Update notes placeholder based on selection
+    const notesField = document.querySelector('textarea[name="admin_notes"]');
+    if (value === 'confirmed') {
+        notesField.placeholder = 'Optional notes about the confirmation...';
+    } else {
+        notesField.placeholder = 'Please provide a reason for rejection...';
+    }
+}
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const selectedStatus = document.querySelector('input[name="status"]:checked');
+    
+    if (!selectedStatus) {
+        e.preventDefault();
+        alert('Please select a verification decision (Confirm or Reject).');
+        return;
+    }
+    
+    if (selectedStatus.value === 'rejected') {
+        const notes = document.querySelector('textarea[name="admin_notes"]').value.trim();
+        if (!notes) {
+            e.preventDefault();
+            alert('Please provide a reason for rejection in the notes field.');
+            return;
+        }
+    }
+    
+    // Confirm the action
+    const action = selectedStatus.value === 'confirmed' ? 'confirm' : 'reject';
+    const confirmed = confirm(`Are you sure you want to ${action} this booking? This action cannot be undone.`);
+    
+    if (!confirmed) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

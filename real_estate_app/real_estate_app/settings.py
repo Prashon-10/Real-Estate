@@ -205,3 +205,17 @@ EMAIL_TIMEOUT = config('EMAIL_TIMEOUT', default=60, cast=int)
 # Account activation settings
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_EMAIL_REQUIRED = True
+
+# Payment Gateway Configuration
+# Demo mode for testing (set to False for production)
+PAYMENT_DEMO_MODE = config('PAYMENT_DEMO_MODE', default=True, cast=bool)
+
+# Stripe Configuration (Demo keys)
+STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='pk_test_demo_key')
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='sk_test_demo_key')
+
+# eSewa Configuration (Demo credentials)
+ESEWA_MERCHANT_ID = config('ESEWA_MERCHANT_ID', default='EPAYTEST')
+ESEWA_SECRET_KEY = config('ESEWA_SECRET_KEY', default='8gBm/:&EnhH.1/q')
+ESEWA_SUCCESS_URL = config('ESEWA_SUCCESS_URL', default='http://localhost:8000/properties/booking/esewa-success/')
+ESEWA_FAILURE_URL = config('ESEWA_FAILURE_URL', default='http://localhost:8000/properties/booking/esewa-failure/')
