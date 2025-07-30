@@ -1,0 +1,269 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Users Management - Admin Panel{% endblock %}
+
+{% block page_title %}Users Management{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Users</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'admin_panel:user_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Add User
+    </a>
+    <button class="btn btn-outline-success" onclick="exportUsers()">
+        <i class="fas fa-download me-2"></i>Export
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+        <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Search & Filters</h6>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label text-muted small">Search Users</label>
+                <input type="text" class="form-control" name="search" placeholder="Search by name, email..." value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small">User Type</label>
+                <select class="form-select" name="user_type">
+                    <option value="">All User Types</option>
+                    {% for value, label in user_types %}
+                    <option value="{{ value }}" {% if user_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small">Status</label>
+                <select class="form-select" name="status">
+                    <option value="">All Status</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-2"></i>Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Users List -->
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-users me-2"></i>
+                Users Directory
+            </h5>
+            <span class="badge bg-light text-primary">{{ total_count }} total</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if users %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="border-0">User</th>
+                        <th class="border-0">Contact</th>
+                        <th class="border-0">Type</th>
+                        <th class="border-0">Status</th>
+                        <th class="border-0">Joined</th>
+                        <th class="border-0 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr class="align-middle">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm me-3">
+                                    <div class="bg-gradient-primary rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 45px; height: 45px;">
+                                        <strong>{{ user.username|make_list|first|upper }}</strong>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">{{ user.get_full_name|default:user.username }}</h6>
+                                    <small class="text-muted">@{{ user.username }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <small class="d-block"><i class="fas fa-envelope text-muted me-1"></i>{{ user.email }}</small>
+                                {% if user.phone %}
+                                <small class="text-muted"><i class="fas fa-phone text-muted me-1"></i>{{ user.phone }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if user.user_type == 'admin' %}
+                                <span class="badge bg-danger-soft text-danger px-3 py-2">
+                                    <i class="fas fa-crown me-1"></i>Admin
+                                </span>
+                            {% elif user.user_type == 'agent' %}
+                                <span class="badge bg-warning-soft text-warning px-3 py-2">
+                                    <i class="fas fa-briefcase me-1"></i>Agent
+                                </span>
+                            {% else %}
+                                <span class="badge bg-info-soft text-info px-3 py-2">
+                                    <i class="fas fa-user me-1"></i>Customer
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                                <span class="badge bg-success-soft text-success px-3 py-2">
+                                    <i class="fas fa-check-circle me-1"></i>Active
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary-soft text-secondary px-3 py-2">
+                                    <i class="fas fa-pause-circle me-1"></i>Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ user.date_joined|date:"M d, Y" }}</small>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'admin_panel:user_detail' user.id %}" class="btn btn-sm btn-outline-primary" title="View Details" data-bs-toggle="tooltip">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'admin_panel:user_edit' user.id %}" class="btn btn-sm btn-outline-success" title="Edit User" data-bs-toggle="tooltip">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if not user.is_superuser and user.id != request.user.id %}
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ user.id }}, '{{ user.username }}')" title="Delete User" data-bs-toggle="tooltip">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-users fa-4x text-muted opacity-50"></i>
+            </div>
+            <h5 class="text-muted">No Users Found</h5>
+            <p class="text-muted mb-4">No users match your current search criteria.</p>
+            <a href="{% url 'admin_panel:user_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add First User
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Enhanced Badge Styles */
+.badge.bg-success-soft { background-color: #d4edda !important; }
+.badge.bg-danger-soft { background-color: #f8d7da !important; }
+.badge.bg-warning-soft { background-color: #fff3cd !important; }
+.badge.bg-info-soft { background-color: #d6f3ff !important; }
+.badge.bg-secondary-soft { background-color: #e9ecef !important; }
+
+/* Gradient Avatar */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+/* Hover Effects */
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+/* Card Enhancements */
+.card {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: 2px solid rgba(255,255,255,0.1);
+}
+
+/* Button Group Spacing */
+.btn-group .btn {
+    margin-right: 2px;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+function deleteUser(userId, username) {
+    if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+        fetch(`{% url 'admin_panel:user_delete' 0 %}`.replace('0', userId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message with better styling
+                showAlert('User deleted successfully!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Error: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Network error occurred', 'error');
+        });
+    }
+}
+
+function exportUsers() {
+    showAlert('Export functionality coming soon!', 'info');
+}
+
+function showAlert(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-danger' : 'alert-info';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999;">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', alertHtml);
+}
+</script>
+{% endblock %}

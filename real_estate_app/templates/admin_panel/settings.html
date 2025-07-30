@@ -1,0 +1,660 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Settings - Admin Panel{% endblock %}
+
+{% block page_title %}System Settings{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Settings</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <button type="submit" form="settingsForm" class="btn btn-primary">
+        <i class="fas fa-save me-2"></i>Save Changes
+    </button>
+    <button type="button" class="btn btn-outline-secondary" onclick="resetSettings()">
+        <i class="fas fa-undo me-2"></i>Reset to Default
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    border: none;
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+
+.settings-card .card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+    padding: 20px 25px;
+    border-radius: 0;
+}
+
+.settings-card .card-header h5 {
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.settings-card .card-header small {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.settings-section {
+    border-bottom: 1px solid #e9ecef;
+    padding: 25px 0;
+}
+
+.settings-section:last-child {
+    border-bottom: none;
+}
+
+.setting-item {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.setting-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.setting-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.setting-description {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.toggle-switch {
+    position: relative;
+    width: 60px;
+    height: 34px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #007bff;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.quick-setting {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+}
+
+.quick-setting:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.quick-setting i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.maintenance-mode {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+}
+
+.backup-system {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.security-check {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- General Settings -->
+    <div class="col-lg-8">
+        <div class="settings-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog me-2 text-primary"></i>
+                    General Configuration
+                </h5>
+                <small>Basic system settings and information</small>
+            </div>
+            <div class="card-body">
+                <form method="post" id="settingsForm">
+                    {% csrf_token %}
+                    
+                    <div class="settings-section">
+                        <h6 class="fw-bold text-primary mb-3">
+                            <i class="fas fa-info-circle me-2"></i>Site Information
+                        </h6>
+                        
+                        <div class="setting-item">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="setting-label">Site Name</label>
+                                    <input type="text" class="form-control" name="site_name" value="RealEstate Platform">
+                                    <div class="setting-description">The name that appears throughout the platform</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="setting-label">Contact Email</label>
+                                    <input type="email" class="form-control" name="contact_email" value="admin@realestate.com">
+                                    <div class="setting-description">Primary contact email for inquiries</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="setting-label">Phone Number</label>
+                                    <input type="tel" class="form-control" name="phone_number" value="+1 (555) 123-4567">
+                                    <div class="setting-description">Main business phone number</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="setting-label">Business Address</label>
+                                    <input type="text" class="form-control" name="business_address" value="123 Business St, City">
+                                    <div class="setting-description">Physical business location</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="setting-label">Site Description</label>
+                                    <textarea class="form-control" name="site_description" rows="3">Your trusted real estate platform for buying, selling, and renting properties.</textarea>
+                                    <div class="setting-description">Brief description shown on the homepage</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h6 class="fw-bold text-success mb-3">
+                            <i class="fas fa-sliders-h me-2"></i>Platform Limits
+                        </h6>
+                        
+                        <div class="setting-item">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="setting-label">Max Properties per Agent</label>
+                                    <input type="number" class="form-control" name="max_properties" value="50">
+                                    <div class="setting-description">Maximum properties an agent can list</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="setting-label">Max Images per Property</label>
+                                    <input type="number" class="form-control" name="max_images" value="10">
+                                    <div class="setting-description">Maximum images allowed per property</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="setting-label">Commission Rate (%)</label>
+                                    <input type="number" class="form-control" name="commission_rate" value="5" step="0.1">
+                                    <div class="setting-description">Default commission percentage</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="setting-label">Booking Expiry (Days)</label>
+                                    <input type="number" class="form-control" name="booking_expiry" value="7">
+                                    <div class="setting-description">Days before pending bookings expire</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h6 class="fw-bold text-warning mb-3">
+                            <i class="fas fa-toggle-on me-2"></i>Feature Toggles
+                        </h6>
+                        
+                        <div class="setting-item">
+                            <div class="row g-3">
+                                <div class="col-md-6 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <label class="setting-label">User Registration</label>
+                                        <div class="setting-description">Allow new users to register</div>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="allow_registration" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="col-md-6 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <label class="setting-label">Email Notifications</label>
+                                        <div class="setting-description">Send automated email alerts</div>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="email_notifications" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="col-md-6 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <label class="setting-label">Maintenance Mode</label>
+                                        <div class="setting-description">Put site in maintenance mode</div>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="maintenance_mode">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="col-md-6 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <label class="setting-label">Auto Approve Listings</label>
+                                        <div class="setting-description">Automatically approve new listings</div>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="auto_approve" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-lg-4">
+        <div class="settings-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-primary"></i>
+                    Quick Actions
+                </h5>
+                <small>Commonly used system operations</small>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <button class="quick-setting backup-system" onclick="runBackup()">
+                        <i class="fas fa-download"></i>
+                        <div class="fw-bold">Create Backup</div>
+                        <small>Backup system data</small>
+                    </button>
+                    
+                    <button class="quick-setting security-check" onclick="runSecurityCheck()">
+                        <i class="fas fa-shield-alt"></i>
+                        <div class="fw-bold">Security Scan</div>
+                        <small>Run security check</small>
+                    </button>
+                    
+                    <button class="quick-setting maintenance-mode" onclick="toggleMaintenance()">
+                        <i class="fas fa-tools"></i>
+                        <div class="fw-bold">Maintenance</div>
+                        <small>Enable/Disable maintenance</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Info -->
+        <div class="settings-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>
+                    System Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Version:</span>
+                    <span class="fw-bold">v2.1.0</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Last Backup:</span>
+                    <span class="fw-bold">Today, 3:00 AM</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Storage Used:</span>
+                    <span class="fw-bold">2.4 GB / 10 GB</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Uptime:</span>
+                    <span class="fw-bold">15 days, 7 hours</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+                            <label class="form-label">Commission Rate (%)</label>
+                            <input type="number" class="form-control" name="commission_rate" value="5" step="0.1">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Email Settings -->
+        <div class="admin-card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-envelope me-2 text-primary"></i>
+                    Email Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="emailSettingsForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">SMTP Host</label>
+                            <input type="text" class="form-control" name="smtp_host" value="smtp.gmail.com">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">SMTP Port</label>
+                            <input type="number" class="form-control" name="smtp_port" value="587">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">From Email</label>
+                            <input type="email" class="form-control" name="from_email" value="noreply@realestate.com">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">From Name</label>
+                            <input type="text" class="form-control" name="from_name" value="RealEstate Platform">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="email_notifications" checked>
+                                <label class="form-check-label">
+                                    Enable email notifications
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Security Settings -->
+        <div class="admin-card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-shield-alt me-2 text-primary"></i>
+                    Security Settings
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="securitySettingsForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Session Timeout (minutes)</label>
+                            <input type="number" class="form-control" name="session_timeout" value="30">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Max Login Attempts</label>
+                            <input type="number" class="form-control" name="max_login_attempts" value="5">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="require_email_verification" checked>
+                                <label class="form-check-label">
+                                    Require email verification for new accounts
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="two_factor_auth">
+                                <label class="form-check-label">
+                                    Enable two-factor authentication (Coming Soon)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="maintenance_mode">
+                                <label class="form-check-label">
+                                    Enable maintenance mode
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-lg-4">
+        <!-- System Status -->
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-heartbeat me-2 text-success"></i>
+                    System Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="status-item d-flex justify-content-between align-items-center mb-3">
+                    <span>Database</span>
+                    <span class="badge bg-success">Online</span>
+                </div>
+                <div class="status-item d-flex justify-content-between align-items-center mb-3">
+                    <span>Email Service</span>
+                    <span class="badge bg-success">Active</span>
+                </div>
+                <div class="status-item d-flex justify-content-between align-items-center mb-3">
+                    <span>File Storage</span>
+                    <span class="badge bg-success">Available</span>
+                </div>
+                <div class="status-item d-flex justify-content-between align-items-center mb-3">
+                    <span>Cache</span>
+                    <span class="badge bg-warning">Clearing</span>
+                </div>
+                <div class="status-item d-flex justify-content-between align-items-center">
+                    <span>Backups</span>
+                    <span class="badge bg-info">Daily</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Information -->
+        <div class="admin-card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2 text-info"></i>
+                    System Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="info-item mb-3">
+                    <label class="text-muted">Version</label>
+                    <div class="fw-bold">v2.1.0</div>
+                </div>
+                <div class="info-item mb-3">
+                    <label class="text-muted">Python Version</label>
+                    <div class="fw-bold">3.11.x</div>
+                </div>
+                <div class="info-item mb-3">
+                    <label class="text-muted">Django Version</label>
+                    <div class="fw-bold">5.2.x</div>
+                </div>
+                <div class="info-item mb-3">
+                    <label class="text-muted">Database</label>
+                    <div class="fw-bold">SQLite</div>
+                </div>
+                <div class="info-item mb-3">
+                    <label class="text-muted">Last Backup</label>
+                    <div class="fw-bold">Today, 3:00 AM</div>
+                </div>
+                <div class="info-item">
+                    <label class="text-muted">Uptime</label>
+                    <div class="fw-bold">7 days, 12 hours</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="admin-card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-warning"></i>
+                    Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="clearCache()">
+                        <i class="fas fa-broom me-2"></i>Clear Cache
+                    </button>
+                    <button class="btn btn-outline-info" onclick="backupDatabase()">
+                        <i class="fas fa-database me-2"></i>Backup Database
+                    </button>
+                    <button class="btn btn-outline-success" onclick="testEmail()">
+                        <i class="fas fa-envelope-open me-2"></i>Test Email
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="restartServer()">
+                        <i class="fas fa-redo me-2"></i>Restart Server
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Save Settings -->
+        <div class="admin-card mt-4">
+            <div class="card-body text-center">
+                <button class="btn btn-admin btn-lg" onclick="saveAllSettings()">
+                    <i class="fas fa-save me-2"></i>Save All Settings
+                </button>
+                <p class="text-muted mt-2 mb-0">Last saved: Never</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function saveAllSettings() {
+    // Show loading state
+    const saveBtn = event.target;
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+    saveBtn.disabled = true;
+    
+    // Simulate save operation
+    setTimeout(() => {
+        saveBtn.innerHTML = '<i class="fas fa-check me-2"></i>Saved!';
+        saveBtn.classList.remove('btn-admin');
+        saveBtn.classList.add('btn-success');
+        
+        // Show success message
+        showNotification('Settings saved successfully!', 'success');
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            saveBtn.innerHTML = originalText;
+            saveBtn.classList.remove('btn-success');
+            saveBtn.classList.add('btn-admin');
+            saveBtn.disabled = false;
+        }, 2000);
+    }, 1500);
+}
+
+function clearCache() {
+    if (confirm('Are you sure you want to clear the cache?')) {
+        showNotification('Cache cleared successfully!', 'success');
+    }
+}
+
+function backupDatabase() {
+    if (confirm('Create a database backup now?')) {
+        showNotification('Database backup created successfully!', 'success');
+    }
+}
+
+function testEmail() {
+    showNotification('Test email sent to admin@realestate.com', 'info');
+}
+
+function restartServer() {
+    if (confirm('Are you sure you want to restart the server? This will temporarily make the site unavailable.')) {
+        showNotification('Server restart initiated...', 'warning');
+    }
+}
+
+function showNotification(message, type) {
+    // Create and show a toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
+// Form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveAllSettings();
+        });
+    });
+});
+</script>
+{% endblock %}

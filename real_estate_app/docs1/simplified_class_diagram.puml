@@ -1,0 +1,162 @@
+@startuml RealEstate_Simplified_Class_Diagram
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam class {
+    BackgroundColor #E8F4FD
+    BorderColor #2196F3
+    FontColor #1976D2
+    AttributeFontColor #37474F
+    AttributeFontSize 10
+    HeaderBackgroundColor #2196F3
+    HeaderFontColor #FFFFFF
+}
+
+title Real Estate Platform - Simplified Class Diagram
+footer Generated: %date("yyyy-MM-dd")
+
+' Core User Management
+class User {
+    + id: AutoField
+    + username: CharField
+    + email: EmailField
+    + first_name: CharField
+    + last_name: CharField
+    + is_staff: BooleanField
+    + is_active: BooleanField
+    --
+    + get_full_name(): string
+    + is_authenticated(): boolean
+}
+
+class UserProfile {
+    + user: OneToOneField
+    + phone_number: CharField
+    + address: TextField
+    + city: CharField
+    + profile_picture: ImageField
+    --
+    + get_full_address(): string
+}
+
+' Core Property Management
+class Property {
+    + title: CharField
+    + description: TextField
+    + property_type: CharField
+    + price: DecimalField
+    + bedrooms: PositiveIntegerField
+    + bathrooms: PositiveIntegerField
+    + address: CharField
+    + city: CharField
+    + owner: ForeignKey
+    + agent: ForeignKey
+    + is_active: BooleanField
+    --
+    + get_price_display(): string
+    + get_full_address(): string
+    + is_available(): boolean
+}
+
+class PropertyImage {
+    + property: ForeignKey
+    + image: ImageField
+    + is_primary: BooleanField
+    --
+    + get_image_url(): string
+    + set_as_primary(): void
+}
+
+' Core Booking System
+class Booking {
+    + property: ForeignKey
+    + customer: ForeignKey
+    + agent: ForeignKey
+    + booking_date: DateTimeField
+    + status: CharField
+    + message: TextField
+    + created_at: DateTimeField
+    --
+    + get_status_display(): string
+    + can_be_cancelled(): boolean
+    + send_confirmation(): void
+}
+
+' Communication
+class Message {
+    + sender: ForeignKey
+    + recipient: ForeignKey
+    + subject: CharField
+    + content: TextField
+    + is_read: BooleanField
+    + booking: ForeignKey
+    --
+    + mark_as_read(): void
+    + send_notification(): void
+}
+
+' Search & Favorites
+class SearchQuery {
+    + user: ForeignKey
+    + location: CharField
+    + min_price: DecimalField
+    + max_price: DecimalField
+    + property_type: CharField
+    --
+    + execute_search(): QuerySet
+}
+
+class Favorite {
+    + user: ForeignKey
+    + property: ForeignKey
+    + created_at: DateTimeField
+    --
+    + remove(): void
+}
+
+' Payment
+class Payment {
+    + booking: OneToOneField
+    + amount: DecimalField
+    + status: CharField
+    + transaction_id: CharField
+    --
+    + process_payment(): boolean
+    + is_successful(): boolean
+}
+
+' Key Relationships
+User ||--|| UserProfile : has
+User ||--o{ Property : owns/manages
+User ||--o{ Booking : makes/handles
+User ||--o{ Message : sends/receives
+User ||--o{ SearchQuery : performs
+User ||--o{ Favorite : has
+
+Property ||--o{ PropertyImage : has
+Property ||--o{ Booking : receives
+Property ||--o{ Favorite : favorited by
+
+Booking ||--|| Payment : has payment
+Booking ||--o{ Message : related to
+
+' Layout hints
+User -[hidden]right- Property
+Booking -[hidden]right- Message
+SearchQuery -[hidden]right- Favorite
+
+note top of User
+    Core user management with
+    customer, agent, and admin roles
+end note
+
+note top of Property
+    Essential property information
+    with ownership and agent assignment
+end note
+
+note bottom of Booking
+    Property viewing appointments
+    and purchase bookings
+end note
+
+@enduml

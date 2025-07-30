@@ -1,0 +1,370 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Admin Dashboard - RealEstate{% endblock %}
+
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        transition: transform 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stats-card.users {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+    
+    .stats-card.properties {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+    
+    .stats-card.bookings {
+        background: linear-gradient(135deg, #fd7e14 0%, #e9561f 100%);
+    }
+    
+    .stats-card.revenue {
+        background: linear-gradient(135deg, #e83e8c 0%, #d91a72 100%);
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .stats-label {
+        font-size: 1rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .stats-icon {
+        font-size: 3rem;
+        opacity: 0.3;
+        position: absolute;
+        top: 15px;
+        right: 20px;
+    }
+    
+    .chart-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+    }
+    
+    .recent-activity {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .activity-item {
+        padding: 15px;
+        border-left: 4px solid #667eea;
+        margin-bottom: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .activity-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .activity-time {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    
+    .quick-action-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 20px;
+        text-decoration: none;
+        display: inline-block;
+        margin: 5px;
+        transition: all 0.3s ease;
+    }
+    
+    .quick-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card users position-relative">
+            <i class="fas fa-users stats-icon"></i>
+            <div class="stats-number">{{ total_users }}</div>
+            <div class="stats-label">Total Users</div>
+            <div class="mt-2">
+                <small>Agents: {{ total_agents }} | Customers: {{ total_customers }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card properties position-relative">
+            <i class="fas fa-home stats-icon"></i>
+            <div class="stats-number">{{ total_properties }}</div>
+            <div class="stats-label">Total Properties</div>
+            <div class="mt-2">
+                <small>Available: {{ available_properties }} | Sold: {{ sold_properties }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card bookings position-relative">
+            <i class="fas fa-calendar-check stats-icon"></i>
+            <div class="stats-number">{{ total_bookings }}</div>
+            <div class="stats-label">Total Bookings</div>
+            <div class="mt-2">
+                <small>Pending: {{ pending_bookings }} | Confirmed: {{ confirmed_bookings }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="stats-card revenue position-relative">
+            <i class="fas fa-chart-line stats-icon"></i>
+            <div class="stats-number">{{ confirmed_bookings }}</div>
+            <div class="stats-label">Completed Deals</div>
+            <div class="mt-2">
+                <small>Success Rate: {% widthratio confirmed_bookings total_bookings 100 %}%</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Quick Actions -->
+    <div class="col-12">
+        <div class="chart-card">
+            <h5 class="mb-3">
+                <i class="fas fa-bolt me-2 text-primary"></i>
+                Quick Actions
+            </h5>
+            <div class="text-center">
+                <a href="{% url 'admin_panel:users_list' %}" class="quick-action-btn">
+                    <i class="fas fa-users me-2"></i>Manage Users
+                </a>
+                <a href="{% url 'admin_panel:properties_list' %}" class="quick-action-btn">
+                    <i class="fas fa-home me-2"></i>Manage Properties
+                </a>
+                <a href="{% url 'admin_panel:bookings_list' %}" class="quick-action-btn">
+                    <i class="fas fa-calendar-check me-2"></i>Manage Bookings
+                </a>
+                <a href="{% url 'admin_panel:analytics' %}" class="quick-action-btn">
+                    <i class="fas fa-chart-bar me-2"></i>View Analytics
+                </a>
+                <a href="{% url 'admin_panel:settings' %}" class="quick-action-btn">
+                    <i class="fas fa-cog me-2"></i>Settings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Users -->
+    <div class="col-lg-4">
+        <div class="recent-activity">
+            <h5 class="mb-3">
+                <i class="fas fa-user-plus me-2 text-success"></i>
+                Recent Users
+            </h5>
+            {% for user in recent_users %}
+            <div class="activity-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">{{ user.get_full_name|default:user.username }}</h6>
+                        <small class="text-muted">{{ user.get_user_type_display }}</small>
+                    </div>
+                    <div class="text-end">
+                        <small class="activity-time">{{ user.date_joined|date:"M j, Y" }}</small>
+                        <br>
+                        <span class="badge {% if user.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if user.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted text-center py-3">No recent users</p>
+            {% endfor %}
+            <div class="text-center mt-3">
+                <a href="{% url 'admin_panel:users_list' %}" class="btn btn-outline-primary btn-sm">
+                    View All Users
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Properties -->
+    <div class="col-lg-4">
+        <div class="recent-activity">
+            <h5 class="mb-3">
+                <i class="fas fa-home me-2 text-primary"></i>
+                Recent Properties
+            </h5>
+            {% for property in recent_properties %}
+            <div class="activity-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">{{ property.title|truncatechars:30 }}</h6>
+                        <small class="text-muted">by {{ property.agent.username }}</small>
+                    </div>
+                    <div class="text-end">
+                        <small class="activity-time">{{ property.created_at|date:"M j, Y" }}</small>
+                        <br>
+                        <span class="badge {% if property.status == 'available' %}bg-success{% elif property.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
+                            {{ property.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted text-center py-3">No recent properties</p>
+            {% endfor %}
+            <div class="text-center mt-3">
+                <a href="{% url 'admin_panel:properties_list' %}" class="btn btn-outline-primary btn-sm">
+                    View All Properties
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Bookings -->
+    <div class="col-lg-4">
+        <div class="recent-activity">
+            <h5 class="mb-3">
+                <i class="fas fa-calendar-check me-2 text-warning"></i>
+                Recent Bookings
+            </h5>
+            {% for booking in recent_bookings %}
+            <div class="activity-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">{{ booking.property_ref.title|truncatechars:25 }}</h6>
+                        <small class="text-muted">{{ booking.customer.username }} - {{ booking.get_booking_type_display }}</small>
+                    </div>
+                    <div class="text-end">
+                        <small class="activity-time">{{ booking.created_at|date:"M j, Y" }}</small>
+                        <br>
+                        <span class="badge {% if booking.status == 'confirmed' %}bg-success{% elif booking.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                            {{ booking.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted text-center py-3">No recent bookings</p>
+            {% endfor %}
+            <div class="text-center mt-3">
+                <a href="{% url 'admin_panel:bookings_list' %}" class="btn btn-outline-primary btn-sm">
+                    View All Bookings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Agents -->
+<div class="row">
+    <div class="col-12">
+        <div class="chart-card">
+            <h5 class="mb-3">
+                <i class="fas fa-trophy me-2 text-warning"></i>
+                Top Performing Agents
+            </h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Agent</th>
+                            <th>Properties Listed</th>
+                            <th>Contact</th>
+                            <th>Join Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for agent in top_agents %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3">
+                                        {{ agent.username|make_list|first|upper }}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ agent.get_full_name|default:agent.username }}</h6>
+                                        <small class="text-muted">{{ agent.username }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ agent.property_count }}</span>
+                            </td>
+                            <td>{{ agent.email|default:"N/A" }}</td>
+                            <td>{{ agent.date_joined|date:"M j, Y" }}</td>
+                            <td>
+                                <span class="badge {% if agent.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if agent.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'admin_panel:user_detail' agent.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-3">No agents found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any dashboard-specific JavaScript here
+    console.log('Admin Dashboard loaded');
+    
+    // Auto-refresh dashboard every 5 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 300000); // 5 minutes
+});
+</script>
+{% endblock %}
+ 

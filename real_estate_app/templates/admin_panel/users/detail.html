@@ -1,0 +1,377 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}{{ user_obj.username }} - User Details{% endblock %}
+
+{% block page_title %}User Details: {{ user_obj.username }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'admin_panel:users_list' %}">Users</a></li>
+<li class="breadcrumb-item active">{{ user_obj.username }}</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'admin_panel:users_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Users
+    </a>
+    <a href="{% url 'admin_panel:user_edit' user_obj.id %}" class="btn btn-admin">
+        <i class="fas fa-edit me-2"></i>Edit User
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- User Information -->
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2 text-primary"></i>
+                    User Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="user-info-item">
+                    <strong>Username:</strong>
+                    <span>{{ user_obj.username }}</span>
+                </div>
+                <div class="user-info-item">
+                    <strong>Email:</strong>
+                    <span>{{ user_obj.email }}</span>
+                </div>
+                <div class="user-info-item">
+                    <strong>Full Name:</strong>
+                    <span>{{ user_obj.get_full_name|default:"Not provided" }}</span>
+                </div>
+                <div class="user-info-item">
+                    <strong>Phone:</strong>
+                    <span>{{ user_obj.phone|default:"Not provided" }}</span>
+                </div>
+                <div class="user-info-item">
+                    <strong>User Type:</strong>
+                    <span>
+                        {% if user_obj.user_type == 'admin' %}
+                            <span class="badge bg-danger">Admin</span>
+                        {% elif user_obj.user_type == 'agent' %}
+                            <span class="badge bg-warning">Agent</span>
+                        {% else %}
+                            <span class="badge bg-info">Customer</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="user-info-item">
+                    <strong>Status:</strong>
+                    <span>
+                        {% if user_obj.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Details -->
+        <div class="admin-card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>
+                    Account Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Date Joined:</strong> {{ user_obj.date_joined|date:"F d, Y" }}</p>
+                        <p><strong>Last Login:</strong> {{ user_obj.last_login|date:"F d, Y H:i"|default:"Never" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Staff Status:</strong> 
+                            {% if user_obj.is_staff %}
+                                <span class="badge bg-warning">Staff</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Regular User</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Superuser:</strong> 
+                            {% if user_obj.is_superuser %}
+                                <span class="badge bg-danger">Yes</span>
+                            {% else %}
+                                <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-primary"></i>
+                    Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'admin_panel:user_edit' user_obj.id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i>Edit User
+                    </a>
+                    <button class="btn btn-outline-warning" onclick="sendEmail()">
+                        <i class="fas fa-envelope me-2"></i>Send Email
+                    </button>
+                    {% if not user_obj.is_superuser and user_obj.id != request.user.id %}
+                    <button class="btn btn-outline-danger" onclick="deleteUser()">
+                        <i class="fas fa-trash me-2"></i>Delete User
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border: none;
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+
+    .admin-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 20px 25px;
+    }
+
+    .admin-card .card-body {
+        padding: 30px 25px;
+    }
+
+    .user-profile {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .user-profile:hover {
+        border-color: #667eea;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    }
+
+    .user-avatar {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: white;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .user-info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
+    }
+
+    .user-info-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .user-info-item strong {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-admin {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-admin:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    .btn-outline-secondary {
+        border: 2px solid #6c757d;
+        border-radius: 10px;
+        padding: 10px 20px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.2);
+    }
+
+    .btn-outline-danger {
+        border: 2px solid #dc3545;
+        color: #dc3545;
+        border-radius: 10px;
+        padding: 10px 20px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-danger:hover {
+        background: #dc3545;
+        border-color: #dc3545;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.2);
+    }
+
+    .quick-actions {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .quick-actions:hover {
+        border-color: #667eea;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    }
+
+    .activity-timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .activity-timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(to bottom, #667eea, #764ba2);
+        border-radius: 2px;
+    }
+
+    .activity-item {
+        position: relative;
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+
+    .activity-item:hover {
+        transform: translateX(10px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+    .activity-marker {
+        position: absolute;
+        left: -22px;
+        top: 20px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #667eea;
+        box-shadow: 0 0 0 3px white, 0 0 0 6px #667eea;
+        z-index: 2;
+    }
+
+    .row {
+        margin-left: -15px;
+        margin-right: -15px;
+    }
+
+    .col-lg-8, .col-lg-4, .col-md-6 {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .d-grid gap-2 > * {
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function sendEmail() {
+    const email = '{{ user_obj.email }}';
+    if (email) {
+        window.location.href = 'mailto:' + email;
+    } else {
+        alert('No email address available');
+    }
+}
+
+function deleteUser() {
+    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+        fetch('{% url "admin_panel:user_delete" user_obj.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = '{% url "admin_panel:users_list" %}';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Network error occurred');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+@startuml RealEstate_Simple_Sequence_Diagram
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+title Real Estate Platform - Simple Booking Sequence
+
+actor Customer as C
+participant "Web App" as WA
+participant "Database" as DB
+actor Agent as A
+
+== Property Booking Flow ==
+
+C -> WA: Browse properties
+WA -> DB: Get property list
+DB -> WA: Return properties
+WA -> C: Show properties
+
+C -> WA: Select property
+WA -> DB: Get property details
+DB -> WA: Property info
+WA -> C: Show details
+
+C -> WA: Book viewing
+WA -> DB: Create booking
+DB -> WA: Booking created
+WA -> A: Notify agent
+WA -> C: Booking confirmation
+
+A -> WA: Confirm booking
+WA -> DB: Update status
+DB -> WA: Status updated
+WA -> C: Send confirmation
+
+C -> WA: Attend viewing
+A -> WA: Complete booking
+WA -> DB: Mark completed
+DB -> WA: Booking completed
+WA -> C: Send feedback request
+
+@enduml

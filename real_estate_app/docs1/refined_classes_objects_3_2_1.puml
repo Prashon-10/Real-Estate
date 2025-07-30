@@ -1,0 +1,363 @@
+@startuml RealEstate_Refined_Classes_Objects_3_2_1
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam class {
+    BackgroundColor #E8F4FD
+    BorderColor #2196F3
+    FontColor #1976D2
+    AttributeFontColor #37474F
+    HeaderBackgroundColor #2196F3
+    HeaderFontColor #FFFFFF
+}
+skinparam object {
+    BackgroundColor #FFF3E0
+    BorderColor #FF9800
+    FontColor #E65100
+    AttributeFontColor #BF360C
+}
+
+title Real Estate Platform - Section 3.2.1 Refined Classes and Objects
+footer Generated: July 30, 2025
+
+' Core Domain Classes with Detailed Attributes
+class User {
+    □ id: ObjectId
+    □ username: String
+    □ email: String
+    □ password: String
+    □ firstName: String
+    □ lastName: String
+    □ phoneNumber: String
+    □ userType: UserType
+    □ isActive: Boolean
+    □ dateJoined: Date
+    □ lastLogin: Date
+    □ profileImage: String
+    --
+    ● authenticate(): Boolean
+    ● updateProfile(): void
+    ● getFullName(): String
+    ● isAgent(): Boolean
+    ● isCustomer(): Boolean
+}
+
+class Property {
+    □ id: ObjectId
+    □ title: String
+    □ description: Text
+    □ propertyType: PropertyType
+    □ price: Number
+    □ bedrooms: Number
+    □ bathrooms: Number
+    □ squareFeet: Number
+    □ address: Address
+    □ owner: ObjectId
+    □ agent: ObjectId
+    □ status: PropertyStatus
+    □ featuredImage: String
+    □ images: String[]
+    □ amenities: String[]
+    □ isActive: Boolean
+    □ dateCreated: Date
+    □ dateUpdated: Date
+    --
+    ● calculateCommission(): Number
+    ● isAvailable(): Boolean
+    ● updateStatus(): void
+    ● addImage(): void
+    ● removeImage(): void
+    ● getLocationDetails(): Address
+}
+
+class Booking {
+    □ id: ObjectId
+    □ property: ObjectId
+    □ customer: ObjectId
+    □ agent: ObjectId
+    □ bookingType: BookingType
+    □ scheduledDate: Date
+    □ scheduledTime: String
+    □ duration: Number // Refined: Duration in minutes
+    □ status: BookingStatus
+    □ notes: Text
+    □ customerPhone: String
+    □ customerEmail: String
+    □ isConfirmed: Boolean
+    □ confirmationCode: String
+    □ dateCreated: Date
+    □ dateUpdated: Date
+    --
+    ● confirmBooking(): Boolean
+    ● cancelBooking(): Boolean
+    ● rescheduleBooking(): Boolean
+    ● sendConfirmation(): void
+    ● generateConfirmationCode(): String
+    ● isUpcoming(): Boolean
+}
+
+class Address {
+    □ street: String
+    □ city: String
+    □ state: String
+    □ zipCode: String
+    □ country: String
+    □ latitude: Number
+    □ longitude: Number
+    --
+    ● getFullAddress(): String
+    ● validatePostalCode(): Boolean
+    ● getCoordinates(): Object
+}
+
+class PaymentRecord {
+    □ id: ObjectId
+    □ booking: ObjectId
+    □ amount: Number
+    □ paymentMethod: String
+    □ transactionId: String
+    □ status: PaymentStatus
+    □ paymentDate: Date
+    □ refundAmount: Number
+    □ refundDate: Date
+    --
+    ● processPayment(): Boolean
+    ● refundPayment(): Boolean
+    ● validateTransaction(): Boolean
+}
+
+class Message {
+    □ id: ObjectId
+    □ sender: ObjectId
+    □ recipient: ObjectId
+    □ booking: ObjectId
+    □ subject: String
+    □ content: Text
+    □ messageType: MessageType
+    □ isRead: Boolean
+    □ readDate: Date
+    □ dateSent: Date
+    --
+    ● markAsRead(): void
+    ● reply(): Message
+    ● forward(): void
+}
+
+' Live Object Instances with Detailed Data
+object "agent1 : User" as agent1 {
+    id = "usr001"
+    username = "john_agent"
+    email = "john@realestate.com"
+    firstName = "John"
+    lastName = "Smith"
+    phoneNumber = "+1-555-0123"
+    userType = AGENT
+    isActive = true
+    dateJoined = "2024-01-15"
+    lastLogin = "2025-07-30 09:30:00"
+    profileImage = "/media/profiles/john.jpg"
+}
+
+object "customer1 : User" as customer1 {
+    id = "usr002"
+    username = "mike_buyer"
+    email = "mike@email.com"
+    firstName = "Mike"
+    lastName = "Johnson"
+    phoneNumber = "+1-555-0456"
+    userType = CUSTOMER
+    isActive = true
+    dateJoined = "2024-03-20"
+    lastLogin = "2025-07-29 18:45:00"
+    profileImage = "/media/profiles/mike.jpg"
+}
+
+object "villa1 : Property" as villa1 {
+    id = "prop001"
+    title = "Luxury Ocean View Villa"
+    description = "Stunning 4BR villa with ocean views"
+    propertyType = VILLA
+    price = 750000.00
+    bedrooms = 4
+    bathrooms = 3
+    squareFeet = 2800
+    address = addr1
+    owner = "usr001"
+    agent = "usr001"
+    status = ACTIVE
+    featuredImage = "/media/properties/villa1_main.jpg"
+    images = ["/media/properties/villa1_1.jpg", "/media/properties/villa1_2.jpg"]
+    amenities = ["Pool", "Garden", "Parking", "Ocean View"]
+    isActive = true
+    dateCreated = "2024-02-10"
+    dateUpdated = "2025-07-25"
+}
+
+object "addr1 : Address" as addr1 {
+    street = "123 Ocean Drive"
+    city = "Miami Beach"
+    state = "Florida"
+    zipCode = "33139"
+    country = "USA"
+    latitude = 25.7617
+    longitude = -80.1918
+}
+
+object "booking1 : Booking" as booking1 {
+    id = "book001"
+    property = "prop001"
+    customer = "usr002"
+    agent = "usr001"
+    bookingType = VIEWING
+    scheduledDate = "2025-08-05"
+    scheduledTime = "14:00"
+    duration = 60
+    status = CONFIRMED
+    notes = "Customer interested in ocean view properties"
+    customerPhone = "+1-555-0456"
+    customerEmail = "mike@email.com"
+    isConfirmed = true
+    confirmationCode = "CONF2025080001"
+    dateCreated = "2025-07-28"
+    dateUpdated = "2025-07-29"
+}
+
+object "payment1 : PaymentRecord" as payment1 {
+    id = "pay001"
+    booking = "book001"
+    amount = 500.00
+    paymentMethod = "Credit Card"
+    transactionId = "TXN_2025073001"
+    status = COMPLETED
+    paymentDate = "2025-07-30"
+    refundAmount = 0.00
+    refundDate = null
+}
+
+object "msg1 : Message" as msg1 {
+    id = "msg001"
+    sender = "usr001"
+    recipient = "usr002"
+    booking = "book001"
+    subject = "Booking Confirmation - Ocean View Villa"
+    content = "Your viewing appointment has been confirmed for August 5th at 2:00 PM"
+    messageType = CONFIRMATION
+    isRead = true
+    readDate = "2025-07-29 10:15:00"
+    dateSent = "2025-07-29 09:30:00"
+}
+
+' Class to Object Instantiation Relationships
+agent1 --|> User : instance of
+customer1 --|> User : instance of
+villa1 --|> Property : instance of
+addr1 --|> Address : instance of
+booking1 --|> Booking : instance of
+payment1 --|> PaymentRecord : instance of
+msg1 --|> Message : instance of
+
+' Object Relationships with Detailed Associations
+agent1 --> villa1 : owns/manages
+customer1 --> booking1 : requested
+booking1 --> villa1 : for property
+villa1 --> addr1 : located at
+booking1 --> payment1 : has payment
+agent1 --> msg1 : sent
+customer1 <-- msg1 : received
+booking1 --> msg1 : regarding
+
+' Class Relationships
+User ||--o{ Property : owns/manages
+User ||--o{ Booking : creates/handles
+Property ||--|| Address : has location
+Property ||--o{ Booking : receives bookings
+Booking ||--o| PaymentRecord : may have payment
+User ||--o{ Message : sends/receives
+Booking ||--o{ Message : generates
+
+' Enumeration Classes
+enum UserType {
+    CUSTOMER
+    AGENT
+    ADMIN
+    MANAGER
+}
+
+enum PropertyType {
+    HOUSE
+    APARTMENT
+    VILLA
+    CONDO
+    TOWNHOUSE
+}
+
+enum PropertyStatus {
+    DRAFT
+    ACTIVE
+    PENDING
+    SOLD
+    INACTIVE
+}
+
+enum BookingType {
+    VIEWING
+    INSPECTION
+    CONSULTATION
+    FINAL_WALKTHROUGH
+}
+
+enum BookingStatus {
+    PENDING
+    CONFIRMED
+    COMPLETED
+    CANCELLED
+    RESCHEDULED
+}
+
+enum PaymentStatus {
+    PENDING
+    COMPLETED
+    FAILED
+    REFUNDED
+    CANCELLED
+}
+
+enum MessageType {
+    INQUIRY
+    CONFIRMATION
+    REMINDER
+    UPDATE
+    NOTIFICATION
+}
+
+' Layout hints for better organization
+User -[hidden]right- Property
+Property -[hidden]right- Booking
+agent1 -[hidden]right- customer1
+villa1 -[hidden]right- booking1
+addr1 -[hidden]right- payment1
+
+note top of User
+    Refined User class with complete
+    profile information and authentication
+    methods for the real estate platform
+end note
+
+note bottom of villa1
+    Live property instance showing
+    detailed attributes including
+    location, pricing, and metadata
+end note
+
+note right of booking1
+    Active booking with complete
+    scheduling information and
+    confirmation details
+end note
+
+note left of payment1
+    Payment record linked to
+    booking with transaction
+    tracking capabilities
+end note
+
+@enduml

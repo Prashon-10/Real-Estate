@@ -1,0 +1,218 @@
+@startuml RealEstate_Deployment_Diagram
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam node {
+    BackgroundColor #E8F4FD
+    BorderColor #2196F3
+    FontColor #1976D2
+    FontSize 12
+    FontStyle bold
+}
+skinparam component {
+    BackgroundColor #F8F9FA
+    BorderColor #667eea
+    FontColor #495057
+    FontSize 11
+    FontStyle normal
+}
+skinparam artifact {
+    BackgroundColor #FFF3E0
+    BorderColor #FF9800
+    FontColor #F57C00
+}
+skinparam database {
+    BackgroundColor #E8F5E8
+    BorderColor #4CAF50
+    FontColor #2E7D32
+}
+
+title Real Estate Platform - Deployment Diagram
+footer Generated: %date("yyyy-MM-dd")
+
+' Client Devices
+node "Client Browser" as ClientBrowser {
+    component "React/HTML5 UI" as WebUI
+    component "JavaScript/AJAX" as ClientJS
+    artifact "Static Assets" as StaticFiles
+}
+
+node "Mobile App" as MobileApp {
+    component "React Native" as MobileUI
+    component "Mobile API Client" as MobileAPI
+}
+
+' Load Balancer
+node "Load Balancer" as LoadBalancer {
+    component "NGINX" as Nginx
+    component "SSL Termination" as SSL
+}
+
+' Web Servers
+node "Web Server 1" as WebServer1 {
+    component "Django Application" as DjangoApp1
+    component "WSGI Server" as WSGIServer1
+    component "Static File Server" as StaticServer1
+}
+
+node "Web Server 2" as WebServer2 {
+    component "Django Application" as DjangoApp2
+    component "WSGI Server" as WSGIServer2
+    component "Static File Server" as StaticServer2
+}
+
+' Application Services
+node "Application Server" as AppServer {
+    component "Admin Panel" as AdminPanel
+    component "Property Management" as PropertyMgmt
+    component "Booking System" as BookingSystem
+    component "User Management" as UserMgmt
+    component "Chat Service" as ChatService
+    component "Search Engine" as SearchEngine
+}
+
+' Cache Layer
+node "Cache Layer" as CacheLayer {
+    component "Redis Cache" as RedisCache
+    component "Session Store" as SessionStore
+    component "Query Cache" as QueryCache
+}
+
+' Message Queue
+node "Message Queue" as MessageQueue {
+    component "Celery" as Celery
+    component "Task Scheduler" as TaskScheduler
+    component "Background Jobs" as BgJobs
+}
+
+' Database Layer
+node "Database Server" as DatabaseServer {
+    database "PostgreSQL" as PostgresDB
+    database "User Data" as UserDB
+    database "Property Data" as PropertyDB
+    database "Booking Data" as BookingDB
+}
+
+' File Storage
+node "File Storage" as FileStorage {
+    component "Media Server" as MediaServer
+    artifact "Property Images" as PropertyImages
+    artifact "User Uploads" as UserUploads
+    artifact "Documents" as Documents
+}
+
+' External Services
+cloud "External Services" {
+    node "Payment Gateway" as PaymentGW {
+        component "Stripe API" as StripeAPI
+        component "PayPal API" as PayPalAPI
+    }
+    
+    node "Email Service" as EmailService {
+        component "SMTP Server" as SMTPServer
+        component "Email Templates" as EmailTemplates
+    }
+    
+    node "Map Services" as MapServices {
+        component "Google Maps API" as GoogleMaps
+        component "Geolocation API" as GeoAPI
+    }
+    
+    node "Cloud Storage" as CloudStorage {
+        component "AWS S3" as S3Storage
+        component "CDN" as CDN
+    }
+}
+
+' Monitoring & Logging
+node "Monitoring" as Monitoring {
+    component "Application Logs" as AppLogs
+    component "Performance Monitor" as PerfMonitor
+    component "Error Tracking" as ErrorTracking
+}
+
+' Connections - Client to Load Balancer
+ClientBrowser --> LoadBalancer : HTTPS
+MobileApp --> LoadBalancer : HTTPS
+
+' Load Balancer to Web Servers
+LoadBalancer --> WebServer1 : HTTP
+LoadBalancer --> WebServer2 : HTTP
+
+' Web Servers to Application Server
+WebServer1 --> AppServer : HTTP
+WebServer2 --> AppServer : HTTP
+
+' Application Server to Cache
+AppServer --> CacheLayer : TCP
+
+' Application Server to Message Queue
+AppServer --> MessageQueue : AMQP
+
+' Application Server to Database
+AppServer --> DatabaseServer : TCP/5432
+
+' Application Server to File Storage
+AppServer --> FileStorage : HTTP
+
+' External Service Connections
+AppServer --> PaymentGW : HTTPS
+AppServer --> EmailService : SMTP/465
+AppServer --> MapServices : HTTPS
+AppServer --> CloudStorage : HTTPS
+
+' Monitoring Connections
+AppServer --> Monitoring : HTTP
+WebServer1 --> Monitoring : HTTP
+WebServer2 --> Monitoring : HTTP
+
+' Internal Component Relationships
+DjangoApp1 --> AdminPanel
+DjangoApp1 --> PropertyMgmt
+DjangoApp1 --> BookingSystem
+DjangoApp1 --> UserMgmt
+
+DjangoApp2 --> AdminPanel
+DjangoApp2 --> PropertyMgmt
+DjangoApp2 --> BookingSystem
+DjangoApp2 --> UserMgmt
+
+' Cache Relationships
+RedisCache --> SessionStore
+RedisCache --> QueryCache
+
+' Database Relationships
+PostgresDB --> UserDB
+PostgresDB --> PropertyDB
+PostgresDB --> BookingDB
+
+' File Storage Relationships
+MediaServer --> PropertyImages
+MediaServer --> UserUploads
+MediaServer --> Documents
+
+' Notes
+note top of LoadBalancer
+    High Availability Setup
+    Auto-scaling enabled
+    Health checks configured
+end note
+
+note right of CacheLayer
+    Redis Cluster
+    In-memory caching
+    Session management
+end note
+
+note bottom of DatabaseServer
+    Master-Slave Configuration
+    Automated backups
+    Read replicas for scaling
+end note
+
+note left of FileStorage
+    Distributed storage
+    Image optimization
+    Backup synchronization
+end note
+
+@enduml

@@ -1,0 +1,41 @@
+@startuml RealEstate_Simple_Deployment_Diagram
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+title Real Estate Platform - Simple Deployment Diagram
+
+actor "Users" as users
+cloud "Internet" as internet
+
+node "Web Server" as web {
+    component "Django App" as django
+    component "Admin Panel" as admin
+}
+
+node "Database Server" as db_server {
+    database "PostgreSQL" as db
+}
+
+node "Cache Server" as cache_server {
+    component "Redis" as redis
+}
+
+node "File Server" as file_server {
+    component "Media Files" as media
+    component "Static Files" as static
+}
+
+cloud "External Services" as external {
+    component "Email Service" as email
+    component "Payment Gateway" as payment
+}
+
+' Connections
+users --> internet
+internet --> web
+web --> db_server
+web --> cache_server
+web --> file_server
+web --> external
+
+@enduml

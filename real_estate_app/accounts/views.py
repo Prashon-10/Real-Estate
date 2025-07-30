@@ -71,6 +71,11 @@ class LoginView(FormView):
         if user is not None:
             login(self.request, user)
             messages.success(self.request, f"Welcome back, {user.username}!")
+            
+            # Check if user is admin/superuser and redirect to admin panel
+            if user.is_superuser:
+                return redirect('admin_panel:dashboard')
+            
             next_url = self.request.GET.get('next', None)
             if next_url:
                 return redirect(next_url)

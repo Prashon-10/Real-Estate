@@ -7,6 +7,7 @@ from accounts.admin_site import admin_site
 
 urlpatterns = [
     path('admin/', admin_site.urls),
+    path('admin-panel/', include('admin_panel.urls')),  # Custom admin panel
     path('', index, name='index'),
     path('accounts/', include('accounts.urls')),
     path('properties/', include('properties.urls')),

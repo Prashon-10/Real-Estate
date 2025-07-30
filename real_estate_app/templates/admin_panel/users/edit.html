@@ -1,0 +1,787 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Edit User - Admin Panel{% endblock %}
+
+{% block page_title %}Edit User: {{ user_obj.username }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'admin_panel:users_list' %}">Users</a></li>
+<li class="breadcrumb-item active">Edit {{ user_obj.username }}</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'admin_panel:users_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Users
+    </a>
+    <button type="submit" form="userForm" class="btn btn-admin">
+        <i class="fas fa-save me-2"></i>Save Changes
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <form id="userForm" method="post">
+            {% csrf_token %}
+            
+            <div class="admin-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-edit me-2"></i>
+                        Edit User Profile
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="fas fa-id-card"></i>
+                            Basic Information
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">
+                                        <i class="fas fa-user me-2"></i>Username
+                                    </label>
+                                    <input type="text" class="form-control" id="username" value="{{ user_obj.username }}" disabled>
+                                    <div class="text-muted">Username cannot be changed after registration</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label required">
+                                        <i class="fas fa-envelope me-2"></i>Email Address
+                                    </label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           value="{{ user_obj.email }}" required>
+                                    <div class="text-muted">Primary contact email for the user</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="first_name" class="form-label">
+                                        <i class="fas fa-user-tag me-2"></i>First Name
+                                    </label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" 
+                                           value="{{ user_obj.first_name }}" placeholder="Enter first name">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="last_name" class="form-label">
+                                        <i class="fas fa-user-tag me-2"></i>Last Name
+                                    </label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" 
+                                           value="{{ user_obj.last_name }}" placeholder="Enter last name">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">
+                                        <i class="fas fa-phone me-2"></i>Phone Number
+                                    </label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" 
+                                           value="{{ user_obj.phone|default:'' }}" placeholder="+1 (555) 123-4567">
+                                    <div class="text-muted">Contact phone number for the user</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="user_type" class="form-label required">
+                                        <i class="fas fa-user-shield me-2"></i>User Type
+                                    </label>
+                                    <select class="form-select" id="user_type" name="user_type">
+                                        {% for value, label in user_types %}
+                                        <option value="{{ value }}" {% if user_obj.user_type == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="text-muted">Determines user permissions and access level</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="fas fa-cog"></i>
+                            Account Settings
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                           {% if user_obj.is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_active">
+                                        <i class="fas fa-toggle-on me-2"></i>Active User Account
+                                    </label>
+                                    <div class="text-muted">User can log in and access the platform</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="is_staff" name="is_staff" 
+                                           {% if user_obj.is_staff %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_staff">
+                                        <i class="fas fa-user-tie me-2"></i>Staff Access
+                                    </label>
+                                    <div class="text-muted">Can access admin panel and staff features</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> Changes will take effect immediately. Users will receive an email notification about significant account changes.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Password Change -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-key me-2"></i>
+                        Password Management
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="fas fa-lock"></i>
+                            Change Password (Optional)
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label">
+                                        <i class="fas fa-key me-2"></i>New Password
+                                    </label>
+                                    <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Enter new password">
+                                    <div class="text-muted">Leave empty to keep current password unchanged</div>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">
+                                        <i class="fas fa-check-circle me-2"></i>Confirm New Password
+                                    </label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Confirm new password">
+                                    <div class="text-muted">Re-enter the new password to confirm</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Security Note:</strong> The user will be logged out from all devices after password change and will need to log in again.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Live Preview -->
+        <div class="user-preview-card">
+            <div class="preview-avatar" id="preview-avatar">
+                {{ user_obj.username|make_list|first|upper }}
+            </div>
+            <div class="preview-name" id="preview-name">
+                {{ user_obj.get_full_name|default:user_obj.username }}
+            </div>
+            <div class="preview-email" id="preview-email">
+                {{ user_obj.email }}
+            </div>
+            <div class="preview-badges">
+                <span class="preview-badge" id="preview-type-badge">{{ user_obj.get_user_type_display }}</span>
+                <span class="preview-badge" id="preview-status-badge">
+                    {% if user_obj.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+            </div>
+        </div>
+        
+        <!-- User Statistics -->
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    User Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Properties</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Bookings</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Messages</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ user_obj.date_joined|timesince|truncatewords:1 }}</div>
+                        <div class="stat-label">Member</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Account Information -->
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Account Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="user-info-item">
+                    <strong><i class="fas fa-calendar me-2"></i>Join Date:</strong>
+                    <span>{{ user_obj.date_joined|date:"M d, Y" }}</span>
+                </div>
+                <div class="user-info-item">
+                    <strong><i class="fas fa-clock me-2"></i>Last Login:</strong>
+                    <span>{{ user_obj.last_login|date:"M d, Y H:i"|default:"Never logged in" }}</span>
+                </div>
+                <div class="user-info-item">
+                    <strong><i class="fas fa-shield-alt me-2"></i>Permissions:</strong>
+                    <span>
+                        {% if user_obj.is_superuser %}
+                            <span class="badge bg-danger">Superuser</span>
+                        {% elif user_obj.is_staff %}
+                            <span class="badge bg-warning">Staff</span>
+                        {% else %}
+                            <span class="badge bg-info">Regular User</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="user-info-item">
+                    <strong><i class="fas fa-toggle-on me-2"></i>Account Status:</strong>
+                    <span>
+                        {% if user_obj.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="sendEmail()">
+                        <i class="fas fa-envelope me-2"></i>Send Email
+                    </button>
+                    <button class="btn btn-outline-info" onclick="viewActivity()">
+                        <i class="fas fa-history me-2"></i>View Activity
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="resetPassword()">
+                        <i class="fas fa-key me-2"></i>Reset Password
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="suspendAccount()">
+                        <i class="fas fa-user-slash me-2"></i>Suspend Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border: none;
+        overflow: hidden;
+        margin-bottom: 30px;
+        transition: transform 0.3s ease;
+    }
+
+    .admin-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+    }
+
+    .admin-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 25px 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .admin-card .card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+        pointer-events: none;
+    }
+
+    .admin-card .card-body {
+        padding: 35px 30px;
+    }
+
+    .form-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .form-section:hover {
+        border-color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.1);
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #495057;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .section-title i {
+        margin-right: 10px;
+        color: #667eea;
+        font-size: 1.2rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-label.required::after {
+        content: '*';
+        color: #dc3545;
+        margin-left: 5px;
+        font-weight: 700;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 14px 18px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        margin-bottom: 8px;
+        background: white;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        transform: translateY(-2px);
+        background: white;
+    }
+
+    .form-control:disabled {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-color: #dee2e6;
+        color: #6c757d;
+    }
+
+    .mb-3 {
+        margin-bottom: 25px !important;
+    }
+
+    .btn-admin {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 30px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-admin:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .btn-outline-secondary {
+        border: 2px solid #6c757d;
+        border-radius: 12px;
+        padding: 12px 25px;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+
+    .btn-outline-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.2);
+    }
+
+    .user-preview-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        margin-bottom: 25px;
+        transition: all 0.3s ease;
+    }
+
+    .user-preview-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+    }
+
+    .preview-avatar {
+        width: 100px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 2.5rem;
+        font-weight: 700;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .preview-avatar:hover {
+        transform: scale(1.05);
+        border-color: rgba(255, 255, 255, 0.6);
+    }
+
+    .preview-name {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .preview-email {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-bottom: 15px;
+    }
+
+    .preview-badges {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .preview-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .preview-badge.admin {
+        background: rgba(220, 53, 69, 0.3);
+        border-color: rgba(220, 53, 69, 0.5);
+    }
+
+    .preview-badge.agent {
+        background: rgba(255, 193, 7, 0.3);
+        border-color: rgba(255, 193, 7, 0.5);
+    }
+
+    .preview-badge.customer {
+        background: rgba(23, 162, 184, 0.3);
+        border-color: rgba(23, 162, 184, 0.5);
+    }
+
+    .preview-badge.active {
+        background: rgba(40, 167, 69, 0.3);
+        border-color: rgba(40, 167, 69, 0.5);
+    }
+
+    .preview-badge.inactive {
+        background: rgba(108, 117, 125, 0.3);
+        border-color: rgba(108, 117, 125, 0.5);
+    }
+
+    .form-check {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px 20px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .form-check:hover {
+        border-color: #667eea;
+        background: #e9ecef;
+    }
+
+    .form-check-input:checked {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+
+    .form-check-label {
+        font-weight: 600;
+        color: #495057;
+        margin-left: 8px;
+    }
+
+    .text-muted {
+        font-size: 0.85rem;
+        margin-top: 5px;
+    }
+
+    .row {
+        margin-left: -15px;
+        margin-right: -15px;
+    }
+
+    .col-md-6, .col-lg-8, .col-lg-4 {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .card-header h5 {
+        margin-bottom: 0;
+        font-weight: 700;
+        font-size: 1.2rem;
+    }
+
+    .page-actions .d-flex {
+        gap: 15px;
+    }
+
+    .input-group-text {
+        background: #667eea;
+        color: white;
+        border: 2px solid #667eea;
+        border-radius: 12px 0 0 12px;
+        font-weight: 600;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .stat-item {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .stat-item:hover {
+        border-color: #667eea;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border: 2px solid #2196f3;
+        border-radius: 15px;
+        color: #1976d2;
+        padding: 20px;
+    }
+
+    .alert-info i {
+        color: #1976d2;
+        margin-right: 10px;
+    }
+
+    @media (max-width: 768px) {
+        .admin-card .card-body {
+            padding: 25px 20px;
+        }
+        
+        .form-section {
+            padding: 20px;
+        }
+        
+        .user-preview-card {
+            padding: 25px 20px;
+        }
+        
+        .preview-avatar {
+            width: 80px;
+            height: 80px;
+            font-size: 2rem;
+        }
+    }
+</style>
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Live preview updates
+document.addEventListener('DOMContentLoaded', function() {
+    const fields = ['first_name', 'last_name', 'email', 'phone'];
+    
+    fields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input) {
+            input.addEventListener('input', updatePreview);
+        }
+    });
+    
+    // User type and status selects
+    document.getElementById('user_type').addEventListener('change', updateTypePreview);
+    document.getElementById('is_active').addEventListener('change', updateStatusPreview);
+    
+    // Password validation
+    const newPassword = document.getElementById('new_password');
+    const confirmPassword = document.getElementById('confirm_password');
+    
+    function validatePasswords() {
+        if (newPassword.value || confirmPassword.value) {
+            if (newPassword.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity("Passwords don't match");
+            } else if (newPassword.value.length < 6) {
+                newPassword.setCustomValidity("Password must be at least 6 characters");
+            } else {
+                newPassword.setCustomValidity("");
+                confirmPassword.setCustomValidity("");
+            }
+        } else {
+            newPassword.setCustomValidity("");
+            confirmPassword.setCustomValidity("");
+        }
+    }
+    
+    newPassword.addEventListener('input', validatePasswords);
+    confirmPassword.addEventListener('input', validatePasswords);
+});
+
+function updatePreview() {
+    const firstName = document.getElementById('first_name').value;
+    const lastName = document.getElementById('last_name').value;
+    const email = document.getElementById('email').value;
+    const phone = document.getElementById('phone').value;
+    
+    const fullName = [firstName, lastName].filter(n => n.trim()).join(' ') || '{{ user_obj.username }}';
+    
+    document.getElementById('preview-name').textContent = fullName;
+    document.getElementById('preview-email').textContent = email || 'No email';
+    document.getElementById('preview-phone').textContent = phone || 'No phone';
+}
+
+function updateTypePreview() {
+    const select = document.getElementById('user_type');
+    const selectedText = select.options[select.selectedIndex].text;
+    document.getElementById('preview-type').textContent = selectedText;
+}
+
+function updateStatusPreview() {
+    const isActive = document.getElementById('is_active').checked;
+    const statusBadge = document.getElementById('preview-status');
+    
+    statusBadge.textContent = isActive ? 'Active' : 'Inactive';
+    statusBadge.className = isActive ? 'badge bg-success' : 'badge bg-secondary';
+}
+
+function sendEmail() {
+    const email = document.getElementById('email').value;
+    if (email) {
+        window.location.href = 'mailto:' + email;
+    } else {
+        alert('No email address available');
+    }
+}
+
+function deleteUser() {
+    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+        fetch('{% url "admin_panel:user_delete" user_obj.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = '{% url "admin_panel:users_list" %}';
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Network error occurred');
+        });
+    }
+}
+</script>
+{% endblock %}

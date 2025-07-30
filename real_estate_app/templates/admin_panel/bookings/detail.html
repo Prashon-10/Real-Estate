@@ -1,0 +1,618 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Booking Details - Admin Panel{% endblock %}
+
+{% block page_title %}Booking Details{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'admin_panel:bookings_list' %}">Bookings</a></li>
+<li class="breadcrumb-item active">Booking #{{ booking.id }}</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'admin_panel:bookings_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Bookings
+    </a>
+    <div class="dropdown">
+        <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="fas fa-edit me-2"></i>Update Status
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#" onclick="updateStatus('pending')">Pending</a></li>
+            <li><a class="dropdown-item" href="#" onclick="updateStatus('confirmed')">Confirmed</a></li>
+            <li><a class="dropdown-item" href="#" onclick="updateStatus('rejected')">Rejected</a></li>
+            <li><a class="dropdown-item" href="#" onclick="updateStatus('cancelled')">Cancelled</a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Booking Information -->
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-check me-2 text-primary"></i>
+                    Booking Information
+                </h5>
+                <span class="badge 
+                    {% if booking.status == 'confirmed' %}bg-success
+                    {% elif booking.status == 'pending' %}bg-warning
+                    {% elif booking.status == 'rejected' %}bg-danger
+                    {% else %}bg-secondary{% endif %} ms-auto">
+                    {{ booking.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="booking-detail-item mb-3">
+                            <label class="fw-bold text-muted">Booking ID:</label>
+                            <p class="mb-0">#{{ booking.id }}</p>
+                        </div>
+                        <div class="booking-detail-item mb-3">
+                            <label class="fw-bold text-muted">Booking Type:</label>
+                            <p class="mb-0">{{ booking.get_booking_type_display }}</p>
+                        </div>
+                        <div class="booking-detail-item mb-3">
+                            <label class="fw-bold text-muted">Transaction ID:</label>
+                            <p class="mb-0 font-monospace">{{ booking.transaction_id }}</p>
+                        </div>
+                        <div class="booking-detail-item mb-3">
+                            <label class="fw-bold text-muted">Payment Method:</label>
+                            <p class="mb-0">{{ booking.get_payment_method_display }}</p>
+                        </div>
+                        <div class="booking-detail-item mb-3">
+                            <label class="fw-bold text-muted">Payment Amount:</label>
+                            <p class="mb-0 text-success fw-bold">${{ booking.payment_amount|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="booking-detail-item mb-3">
+                            <label class="fw-bold text-muted">Customer Name:</label>
+                            <p class="mb-0">{{ booking.customer_name }}</p>
+                        </div>
+                        <div class="booking-detail-item mb-3">
+                            <label class="fw-bold text-muted">Customer Email:</label>
+                            <p class="mb-0">{{ booking.customer_email }}</p>
+                        </div>
+                        <div class="booking-detail-item mb-3">
+                            <label class="fw-bold text-muted">Customer Phone:</label>
+                            <p class="mb-0">{{ booking.customer_phone }}</p>
+                        </div>
+                        <div class="booking-detail-item mb-3">
+                            <label class="fw-bold text-muted">Booking Date:</label>
+                            <p class="mb-0">{{ booking.created_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                        <div class="booking-detail-item mb-3">
+                            <label class="fw-bold text-muted">Payment Status:</label>
+                            <span class="badge bg-success">{{ booking.payment_status|title }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if booking.preferred_date %}
+                <div class="booking-detail-item mb-3">
+                    <label class="fw-bold text-muted">Preferred Visit Date:</label>
+                    <p class="mb-0">{{ booking.preferred_date|date:"M d, Y H:i" }}</p>
+                </div>
+                {% endif %}
+                
+                {% if booking.message %}
+                <div class="booking-detail-item mb-3">
+                    <label class="fw-bold text-muted">Customer Message:</label>
+                    <div class="bg-light p-3 rounded">
+                        <p class="mb-0">{{ booking.message|linebreaks }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Property Information -->
+        <div class="admin-card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-home me-2 text-primary"></i>
+                    Property Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        {% if booking.property_ref.get_thumbnail %}
+                            <img src="{{ booking.property_ref.get_thumbnail }}" class="img-fluid rounded" alt="Property">
+                        {% else %}
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
+                                <i class="fas fa-home fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-9">
+                        <h6 class="mb-2">{{ booking.property_ref.title }}</h6>
+                        <p class="text-muted mb-2">{{ booking.property_ref.address }}</p>
+                        <p class="text-success fw-bold mb-2">${{ booking.property_ref.price|floatformat:0 }}</p>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-light text-dark">{{ booking.property_ref.bedrooms }} bed</span>
+                            <span class="badge bg-light text-dark">{{ booking.property_ref.bathrooms }} bath</span>
+                            <span class="badge bg-light text-dark">{{ booking.property_ref.square_footage }} sqft</span>
+                        </div>
+                        <div class="mt-2">
+                            <a href="{% url 'admin_panel:property_detail' booking.property_ref.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye me-1"></i>View Property
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment Data -->
+        {% if booking.payment_data %}
+        <div class="admin-card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-credit-card me-2 text-primary"></i>
+                    Payment Gateway Data
+                </h5>
+            </div>
+            <div class="card-body">
+                <pre class="bg-light p-3 rounded"><code>{{ booking.payment_data|pprint }}</code></pre>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Customer Information & Actions -->
+    <div class="col-lg-4">
+        <!-- Customer Information -->
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2 text-primary"></i>
+                    Customer Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="customer-info">
+                    <div class="customer-avatar">
+                        {% if booking.customer.profile_image %}
+                            <img src="{{ booking.customer.profile_image.url }}" class="rounded-circle" width="80" height="80" alt="Customer">
+                        {% else %}
+                            {{ booking.customer.username|make_list|first|upper }}
+                        {% endif %}
+                    </div>
+                    <h5 class="mb-2">{{ booking.customer.get_full_name|default:booking.customer.username }}</h5>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-envelope me-2"></i>{{ booking.customer.email }}
+                    </p>
+                    <p class="text-muted mb-3">
+                        <i class="fas fa-calendar me-2"></i>Member since {{ booking.customer.date_joined|date:"M Y" }}
+                    </p>
+                    <a href="{% url 'admin_panel:user_detail' booking.customer.id %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-2"></i>View Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="admin-card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-primary"></i>
+                    Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success btn-sm" onclick="confirmBooking()">
+                        <i class="fas fa-check me-2"></i>Confirm Booking
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="sendEmail()">
+                        <i class="fas fa-envelope me-2"></i>Send Email
+                    </button>
+                    <button class="btn btn-info btn-sm" onclick="callCustomer()">
+                        <i class="fas fa-phone me-2"></i>Call Customer
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="rejectBooking()">
+                        <i class="fas fa-times me-2"></i>Reject Booking
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Booking Timeline -->
+        <div class="admin-card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2 text-primary"></i>
+                    Booking Timeline
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Booking Created</h6>
+                            <small class="text-muted">{{ booking.created_at|date:"M d, Y H:i" }}</small>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Payment Processed</h6>
+                            <small class="text-muted">{{ booking.created_at|date:"M d, Y H:i" }}</small>
+                        </div>
+                    </div>
+                    {% if booking.status == 'confirmed' %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-info"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Booking Confirmed</h6>
+                            <small class="text-muted">{{ booking.updated_at|date:"M d, Y H:i" }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border: none;
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+
+    .admin-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 20px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .admin-card .card-body {
+        padding: 30px 25px;
+    }
+
+    .booking-detail-item {
+        margin-bottom: 25px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
+    }
+
+    .booking-detail-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .booking-detail-item label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .booking-detail-item p {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 0;
+    }
+
+    .customer-info {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .customer-info:hover {
+        border-color: #667eea;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    }
+
+    .customer-avatar {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 2rem;
+        font-weight: 700;
+        color: white;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .property-info {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border-radius: 15px;
+        padding: 25px;
+        border: 2px solid #e3f2fd;
+        transition: all 0.3s ease;
+    }
+
+    .property-info:hover {
+        border-color: #2196f3;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(33, 150, 243, 0.15);
+    }
+
+    .property-image {
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 40px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 20px;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(to bottom, #667eea, #764ba2);
+        border-radius: 2px;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 30px;
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+
+    .timeline-item:hover {
+        transform: translateX(10px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -32px;
+        top: 20px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: white;
+        border: 4px solid #667eea;
+        box-shadow: 0 0 0 4px white, 0 0 0 6px #667eea;
+        z-index: 2;
+    }
+
+    .timeline-marker.confirmed {
+        border-color: #28a745;
+        box-shadow: 0 0 0 4px white, 0 0 0 6px #28a745;
+    }
+
+    .timeline-marker.pending {
+        border-color: #ffc107;
+        box-shadow: 0 0 0 4px white, 0 0 0 6px #ffc107;
+    }
+
+    .timeline-marker.rejected {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 4px white, 0 0 0 6px #dc3545;
+    }
+
+    .timeline-content h6 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+    }
+
+    .timeline-content p {
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+
+    .timeline-time {
+        font-size: 0.85rem;
+        color: #999;
+        font-style: italic;
+    }
+
+    .badge {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-outline-secondary {
+        border: 2px solid #6c757d;
+        border-radius: 10px;
+        padding: 10px 20px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.2);
+    }
+
+    .btn-outline-primary {
+        border: 2px solid #667eea;
+        color: #667eea;
+        border-radius: 10px;
+        padding: 10px 20px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-primary:hover {
+        background: #667eea;
+        border-color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+    }
+
+    .dropdown-toggle {
+        border-radius: 10px;
+        padding: 10px 15px;
+    }
+
+    .dropdown-menu {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        padding: 10px 0;
+    }
+
+    .dropdown-item {
+        padding: 10px 20px;
+        transition: all 0.3s ease;
+    }
+
+    .dropdown-item:hover {
+        background: #f8f9fa;
+        transform: translateX(5px);
+    }
+
+    .property-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 15px;
+    }
+
+    .property-stat {
+        text-align: center;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+        flex: 1;
+        margin: 0 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .property-stat i {
+        color: #667eea;
+        font-size: 1.2rem;
+        margin-bottom: 5px;
+    }
+
+    .property-stat .stat-number {
+        font-weight: 700;
+        color: #333;
+    }
+
+    .property-stat .stat-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .font-monospace {
+        background: #f8f9fa;
+        padding: 4px 8px;
+        border-radius: 5px;
+        border: 1px solid #e9ecef;
+    }
+
+    .text-success {
+        color: #28a745 !important;
+    }
+
+    .row {
+        margin-left: -15px;
+        margin-right: -15px;
+    }
+
+    .col-lg-8, .col-lg-4, .col-md-6 {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+</style>
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateStatus(status) {
+    const bookingId = {{ booking.id }};
+    
+    if (confirm('Are you sure you want to update this booking status to "' + status + '"?')) {
+        fetch('{% url "admin_panel:update_booking_status" booking.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                status: status
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating booking status: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the booking status');
+        });
+    }
+}
+
+function confirmBooking() {
+    updateStatus('confirmed');
+}
+
+function rejectBooking() {
+    updateStatus('rejected');
+}
+
+function sendEmail() {
+    const email = '{{ booking.customer_email }}';
+    window.location.href = 'mailto:' + email + '?subject=Regarding Your Property Booking (ID: {{ booking.id }})';
+}
+
+function callCustomer() {
+    const phone = '{{ booking.customer_phone }}';
+    if (phone) {
+        window.location.href = 'tel:' + phone;
+    } else {
+        alert('No phone number available for this customer');
+    }
+}
+</script>
+{% endblock %}

@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'search',
     'core',
     'chat',
+    'admin_panel',  # Custom admin panel
     # 'channels',  # Temporarily commented out
 ]
 

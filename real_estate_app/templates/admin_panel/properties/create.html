@@ -1,0 +1,581 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Create Property - Admin Panel{% endblock %}
+
+{% block page_title %}Create New Property{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'admin_panel:properties_list' %}">Properties</a></li>
+<li class="breadcrumb-item active">Create</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <a href="{% url 'admin_panel:properties_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Properties
+    </a>
+    <button type="submit" form="propertyForm" class="btn btn-admin">
+        <i class="fas fa-save me-2"></i>Create Property
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <form id="propertyForm" method="post">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>
+                        Basic Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Property Title *</label>
+                                <input type="text" class="form-control" id="title" name="title" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="price" class="form-label">Price *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rs.</span>
+                                    <input type="number" class="form-control" id="price" name="price" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address *</label>
+                        <input type="text" class="form-control" id="address" name="address" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" 
+                                  placeholder="Describe the property features, amenities, and unique selling points..."></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Property Details -->
+            <div class="admin-card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-home me-2 text-primary"></i>
+                        Property Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="bedrooms" class="form-label">Bedrooms *</label>
+                                <input type="number" class="form-control" id="bedrooms" name="bedrooms" 
+                                       min="0" value="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="bathrooms" class="form-label">Bathrooms *</label>
+                                <input type="number" class="form-control" id="bathrooms" name="bathrooms" 
+                                       min="0" step="0.5" value="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="square_footage" class="form-label">Square Footage *</label>
+                                <input type="number" class="form-control" id="square_footage" name="square_footage" 
+                                       min="1" value="1000" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="property_type" class="form-label">Property Type *</label>
+                                <select class="form-select" id="property_type" name="property_type" required>
+                                    {% for value, label in PROPERTY_TYPE_CHOICES %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="listing_type" class="form-label">Listing Type *</label>
+                                <select class="form-select" id="listing_type" name="listing_type" required>
+                                    {% for value, label in LISTING_TYPE_CHOICES %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status *</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    {% for value, label in STATUS_CHOICES %}
+                                    <option value="{{ value }}" {% if value == 'available' %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="agent" class="form-label">Assigned Agent *</label>
+                                <select class="form-select" id="agent" name="agent" required>
+                                    <option value="">Select an agent...</option>
+                                    {% for agent in agents %}
+                                    <option value="{{ agent.id }}">
+                                        {{ agent.get_full_name|default:agent.username }} ({{ agent.email }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured">
+                                    <label class="form-check-label" for="is_featured">
+                                        <strong>Featured Property</strong>
+                                        <small class="d-block text-muted">Display this property prominently</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Property Preview -->
+    <div class="col-lg-4">
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-eye me-2 text-primary"></i>
+                    Property Preview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="property-preview">
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center mb-3" style="height: 200px;">
+                        <i class="fas fa-home fa-3x text-muted"></i>
+                    </div>
+                    
+                    <h6 class="mb-2" id="preview-title">Property Title</h6>
+                    <p class="text-muted mb-2" id="preview-address">Property Address</p>
+                    <p class="text-success fw-bold mb-3" id="preview-price">Rs. 0</p>
+                    
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="property-stat">
+                                <i class="fas fa-bed text-primary"></i>
+                                <div class="small" id="preview-bedrooms">1 bed</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="property-stat">
+                                <i class="fas fa-bath text-primary"></i>
+                                <div class="small" id="preview-bathrooms">1 bath</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="property-stat">
+                                <i class="fas fa-ruler text-primary"></i>
+                                <div class="small" id="preview-sqft">1,000 sqft</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <span class="badge bg-info me-1" id="preview-type">House</span>
+                        <span class="badge bg-secondary" id="preview-listing">For Sale</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tips -->
+        <div class="admin-card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-lightbulb me-2 text-warning"></i>
+                    Pro Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="tips-list">
+                    <div class="tip-item mb-3">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <small>Use descriptive titles that highlight key features</small>
+                    </div>
+                    <div class="tip-item mb-3">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <small>Include complete address for better searchability</small>
+                    </div>
+                    <div class="tip-item mb-3">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <small>Set competitive pricing based on market research</small>
+                    </div>
+                    <div class="tip-item mb-0">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <small>Choose experienced agents for better sales results</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border: none;
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+
+    .admin-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 20px 25px;
+    }
+
+    .admin-card .card-body {
+        padding: 30px 25px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 12px 15px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        margin-bottom: 5px;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+        transform: translateY(-1px);
+    }
+
+    .input-group-text {
+        background: #667eea;
+        color: white;
+        border: 2px solid #667eea;
+        border-radius: 10px 0 0 10px;
+        font-weight: 600;
+    }
+
+    .input-group .form-control {
+        border-left: none;
+        border-radius: 0 10px 10px 0;
+    }
+
+    .input-group .form-control:focus {
+        border-left: 2px solid #667eea;
+    }
+
+    .mb-3 {
+        margin-bottom: 25px !important;
+    }
+
+    .property-preview {
+        border: 2px dashed #667eea;
+        border-radius: 15px;
+        padding: 25px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        margin-top: 20px;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .property-preview:hover {
+        border-color: #764ba2;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    }
+
+    .property-stat {
+        padding: 15px 10px;
+        text-align: center;
+        background: white;
+        border-radius: 10px;
+        margin: 5px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        transition: transform 0.3s ease;
+    }
+
+    .property-stat:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+
+    .property-stat i {
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+        color: #667eea;
+    }
+
+    .property-stat .stat-number {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 2px;
+    }
+
+    .property-stat .stat-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-admin {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-admin:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    .btn-outline-secondary {
+        border: 2px solid #6c757d;
+        border-radius: 10px;
+        padding: 10px 20px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.2);
+    }
+
+    .tip-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
+    }
+
+    .tip-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .tip-item i {
+        color: #667eea;
+        margin-right: 15px;
+        margin-top: 3px;
+        font-size: 1.1rem;
+    }
+
+    .tip-content h6 {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .tip-content p {
+        color: #6c757d;
+        margin-bottom: 0;
+        font-size: 0.9rem;
+    }
+
+    .preview-placeholder {
+        color: #6c757d;
+        font-style: italic;
+        padding: 40px 20px;
+    }
+
+    .preview-placeholder i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        color: #e9ecef;
+    }
+
+    .preview-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .preview-price {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #28a745;
+        margin-bottom: 15px;
+    }
+
+    .preview-address {
+        color: #6c757d;
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+    }
+
+    .preview-description {
+        color: #495057;
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+
+    .row {
+        margin-left: -15px;
+        margin-right: -15px;
+    }
+
+    .col-md-6, .col-md-4, .col-lg-8, .col-lg-4 {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .card-header h5 {
+        margin-bottom: 0;
+        font-weight: 600;
+    }
+
+    .page-actions .d-flex {
+        gap: 10px;
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border: 2px solid #2196f3;
+        border-radius: 10px;
+        color: #1976d2;
+    }
+
+    .alert-info i {
+        color: #1976d2;
+    }
+</style>
+}
+
+.tips-list {
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Live preview updates
+document.addEventListener('DOMContentLoaded', function() {
+    const fields = ['title', 'address', 'price', 'bedrooms', 'bathrooms', 'square_footage'];
+    
+    fields.forEach(field => {
+        const input = document.getElementById(field);
+        if (input) {
+            input.addEventListener('input', updatePreview);
+        }
+    });
+    
+    // Type and listing selects
+    document.getElementById('property_type').addEventListener('change', updateTypePreview);
+    document.getElementById('listing_type').addEventListener('change', updateListingPreview);
+    
+    // Initialize preview
+    updatePreview();
+    updateTypePreview();
+    updateListingPreview();
+});
+
+function updatePreview() {
+    const title = document.getElementById('title').value || 'Property Title';
+    const address = document.getElementById('address').value || 'Property Address';
+    const price = document.getElementById('price').value || '0';
+    const bedrooms = document.getElementById('bedrooms').value || '1';
+    const bathrooms = document.getElementById('bathrooms').value || '1';
+    const sqft = document.getElementById('square_footage').value || '1000';
+    
+    document.getElementById('preview-title').textContent = title;
+    document.getElementById('preview-address').textContent = address;
+    document.getElementById('preview-price').textContent = 'Rs. ' + parseInt(price).toLocaleString();
+    document.getElementById('preview-bedrooms').textContent = bedrooms + ' bed';
+    document.getElementById('preview-bathrooms').textContent = bathrooms + ' bath';
+    document.getElementById('preview-sqft').textContent = parseInt(sqft).toLocaleString() + ' sqft';
+}
+
+function updateTypePreview() {
+    const select = document.getElementById('property_type');
+    const selectedText = select.options[select.selectedIndex].text;
+    document.getElementById('preview-type').textContent = selectedText;
+}
+
+function updateListingPreview() {
+    const select = document.getElementById('listing_type');
+    const selectedText = select.options[select.selectedIndex].text;
+    document.getElementById('preview-listing').textContent = selectedText;
+}
+
+// Form validation
+document.getElementById('propertyForm').addEventListener('submit', function(e) {
+    const agent = document.getElementById('agent').value;
+    if (!agent) {
+        e.preventDefault();
+        alert('Please select an agent for this property.');
+        document.getElementById('agent').focus();
+        return false;
+    }
+    
+    const price = parseInt(document.getElementById('price').value);
+    if (price <= 0) {
+        e.preventDefault();
+        alert('Please enter a valid price greater than 0.');
+        document.getElementById('price').focus();
+        return false;
+    }
+    
+    return true;
+});
+</script>
+{% endblock %}

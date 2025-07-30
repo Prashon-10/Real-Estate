@@ -1,0 +1,558 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Analytics & Reports - Admin Panel{% endblock %}
+
+{% block page_title %}Analytics & Reports{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Analytics</li>
+{% endblock %}
+
+{% block page_actions %}
+<div class="d-flex gap-2">
+    <button class="btn btn-success" onclick="exportReport()">
+        <i class="fas fa-download me-2"></i>Export Report
+    </button>
+    <button class="btn btn-outline-primary" onclick="refreshData()">
+        <i class="fas fa-sync-alt me-2"></i>Refresh Data
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.analytics-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    border: none;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    position: relative;
+}
+
+.analytics-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+}
+
+.analytics-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #007bff, #28a745, #ffc107, #17a2b8);
+}
+
+.metric-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 20px;
+    padding: 25px;
+    text-align: center;
+    border: none;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: rotate(45deg);
+    transition: all 0.5s ease;
+    opacity: 0;
+}
+
+.metric-card:hover::before {
+    opacity: 1;
+    transform: rotate(45deg) translate(100px, 100px);
+}
+
+.metric-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+}
+
+.metric-card.users {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    box-shadow: 0 10px 30px rgba(40, 167, 69, 0.2);
+}
+
+.metric-card.properties {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.2);
+}
+
+.metric-card.bookings {
+    background: linear-gradient(135deg, #fd7e14 0%, #e9561f 100%);
+    box-shadow: 0 10px 30px rgba(253, 126, 20, 0.2);
+}
+
+.metric-card.success {
+    background: linear-gradient(135deg, #e83e8c 0%, #d91a72 100%);
+    box-shadow: 0 10px 30px rgba(232, 62, 140, 0.2);
+}
+
+.metric-number {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.metric-label {
+    font-size: 1rem;
+    opacity: 0.95;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
+.metric-icon {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 2rem;
+    opacity: 0.3;
+}
+
+.chart-container {
+    position: relative;
+    height: 350px;
+    padding: 20px;
+}
+
+.filter-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Date Range Filter -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card filter-card">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small fw-bold">From Date</label>
+                        <input type="date" class="form-control" name="from_date" value="{{ from_date }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small fw-bold">To Date</label>
+                        <input type="date" class="form-control" name="to_date" value="{{ to_date }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small fw-bold">Report Type</label>
+                        <select class="form-select" name="report_type">
+                            <option value="overview">Overview</option>
+                            <option value="detailed">Detailed</option>
+                            <option value="comparison">Comparison</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-2"></i>Generate Report
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Metrics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="metric-card users position-relative">
+            <i class="fas fa-users metric-icon"></i>
+            <div class="metric-number">{{ user_stats|length|default:"0" }}</div>
+            <div class="metric-label">Total Users</div>
+            <div class="mt-2">
+                <small style="opacity: 0.8;">+12% from last month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="metric-card properties position-relative">
+            <i class="fas fa-home metric-icon"></i>
+            <div class="metric-number">{{ property_stats|length|default:"0" }}</div>
+            <div class="metric-label">Properties Listed</div>
+            <div class="mt-2">
+                <small style="opacity: 0.8;">+8% from last month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="metric-card bookings position-relative">
+            <i class="fas fa-calendar-check metric-icon"></i>
+            <div class="metric-number">{{ booking_stats|length|default:"0" }}</div>
+            <div class="metric-label">Total Bookings</div>
+            <div class="mt-2">
+                <small style="opacity: 0.8;">+15% from last month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-3">
+        <div class="metric-card success position-relative">
+            <i class="fas fa-chart-line metric-icon"></i>
+            <div class="metric-number">92%</div>
+            <div class="metric-label">Success Rate</div>
+            <div class="mt-2">
+                <small style="opacity: 0.8;">+3% from last month</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row">
+    <!-- User Registrations Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="analytics-card">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fas fa-user-plus me-2 text-primary"></i>
+                    User Registrations Trend
+                </h5>
+                <small class="text-muted">Monthly user growth analysis</small>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="userChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Property Listings Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="analytics-card">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <h5 class="mb-0 fw-bold">
+                    <i class="fas fa-home me-2 text-success"></i>
+                    Property Listings Growth
+                </h5>
+                <small class="text-muted">Monthly property additions</small>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="propertyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bookings and Performance Row -->
+<div class="row">
+    <!-- Bookings Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="analytics-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-check me-2 text-warning"></i>
+                    Bookings by Month
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="bookingChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Property Types Distribution -->
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2 text-info"></i>
+                    Property Types Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="propertyTypesChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Metrics -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tachometer-alt me-2 text-primary"></i>
+                    Performance Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <div class="metric-item">
+                            <h3 class="text-primary">92%</h3>
+                            <p class="text-muted">Customer Satisfaction</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="metric-item">
+                            <h3 class="text-success">78%</h3>
+                            <p class="text-muted">Booking Conversion</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="metric-item">
+                            <h3 class="text-warning">4.2 days</h3>
+                            <p class="text-muted">Avg Response Time</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="metric-item">
+                            <h3 class="text-info">156</h3>
+                            <p class="text-muted">Active Agents</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="metric-item">
+                            <h3 class="text-danger">2.1%</h3>
+                            <p class="text-muted">Cancellation Rate</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="metric-item">
+                            <h3 class="text-secondary">67%</h3>
+                            <p class="text-muted">Repeat Customers</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Performers -->
+<div class="row mt-4">
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-star me-2 text-warning"></i>
+                    Top Performing Agents
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">John Smith</h6>
+                            <small class="text-muted">25 properties sold</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">95%</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Sarah Johnson</h6>
+                            <small class="text-muted">22 properties sold</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">92%</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Mike Wilson</h6>
+                            <small class="text-muted">18 properties sold</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">88%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2 text-info"></i>
+                    Recent System Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="activity-log">
+                    <div class="activity-item">
+                        <div class="activity-icon bg-success">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p class="mb-1"><strong>New user registered</strong></p>
+                            <small class="text-muted">2 minutes ago</small>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon bg-primary">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p class="mb-1"><strong>Property listing created</strong></p>
+                            <small class="text-muted">15 minutes ago</small>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon bg-warning">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p class="mb-1"><strong>Booking confirmed</strong></p>
+                            <small class="text-muted">1 hour ago</small>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon bg-info">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p class="mb-1"><strong>Message sent to customer</strong></p>
+                            <small class="text-muted">2 hours ago</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Sample data - replace with actual data from your backend
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // User registrations chart
+    const userCtx = document.getElementById('userChart').getContext('2d');
+    new Chart(userCtx, {
+        type: 'line',
+        data: {
+            labels: monthNames.slice(0, 8),
+            datasets: [{
+                label: 'New Users',
+                data: [12, 19, 15, 25, 22, 30, 28, 35],
+                borderColor: 'rgb(102, 126, 234)',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Property listings chart
+    const propertyCtx = document.getElementById('propertyChart').getContext('2d');
+    new Chart(propertyCtx, {
+        type: 'bar',
+        data: {
+            labels: monthNames.slice(0, 8),
+            datasets: [{
+                label: 'New Properties',
+                data: [8, 14, 11, 18, 16, 22, 20, 25],
+                backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                borderColor: 'rgb(40, 167, 69)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Bookings chart
+    const bookingCtx = document.getElementById('bookingChart').getContext('2d');
+    new Chart(bookingCtx, {
+        type: 'area',
+        data: {
+            labels: monthNames.slice(0, 8),
+            datasets: [{
+                label: 'Bookings',
+                data: [5, 12, 8, 15, 13, 18, 16, 22],
+                borderColor: 'rgb(255, 193, 7)',
+                backgroundColor: 'rgba(255, 193, 7, 0.3)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Property types pie chart
+    const typesCtx = document.getElementById('propertyTypesChart').getContext('2d');
+    new Chart(typesCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Houses', 'Apartments', 'Villas', 'Townhouses'],
+            datasets: [{
+                data: [45, 30, 15, 10],
+                backgroundColor: [
+                    'rgba(102, 126, 234, 0.8)',
+                    'rgba(40, 167, 69, 0.8)',
+                    'rgba(255, 193, 7, 0.8)',
+                    'rgba(220, 53, 69, 0.8)'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+
+function exportReport() {
+    alert('Export report functionality would be implemented here');
+}
+
+function refreshData() {
+    location.reload();
+}
+</script>
+{% endblock %}

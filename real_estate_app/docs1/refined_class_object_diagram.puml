@@ -1,0 +1,71 @@
+@startuml RealEstate_Simple_Refined_Diagram
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+title Real Estate Platform - Simple Class & Object Integration
+
+' Core Classes
+class User {
+    - username: string
+    - email: string
+    - is_staff: boolean
+}
+
+class Property {
+    - title: string
+    - price: decimal
+    - owner: User
+    - is_active: boolean
+}
+
+class Booking {
+    - property: Property
+    - customer: User
+    - status: string
+    - booking_date: datetime
+}
+
+' Live Objects
+object "john : User" as john_obj {
+    username = "john_agent"
+    email = "john@realestate.com"
+    is_staff = true
+}
+
+object "mike : User" as mike_obj {
+    username = "mike_customer"
+    email = "mike@email.com"
+    is_staff = false
+}
+
+object "villa : Property" as villa_obj {
+    title = "Luxury Villa"
+    price = 750000.00
+    owner = john
+    is_active = true
+}
+
+object "booking1 : Booking" as booking_obj {
+    property = villa
+    customer = mike
+    status = "confirmed"
+    booking_date = "2024-01-22"
+}
+
+' Class to Object relationships
+john_obj --|> User
+mike_obj --|> User
+villa_obj --|> Property
+booking_obj --|> Booking
+
+' Object relationships
+john_obj --> villa_obj : owns
+mike_obj --> booking_obj : made
+booking_obj --> villa_obj : for
+
+' Class relationships
+User ||--o{ Property : owns
+User ||--o{ Booking : makes
+Property ||--o{ Booking : receives
+
+@enduml
