@@ -17,71 +17,308 @@
         --animation-speed: 0.3s;
     }
 
-    /* Hero Section Styles */
+    /* Modern Hero Section Styles */
     .modern-hero {
-        background: var(--primary-gradient);
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         position: relative;
         overflow: hidden;
         color: white;
+        padding: 0;
     }
 
-    .modern-hero::before {
-        content: '';
+    .hero-background {
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.8" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.6" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-        animation: float 20s ease-in-out infinite;
+        overflow: hidden;
     }
 
-    @keyframes float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-20px); }
+    .hero-shapes {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+    }
+
+    .shape {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        animation: float 15s ease-in-out infinite;
+    }
+
+    .shape-1 {
+        width: 300px;
+        height: 300px;
+        top: -150px;
+        right: -150px;
+        animation-delay: 0s;
+    }
+
+    .shape-2 {
+        width: 200px;
+        height: 200px;
+        bottom: -100px;
+        left: -100px;
+        animation-delay: -5s;
+    }
+
+    .shape-3 {
+        width: 150px;
+        height: 150px;
+        top: 50%;
+        right: 10%;
+        animation-delay: -10s;
     }
 
     .hero-content {
         position: relative;
         z-index: 2;
+        padding: 4rem 0;
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 2rem;
         animation: fadeInUp 1s ease-out;
     }
 
     .hero-title {
-        font-size: 4rem;
+        font-size: 3.5rem;
         font-weight: 800;
         line-height: 1.1;
         margin-bottom: 1.5rem;
-        background: linear-gradient(45deg, #ffffff, #f0f8ff);
+        animation: fadeInUp 1s ease-out 0.2s both;
+    }
+
+    .gradient-text {
+        background: linear-gradient(45deg, #fbbf24, #f59e0b);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        animation: slideInLeft 1s ease-out;
     }
 
     .hero-subtitle {
-        font-size: 1.3rem;
-        margin-bottom: 2rem;
+        font-size: 1.2rem;
+        line-height: 1.6;
         opacity: 0.9;
-        animation: slideInLeft 1s ease-out 0.2s both;
+        margin-bottom: 2rem;
+        max-width: 500px;
+        animation: fadeInUp 1s ease-out 0.4s both;
     }
 
-    .hero-image {
+    .hero-stats {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 3rem;
+        animation: fadeInUp 1s ease-out 0.6s both;
+    }
+
+    .hero-stats .stat-item {
+        text-align: center;
+    }
+
+    .hero-stats .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #fbbf24;
+        display: block;
+        line-height: 1;
+    }
+
+    .hero-stats .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin-top: 0.25rem;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        animation: fadeInUp 1s ease-out 0.8s both;
+    }
+
+    .btn-hero {
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        border: none;
+        color: #1f2937;
+        font-weight: 600;
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(251, 191, 36, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-hero:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px rgba(251, 191, 36, 0.4);
+        color: #1f2937;
+    }
+
+    .btn-arrow {
+        transition: transform 0.3s ease;
+    }
+
+    .btn-hero:hover .btn-arrow {
+        transform: translateX(5px);
+    }
+
+    .btn-outline-hero {
+        background: transparent;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        font-weight: 500;
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-outline-hero:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.5);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    /* Hero Visual Section */
+    .hero-visual {
+        position: relative;
+        z-index: 2;
+        padding: 2rem 0;
+    }
+
+    .property-showcase {
         position: relative;
         animation: slideInRight 1s ease-out 0.4s both;
     }
 
-    .hero-image img {
-        border-radius: var(--border-radius);
-        box-shadow: var(--card-shadow);
-        transition: transform var(--animation-speed) ease;
+    .main-property {
+        position: relative;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s ease;
     }
 
-    .hero-image:hover img {
-        transform: scale(1.05) rotate(2deg);
+    .main-property:hover {
+        transform: translateY(-10px) scale(1.02);
+    }
+
+    .property-image {
+        width: 100%;
+        height: 400px;
+        object-fit: cover;
+    }
+
+    .property-info {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+        padding: 2rem 1.5rem 1.5rem;
+        color: white;
+    }
+
+    .property-price {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #fbbf24;
+        margin-bottom: 0.5rem;
+    }
+
+    .property-details {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .property-details span {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .floating-cards {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+    }
+
+    .floating-card {
+        position: absolute;
+        width: 200px;
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        animation: floatCard 6s ease-in-out infinite;
+        transition: transform 0.3s ease;
+    }
+
+    .card-1 {
+        top: 20%;
+        left: -80px;
+        animation-delay: 0s;
+    }
+
+    .card-2 {
+        bottom: 15%;
+        right: -80px;
+        animation-delay: -3s;
+    }
+
+    .floating-card img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+    }
+
+    .card-info {
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .card-price {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 0.25rem;
+    }
+
+    .card-title {
+        font-size: 0.8rem;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    @keyframes floatCard {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(2deg); }
     }
 
     /* Search Section */
@@ -449,33 +686,167 @@
             font-size: 2rem;
         }
     }
+
+    /* Responsive Styles for New Hero */
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+        }
+
+        .hero-stats {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .hero-stats .stat-item {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-actions {
+            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .btn-hero, .btn-outline-hero {
+            width: 100%;
+            max-width: 300px;
+            justify-content: center;
+        }
+
+        .floating-cards {
+            display: none;
+        }
+
+        .main-property {
+            margin: 2rem 0;
+        }
+
+        .property-image {
+            height: 300px;
+        }
+
+        .shape-1, .shape-2, .shape-3 {
+            opacity: 0.5;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .hero-content {
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 2rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+        }
+
+        .hero-stats .stat-number {
+            font-size: 1.5rem;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block header %}
 <!-- Modern Hero Section -->
 <section class="modern-hero">
+    <div class="hero-background">
+        <div class="hero-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+    </div>
     <div class="container">
-        <div class="row align-items-center">
+        <div class="row align-items-center min-vh-100">
             <div class="col-lg-6">
                 <div class="hero-content">
-                    <h1 class="hero-title">Find Your Perfect Home</h1>
-                    <p class="hero-subtitle">Discover exceptional properties with our premium real estate platform. Your dream home is just a click away.</p>
-                    <div class="d-flex gap-3 flex-wrap">
-                        <a href="{% url 'properties:property_list' %}" class="btn btn-light btn-lg px-4 rounded-pill">
-                            <i class="fas fa-search me-2"></i>Explore Properties
+                    <div class="hero-badge">
+                        <i class="fas fa-home"></i>
+                        <span>Premium Real Estate</span>
+                    </div>
+                    <h1 class="hero-title">
+                        Discover Your 
+                        <span class="gradient-text">Dream Home</span>
+                        Today
+                    </h1>
+                    <p class="hero-subtitle">
+                        Explore thousands of premium properties with our cutting-edge platform. 
+                        Find luxury homes, modern apartments, and perfect locations that match your lifestyle.
+                    </p>
+                    <div class="hero-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">1000+</div>
+                            <div class="stat-label">Properties</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">500+</div>
+                            <div class="stat-label">Happy Clients</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">50+</div>
+                            <div class="stat-label">Locations</div>
+                        </div>
+                    </div>
+                    <div class="hero-actions">
+                        <a href="{% url 'properties:property_list' %}" class="btn btn-primary btn-hero">
+                            <i class="fas fa-search me-2"></i>
+                            Explore Properties
+                            <span class="btn-arrow">→</span>
                         </a>
                         {% if not user.is_authenticated %}
-                        <a href="{% url 'accounts:register_customer' %}" class="btn btn-outline-light btn-lg px-4 rounded-pill">
-                            <i class="fas fa-user-plus me-2"></i>Join Now
+                        <a href="{% url 'accounts:register_customer' %}" class="btn btn-outline-hero">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Get Started Free
                         </a>
                         {% endif %}
                     </div>
                 </div>
             </div>
             <div class="col-lg-6">
-                <div class="hero-image">
-                    <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=800" alt="Luxury Real Estate" class="img-fluid">
+                <div class="hero-visual">
+                    <div class="property-showcase">
+                        <div class="main-property">
+                            <img src="https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&q=80&w=600&h=400" alt="Luxury Home" class="property-image">
+                            <div class="property-info">
+                                <div class="property-price">$850,000</div>
+                                <div class="property-details">
+                                    <span><i class="fas fa-bed"></i> 4 Beds</span>
+                                    <span><i class="fas fa-bath"></i> 3 Baths</span>
+                                    <span><i class="fas fa-car"></i> 2 Garage</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="floating-cards">
+                            <div class="floating-card card-1">
+                                <img src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&q=80&w=300&h=200" alt="Modern Apartment">
+                                <div class="card-info">
+                                    <div class="card-price">$450,000</div>
+                                    <div class="card-title">Modern Apartment</div>
+                                </div>
+                            </div>
+                            <div class="floating-card card-2">
+                                <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=300&h=200" alt="Villa">
+                                <div class="card-info">
+                                    <div class="card-price">$1,200,000</div>
+                                    <div class="card-title">Luxury Villa</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

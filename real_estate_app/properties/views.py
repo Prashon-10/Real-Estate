@@ -540,9 +540,14 @@ def similar_properties(request, pk):
             'quiet': ['quiet', 'peaceful', 'serene', 'tranquil', 'calm', 'silent', 'secluded', 'private', 'noise-free'],
             'family': ['family', 'kids', 'children', 'school', 'playground', 'safe', 'friendly', 'child-friendly', 'residential'],
             'garden': ['garden', 'yard', 'outdoor', 'green', 'lawn', 'patio', 'terrace', 'balcony', 'landscaped', 'park'],
+            'furnished': ['furnished', 'equipped', 'ready', 'complete', 'move-in', 'fully-furnished', 'semi-furnished'],
+            
+            # Property type keywords
+            'apartment': ['apartment', 'flat', 'unit', 'condo', 'condominium', 'bhk', '1bhk', '2bhk', '3bhk', '4bhk'],
+            'house': ['house', 'home', 'villa', 'bungalow', 'residence'],
             
             # Specific view categories for residential
-            'lake_view': ['lake', 'lakeside', 'waterfront', 'lake view', 'lakefront'],
+            'lake_view': ['lake', 'lakeside', 'waterfront', 'lake view', 'lakefront', 'lakeview'],
             'garden_view': ['garden view', 'garden facing', 'overlooks garden', 'garden-facing'],
             'mountain_view': ['mountain', 'mountain view', 'hills', 'hillside', 'mountainside'],
             'city_view': ['city view', 'cityscape', 'urban view', 'downtown view'],
@@ -560,7 +565,6 @@ def similar_properties(request, pk):
             # Common categories (applicable to both)
             'convenient': ['convenient', 'accessible', 'central', 'nearby', 'close', 'walking', 'transport', 'location'],
             'affordable': ['affordable', 'budget', 'cheap', 'economical', 'reasonable', 'value', 'low-cost'],
-            'furnished': ['furnished', 'equipped', 'ready', 'complete', 'move-in'],
             'security': ['secure', 'gated', 'protected', 'safe', 'guard', 'security'],
             'parking': ['parking', 'garage', 'car', 'vehicle', 'covered'],
             'investment': ['investment', 'rental', 'income', 'profitable', 'return']
@@ -592,6 +596,15 @@ def similar_properties(request, pk):
         
         def calculate_title_similarity(title1, title2):
             """Calculate similarity score between two titles based on keywords and direct word matching"""
+            # Normalize titles for comparison
+            title1_lower = title1.lower().strip()
+            title2_lower = title2.lower().strip()
+            
+            # Quick exact match check
+            if title1_lower == title2_lower:
+                return 1.0
+            
+            # Extract keywords from both titles
             keywords1 = extract_keywords(title1)
             keywords2 = extract_keywords(title2)
             
@@ -602,165 +615,310 @@ def similar_properties(request, pk):
                 union = len(keywords1.union(keywords2))
                 keyword_similarity = intersection / union if union > 0 else 0.0
             
-            # Calculate direct word similarity (excluding common words and being more precise)
-            exclude_words = {'for', 'sale', 'rent', 'at', 'in', 'the', 'and', 'or', 'with', 'a', 'an', 'is', 'are', 'be', 'by', 'on', 'to', 'from'}
+            # Calculate direct word similarity (excluding common words)
+            exclude_words = {'for', 'sale', 'rent', 'at', 'in', 'the', 'and', 'or', 'with', 'a', 'an', 'is', 'are', 'be', 'by', 'on', 'to', 'from', 'of', 'this', 'that', 'it', 'as'}
             
-            title1_words = set()
-            title2_words = set()
+            def extract_meaningful_words(title):
+                words = set()
+                for word in title.split():
+                    clean_word = word.lower().strip('.,!?()[]{}";:')
+                    # Only include words that are longer than 3 characters and not common words
+                    if len(clean_word) > 3 and clean_word not in exclude_words:
+                        words.add(clean_word)
+                return words
             
-            # Extract meaningful words (length > 2, not common words)
-            for word in title1.split():
-                clean_word = word.lower().strip('.,!?()[]{}";:')
-                if len(clean_word) > 2 and clean_word not in exclude_words:
-                    title1_words.add(clean_word)
-            
-            for word in title2.split():
-                clean_word = word.lower().strip('.,!?()[]{}";:')
-                if len(clean_word) > 2 and clean_word not in exclude_words:
-                    title2_words.add(clean_word)
+            title1_words = extract_meaningful_words(title1)
+            title2_words = extract_meaningful_words(title2)
             
             word_similarity = 0.0
             if title1_words or title2_words:
-                # Only count exact word matches (no partial matches)
+                # Calculate Jaccard similarity for words
                 word_intersection = len(title1_words.intersection(title2_words))
                 word_union = len(title1_words.union(title2_words))
                 word_similarity = word_intersection / word_union if word_union > 0 else 0.0
+                
+                # Give extra weight to exact word matches when there are many shared words
+                if word_intersection >= 2:
+                    word_similarity = min(word_similarity * 1.2, 1.0)  # Boost but cap at 1.0
             
-            # Combine both similarities (70% keyword groups, 30% direct words)
-            final_similarity = (keyword_similarity * 0.7) + (word_similarity * 0.3)
+            # Combine both similarities with more balanced weighting
+            # 60% keyword groups (semantic), 40% direct words (lexical) - more balanced approach
+            final_similarity = (keyword_similarity * 0.6) + (word_similarity * 0.4)
             
-            return final_similarity
+            # If there are no keyword matches but good word overlap, give it a reasonable score
+            if keyword_similarity == 0 and word_similarity > 0.4:
+                final_similarity = word_similarity * 0.6  # Less penalty if no semantic match
+            
+            # Boost similarity if there are good keyword matches AND word matches
+            if keyword_similarity > 0.3 and word_similarity > 0.2:
+                final_similarity = min(final_similarity * 1.1, 1.0)  # Small boost for strong matches
+            
+            # Ensure the result is between 0 and 1
+            return min(max(final_similarity, 0.0), 1.0)
         
-        def get_property_category(property_obj):
-            """Simple category detection - only separate clear commercial properties"""
-            title_lower = property_obj.title.lower()
+        def calculate_location_similarity(address1, address2):
+            """Calculate similarity between two addresses"""
+            if not address1 or not address2:
+                return 0.0
+                
+            # Normalize addresses
+            addr1_lower = address1.lower().strip()
+            addr2_lower = address2.lower().strip()
             
-            # Only treat as commercial if explicitly commercial
-            clear_commercial = ['office space', 'business center', 'commercial building', 'retail space', 'warehouse']
+            # Quick exact match check
+            if addr1_lower == addr2_lower:
+                return 1.0
             
-            if any(keyword in title_lower for keyword in clear_commercial):
-                return 'commercial'
-            else:
-                return 'residential'  # Default to residential for broader matching
+            # Extract meaningful location words (excluding common address words)
+            location_exclude_words = {'street', 'st', 'avenue', 'ave', 'road', 'rd', 'lane', 'ln', 'drive', 'dr', 'boulevard', 'blvd', 'plaza', 'place', 'apt', 'apartment', 'suite', 'unit', 'floor', 'building', 'block', 'sector', 'phase', '#', 'no', 'number'}
+            
+            def extract_location_words(address):
+                words = set()
+                for word in address.split():
+                    clean_word = word.lower().strip('.,!?()[]{}";:/#-')
+                    # Include location words that are longer than 2 characters and not common address terms
+                    if len(clean_word) > 2 and clean_word not in location_exclude_words and not clean_word.isdigit():
+                        words.add(clean_word)
+                return words
+            
+            addr1_words = extract_location_words(address1)
+            addr2_words = extract_location_words(address2)
+            
+            if not addr1_words or not addr2_words:
+                return 0.0
+            
+            # Calculate Jaccard similarity for location words
+            intersection = len(addr1_words.intersection(addr2_words))
+            union = len(addr1_words.union(addr2_words))
+            
+            return intersection / union if union > 0 else 0.0
         
-        # Get category of current property
-        current_category = get_property_category(property_obj)
-        
-        # Get all available properties except the current one
+        # Get all available properties regardless of type (focus only on title similarity)
         all_properties = Property.objects.filter(
             status="available"
         ).exclude(id=property_obj.id).select_related("agent").prefetch_related("images")
         
-        # Be more inclusive with compatible properties
-        compatible_properties = []
-        for prop in all_properties:
-            prop_category = get_property_category(prop)
-            # Include if same category OR if we don't have many properties
-            if prop_category == current_category or len(all_properties) <= 10:
-                compatible_properties.append(prop)
+        # Use all available properties as compatible properties (no type filtering)
+        compatible_properties = list(all_properties)
         
-        # If still no compatible properties, use all
-        if not compatible_properties:
-            compatible_properties = list(all_properties)
-        
-        # Score properties based on title similarity primarily
+        # Score properties based on EITHER title similarity OR location similarity (not combined)
         property_scores = []
         
         for prop in compatible_properties:
-            score = 0.0
-            
-            # 1. Title similarity (80% weight) - PRIMARY FACTOR
+            # Calculate title similarity
             title_similarity = calculate_title_similarity(property_obj.title, prop.title)
-            score += title_similarity * 0.8
             
-            # 2. Price range similarity (15% weight) - SECONDARY
+            # Calculate location similarity
+            location_similarity = calculate_location_similarity(property_obj.address, prop.address)
+            
+            # Use the HIGHER of the two similarities as the main score
+            # This way properties with either good title match OR good location match will rank well
+            score = max(title_similarity, location_similarity)
+            
+            # Very minimal bonus points for additional matching criteria (optional)
+            
+            # 1. Exact bedroom match bonus (tiny bonus - 0.01)
+            if prop.bedrooms == property_obj.bedrooms:
+                score += 0.01
+            
+            # 2. Similar price range bonus (tiny bonus - 0.005)
             price_ratio = min(float(prop.price), float(property_obj.price)) / max(float(prop.price), float(property_obj.price))
-            if price_ratio >= 0.5:  # Within 50% price range
-                score += 0.15 * price_ratio
+            if price_ratio >= 0.8:  # Within 20% price range
+                score += 0.005
             
-            # 3. Location similarity (5% weight) - MINOR
-            # Check if they share similar location keywords
-            prop_address_words = set(prop.address.lower().split())
-            current_address_words = set(property_obj.address.lower().split())
-            location_overlap = len(prop_address_words.intersection(current_address_words))
-            if location_overlap > 0:
-                score += 0.05 * min(location_overlap / 3, 1.0)  # Cap at 3 word matches
-            
-            # Extract words from both titles for comparison
+            # Only include properties that have meaningful similarity (more lenient approach)
+            # Extract meaningful words for comparison (more inclusive filtering)
             current_words = set(word.lower().strip('.,!?()[]{}";:') for word in property_obj.title.split() 
-                               if len(word) > 2 and word.lower() not in ['for', 'sale', 'rent', 'at', 'in', 'the', 'and', 'or', 'with', 'a', 'an'])
+                               if len(word) > 2 and word.lower() not in ['for', 'sale', 'rent'])
             prop_words = set(word.lower().strip('.,!?()[]{}";:') for word in prop.title.split() 
-                            if len(word) > 2 and word.lower() not in ['for', 'sale', 'rent', 'at', 'in', 'the', 'and', 'or', 'with', 'a', 'an'])
+                            if len(word) > 2 and word.lower() not in ['for', 'sale', 'rent'])
+            shared_meaningful_words = current_words.intersection(prop_words)
             
-            shared_words = current_words.intersection(prop_words)
-            
-            # Simplified matching criteria - focus on title similarity
-            has_strong_similarity = title_similarity > 0.2  # 20%+ similarity
-            has_moderate_similarity = title_similarity > 0.1  # 10%+ similarity  
-            has_word_match = len(shared_words) >= 2  # At least 2 shared words
-            has_single_word_match = len(shared_words) >= 1  # At least 1 shared word
-            has_same_type = prop.property_type == property_obj.property_type  # Same property type
-            
-            # Include property if it meets any criteria (be inclusive to ensure we get results)
-            if (has_strong_similarity or has_moderate_similarity or 
-                has_word_match or has_single_word_match or has_same_type):
-                property_scores.append((prop, score))
-        
-        # Sort by score and get properties
-        property_scores.sort(key=lambda x: x[1], reverse=True)
-        similar = [prop for prop, score in property_scores[:6]]
-        
-        # If we don't have enough matches, be more lenient
-        if len(similar) < 3:
-            # Add properties from same category regardless of similarity score
-            remaining_compatible = [p for p in compatible_properties if p not in similar]
-            similar.extend(remaining_compatible[:3-len(similar)])
-        
-        # If still not enough, add any available properties
-        if len(similar) < 2:
-            any_available = [p for p in all_properties if p not in similar]
-            similar.extend(any_available[:2-len(similar)])
-
-        data = []
-        for prop in similar:
-            # Calculate title similarity percentage
-            title_similarity = calculate_title_similarity(property_obj.title, prop.title)
-            match_percentage = max(int(title_similarity * 100), 10)  # Minimum 10% to show something
-            
-            # Simple similarity reasons based on title analysis
-            similarity_reasons = []
-            
-            # Check for shared keywords
+            # Extract keywords for additional checking
             current_keywords = extract_keywords(property_obj.title)
             prop_keywords = extract_keywords(prop.title)
             shared_keywords = current_keywords.intersection(prop_keywords)
             
-            if shared_keywords:
-                similarity_reasons.append(f"Similar features: {', '.join(list(shared_keywords)[:2])}")
+            # Include if meets any of these criteria (more lenient - easier to match)
+            # But exclude properties with different BHK counts (bedroom mismatch) for apartments only
+            different_bhk = (
+                prop.bedrooms != property_obj.bedrooms and 
+                (property_obj.bedrooms > 0 and prop.bedrooms > 0) and  # Both have bedroom info
+                (property_obj.property_type == "apartment" and prop.property_type == "apartment")  # Both are apartments
+            )
             
-            # Check for shared words in title
-            current_words = set(word.lower().strip('.,!?()[]{}";:') for word in property_obj.title.split() 
-                               if len(word) > 2)
-            prop_words = set(word.lower().strip('.,!?()[]{}";:') for word in prop.title.split() 
-                            if len(word) > 2)
-            shared_words = current_words.intersection(prop_words)
+            should_include = (
+                title_similarity > 0.1 or  # 10%+ title similarity (more lenient)
+                location_similarity > 0.15 or  # 15%+ location similarity (more lenient)
+                (len(shared_meaningful_words) >= 1) or  # At least one shared word
+                (len(shared_keywords) >= 1) or  # Any keyword match
+                (prop.property_type == property_obj.property_type and title_similarity > 0.05) or  # Same type with minimal similarity
+                (prop.bedrooms == property_obj.bedrooms and title_similarity > 0.05)  # Same bedrooms with minimal similarity
+            ) and not different_bhk  # Exclude if different BHK count for apartments
             
-            if shared_words and not shared_keywords:
-                word_list = [word for word in shared_words if word not in ['for', 'sale', 'rent', 'apartment', 'house']]
-                if word_list:
-                    similarity_reasons.append(f"Shared terms: {', '.join(list(word_list)[:2])}")
+            if should_include:
+                property_scores.append((prop, score))
+        
+        # Sort by score (descending) and get top properties
+        property_scores.sort(key=lambda x: x[1], reverse=True)
+        
+        # Get top 6 similar properties
+        similar = [prop for prop, score in property_scores[:6]]
+        
+        # If we don't have enough matches with good similarity, reduce the threshold
+        if len(similar) < 3:
+            # Add any remaining properties with even lower thresholds
+            remaining_properties = []
+            for p in compatible_properties:
+                if p not in similar:
+                    # Calculate similarities for fallback
+                    fallback_title_sim = calculate_title_similarity(property_obj.title, p.title)
+                    fallback_location_sim = calculate_location_similarity(property_obj.address, p.address)
+                    
+                    # More lenient criteria for fallback
+                    # But still exclude different BHK counts for apartments only
+                    different_bhk_fallback = (
+                        p.bedrooms != property_obj.bedrooms and 
+                        (property_obj.bedrooms > 0 and p.bedrooms > 0) and  # Both have bedroom info
+                        (property_obj.property_type == "apartment" and p.property_type == "apartment")  # Both are apartments
+                    )
+                    
+                    if ((fallback_title_sim > 0.05 or  # 5%+ title similarity (very lenient)
+                        fallback_location_sim > 0.1 or  # 10%+ location similarity (very lenient)
+                        (p.property_type == property_obj.property_type) or  # Same type
+                        (p.bedrooms == property_obj.bedrooms)) and  # Same bedrooms
+                        not different_bhk_fallback):  # Exclude if different BHK count for apartments
+                        remaining_properties.append((p, max(fallback_title_sim, fallback_location_sim, 0.25)))  # Minimum 25% score
             
-            # Add property type if same
-            if prop.property_type == property_obj.property_type:
-                similarity_reasons.append(f"Same type: {prop.get_property_type_display()}")
+            # Sort remaining by score and add the best ones
+            remaining_properties.sort(key=lambda x: x[1], reverse=True)
+            similar.extend([p for p, score in remaining_properties[:max(0, 6-len(similar))]])
+
+        data = []
+        for prop in similar:
+            # Calculate individual similarities for display
+            title_similarity = calculate_title_similarity(property_obj.title, prop.title)
+            location_similarity = calculate_location_similarity(property_obj.address, prop.address)
             
-            # Add bedroom similarity
+            # Use the HIGHER similarity score (not combined) for match percentage
+            best_similarity = max(title_similarity, location_similarity)
+            
+            # Ensure match percentage never exceeds 100% and has a reasonable minimum
+            match_percentage = min(max(int(best_similarity * 100), 30), 100)
+            
+            # Enhanced similarity reasons - show EITHER title match OR location match (whichever is stronger)
+            similarity_reasons = []
+            
+            # Determine which type of similarity is stronger
+            is_location_match = location_similarity > title_similarity
+            
+            if is_location_match and location_similarity > 0.15:  # Location-based match (more lenient threshold)
+                # Extract meaningful location words to show what's similar
+                location_exclude_words = {'street', 'st', 'avenue', 'ave', 'road', 'rd', 'lane', 'ln', 'drive', 'dr', 'boulevard', 'blvd', 'plaza', 'place', 'apt', 'apartment', 'suite', 'unit', 'floor', 'building', 'block', 'sector', 'phase', '#', 'no', 'number'}
+                
+                def extract_location_display_words(address):
+                    words = []
+                    for word in address.split():
+                        clean_word = word.lower().strip('.,!?()[]{}";:/#-')
+                        if len(clean_word) > 2 and clean_word not in location_exclude_words and not clean_word.isdigit():
+                            words.append(clean_word.capitalize())
+                    return words
+                
+                current_location_words = set(extract_location_display_words(property_obj.address))
+                prop_location_words = set(extract_location_display_words(prop.address))
+                shared_location_words = current_location_words.intersection(prop_location_words)
+                
+                if shared_location_words:
+                    location_words = list(shared_location_words)[:2]  # Show max 2 words
+                    similarity_reasons.append(f"Same area: {', '.join(location_words)}")
+                else:
+                    similarity_reasons.append("Similar location/neighborhood")
+                    
+            else:  # Title-based match (or equal, default to title)
+                # Check for shared keywords (semantic groups)
+                current_keywords = extract_keywords(property_obj.title)
+                prop_keywords = extract_keywords(prop.title)
+                shared_keywords = current_keywords.intersection(prop_keywords)
+                
+                if shared_keywords:
+                    # Convert keyword groups to readable format
+                    keyword_display = []
+                    for keyword in list(shared_keywords)[:2]:
+                        # Skip property type keywords (apartment, house) from being displayed as features
+                        if keyword in ['apartment', 'house']:
+                            continue
+                        elif keyword == 'luxury_residential':
+                            keyword_display.append('luxury features')
+                        elif keyword == 'modern_residential':
+                            keyword_display.append('modern design')
+                        elif keyword == 'modern_office':
+                            keyword_display.append('modern office features')
+                        elif keyword == 'premium_office':
+                            keyword_display.append('premium office features')
+                        elif keyword == 'spacious_residential':
+                            keyword_display.append('spacious layout')
+                        elif keyword == 'cozy':
+                            keyword_display.append('cozy atmosphere')
+                        elif keyword == 'family':
+                            keyword_display.append('family-friendly')
+                        elif keyword == 'garden':
+                            keyword_display.append('garden/outdoor space')
+                        elif keyword == 'office_space':
+                            keyword_display.append('office workspace')
+                        elif keyword == 'commercial':
+                            keyword_display.append('commercial features')
+                        elif keyword == 'lake_view':
+                            keyword_display.append('lake view')
+                        elif keyword == 'garden_view':
+                            keyword_display.append('garden view')
+                        elif keyword == 'mountain_view':
+                            keyword_display.append('mountain view')
+                        elif keyword == 'city_view':
+                            keyword_display.append('city view')
+                        elif keyword == 'sea_view':
+                            keyword_display.append('sea view')
+                        elif keyword == 'river_view':
+                            keyword_display.append('river view')
+                        elif keyword == 'park_view':
+                            keyword_display.append('park view')
+                        elif 'view' in keyword:
+                            keyword_display.append(keyword.replace('_', ' '))
+                        else:
+                            keyword_display.append(keyword.replace('_', ' '))
+                    
+                    if keyword_display:
+                        similarity_reasons.append(f"Similar features: {', '.join(keyword_display)}")
+                
+                # Check for shared words in title (exact word matches)
+                exclude_words = {'for', 'sale', 'rent', 'at', 'in', 'the', 'and', 'or', 'with', 'a', 'an', 'apartment', 'house', 'condo', 'villa', 'office', 'space', 'bhk', '1bhk', '2bhk', '3bhk', '4bhk'}
+                current_words = set(word.lower().strip('.,!?()[]{}";:') for word in property_obj.title.split() 
+                                   if len(word) > 3 and word.lower() not in exclude_words)
+                prop_words = set(word.lower().strip('.,!?()[]{}";:') for word in prop.title.split() 
+                                if len(word) > 3 and word.lower() not in exclude_words)
+                shared_words = current_words.intersection(prop_words)
+                
+                if shared_words:
+                    # Show meaningful shared words
+                    meaningful_words = [word.capitalize() for word in shared_words if len(word) > 3][:3]
+                    if meaningful_words:
+                        similarity_reasons.append(f"Shared terms: {', '.join(meaningful_words)}")
+                
+                # If no title reasons found, add generic title reason
+                if not similarity_reasons:
+                    similarity_reasons.append("Similar title content")
+            
+            # Add secondary reasons only if relevant
             if prop.bedrooms == property_obj.bedrooms:
-                similarity_reasons.append(f"Same size: {prop.bedrooms} bedrooms")
+                bedroom_text = f"{prop.bedrooms} bedroom" if prop.bedrooms == 1 else f"{prop.bedrooms} bedrooms"
+                similarity_reasons.append(f"Same size: {bedroom_text}")
             
-            # If no specific reasons, add generic one
-            if not similarity_reasons:
-                similarity_reasons.append("Available property")
+            # Add price range similarity only if very close
+            price_ratio = min(float(prop.price), float(property_obj.price)) / max(float(prop.price), float(property_obj.price))
+            if price_ratio >= 0.8:  # Within 20% price range
+                similarity_reasons.append("Similar price range")
+            
+            # Limit to top 2-3 most relevant reasons for better display
+            similarity_reasons = similarity_reasons[:3]
             
             data.append({
                 "id": prop.id,
@@ -773,7 +931,7 @@ def similar_properties(request, pk):
                 "agent": prop.agent.get_full_name() or prop.agent.username,
                 "has_image": prop.images.exists(),
                 "similarity_reasons": similarity_reasons,
-                "similarity_score": match_percentage  # Show as percentage
+                "similarity_score": match_percentage  # Properly capped percentage
             })
 
         return JsonResponse({"properties": data})

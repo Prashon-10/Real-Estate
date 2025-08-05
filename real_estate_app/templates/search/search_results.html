@@ -187,7 +187,7 @@
     }
 
     .property-actions {
-        padding: 1.5rem;
+        padding: 3rem;
         background: #f8f9fa;
         margin: 0 -1.5rem -1.5rem -1.5rem;
     }
@@ -244,34 +244,135 @@
         box-shadow: var(--card-shadow);
     }
 
+    /* Completely Remove Search History From Middle of Page */
     .search-history-card {
+        display: none !important;
+    }
+
+    /* Compact Bottom Search History */
+    .bottom-search-history {
         background: white;
-        border-radius: 20px;
-        box-shadow: var(--card-shadow);
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         overflow: hidden;
-        margin-top: 2rem;
-    }
-
-    .search-history-header {
-        background: var(--primary-gradient);
-        color: white;
-        padding: 1.5rem;
-    }
-
-    .history-item {
-        padding: 1rem 1.5rem;
-        border-bottom: 1px solid #eee;
+        margin: 2rem auto 1rem auto;
+        border: 1px solid #e1e8f0;
+        max-width: 600px;
+        width: 100%;
+        backdrop-filter: blur(10px);
         transition: all 0.3s ease;
-        text-decoration: none;
-        color: inherit;
-        display: block;
     }
 
-    .history-item:hover {
-        background: #f8f9fa;
-        color: inherit;
-        text-decoration: none;
-        padding-left: 2rem;
+    .bottom-search-history:hover {
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+    }
+
+    .bottom-search-history .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.8rem 1rem;
+        border-bottom: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .bottom-search-history .card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .bottom-search-history .card-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .bottom-search-history .card-title i {
+        font-size: 0.8rem;
+        opacity: 0.9;
+    }
+
+    .bottom-search-history .list-group-item {
+        padding: 0.75rem 1rem;
+        border: none;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        position: relative;
+        background: white;
+    }
+
+    .bottom-search-history .list-group-item:hover {
+        background: linear-gradient(45deg, #f8faff 0%, #f0f4ff 100%);
+        border-left: 3px solid #667eea;
+        padding-left: calc(1rem - 3px);
+        transform: translateX(2px);
+    }
+
+    .bottom-search-history .list-group-item:last-child {
+        border-bottom: none;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+    }
+
+    .bottom-search-history .list-group-item i {
+        color: #667eea;
+        font-size: 0.7rem;
+        opacity: 0.7;
+    }
+
+    .bottom-search-history .card-footer {
+        padding: 0.6rem 1rem;
+        font-size: 0.75rem;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-top: 1px solid #e2e8f0;
+        color: #64748b;
+        text-align: center;
+        font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+        .search-hero {
+            padding: 60px 0;
+        }
+        
+        .advanced-search-box {
+            padding: 1.5rem;
+        }
+        
+        .property-card {
+            margin-bottom: 1.5rem;
+        }
+
+        .bottom-search-history {
+            margin: 1.5rem auto 1rem auto;
+            max-width: 95%;
+            border-radius: 10px;
+        }
+
+        .bottom-search-history .card-header {
+            padding: 0.7rem 0.9rem;
+        }
+
+        .bottom-search-history .list-group-item {
+            padding: 0.6rem 0.9rem;
+            font-size: 0.8rem;
+        }
+
+        .bottom-search-history .card-title {
+            font-size: 0.85rem;
+        }
     }
 
     .semantic-indicator {
@@ -309,20 +410,6 @@
         background: #667eea;
         color: white;
         transform: translateY(-2px);
-    }
-
-    @media (max-width: 768px) {
-        .search-hero {
-            padding: 60px 0;
-        }
-        
-        .advanced-search-box {
-            padding: 1.5rem;
-        }
-        
-        .property-card {
-            margin-bottom: 1.5rem;
-        }
     }
 </style>
 {% endblock %}
@@ -598,81 +685,47 @@
         </div>
     {% endif %}
 
-    <!-- Search History -->
-    {% if user.is_authenticated and query %}
-        <div class="search-history-card">
-            <div class="search-history-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-history me-2"></i>
-                    Recent Searches
-                </h5>
+    <!-- Search history is now only at the bottom -->
+    {% comment %}
+    Search history section removed from here to avoid duplication
+    {% endcomment %}
+
+    <!-- Bottom Search History -->
+    {% if user.is_authenticated and user.search_history.all %}
+        <div class="bottom-search-history mt-4">
+            <div class="card-header">
+                <h6 class="card-title">
+                    <i class="fas fa-history"></i>Search History
+                </h6>
             </div>
-            <div class="list-group list-group-flush">
-                {% for search in user.search_history.all|slice:":5" %}
-                    <a href="{% url 'search:search' %}?q={{ search.query }}" class="history-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <i class="fas fa-search me-2 text-muted"></i>
-                                {{ search.query }}
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for search in user.search_history.all|slice:":3" %}
+                        <a href="{% url 'search:search' %}?q={{ search.query }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <span style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <i class="fas fa-search text-muted" style="font-size: 0.6rem;"></i>
+                                    {{ search.query|truncatechars:35 }}
+                                </span>
+                                <small class="text-muted">{{ search.timestamp|timesince|truncatewords:1 }}</small>
                             </div>
-                            <small class="text-muted">{{ search.timestamp|timesince }} ago</small>
+                        </a>
+                    {% empty %}
+                        <div class="list-group-item text-center">
+                            <small class="text-muted">No search history</small>
                         </div>
-                    </a>
-                {% empty %}
-                    <div class="history-item text-center py-4">
-                        <i class="fas fa-search fa-2x text-muted mb-2"></i>
-                        <p class="mb-0 text-muted">No search history yet</p>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             </div>
+            {% if user.search_history.all|length > 3 %}
+            <div class="card-footer text-center">
+                <small class="text-muted">{{ user.search_history.all|length }} total searches</small>
+            </div>
+            {% endif %}
         </div>
     {% endif %}
 </div>
 
-                    <p class="text-muted">Enter a search query above to find properties that match your needs.</p>
-                    <p class="mt-3">Try these examples:</p>
-                    <div class="row justify-content-center">
-                        <div class="col-md-8">
-                            <div class="d-flex flex-wrap justify-content-center gap-2">
-                                <a href="{% url 'search:search' %}?q=modern apartment with balcony" class="btn btn-outline-primary btn-sm mb-2">modern apartment with balcony</a>
-                                <a href="{% url 'search:search' %}?q=spacious family home" class="btn btn-outline-primary btn-sm mb-2">spacious family home</a>
-                                <a href="{% url 'search:search' %}?q=downtown condo" class="btn btn-outline-primary btn-sm mb-2">downtown condo</a>
-                                <a href="{% url 'search:search' %}?q=houses with garden" class="btn btn-outline-primary btn-sm mb-2">houses with garden</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-{% if results and user.is_authenticated %}
-    <div class="card shadow mt-4">
-        <div class="card-header bg-white py-3">
-            <h5 class="card-title mb-0">Search History</h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="list-group list-group-flush">
-                {% for search in user.search_history.all|slice:":5" %}
-                    <a href="{% url 'search:search' %}?q={{ search.query }}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <span>{{ search.query }}</span>
-                            <small class="text-muted">{{ search.timestamp|timesince }} ago</small>
-                        </div>
-                    </a>
-                {% empty %}
-                    <div class="list-group-item text-center py-3">
-                        <p class="mb-0 text-muted">No search history yet</p>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-        <div class="card-footer bg-white text-center">
-            <small class="text-muted">Last updated: {{ current_time|date:"M d, Y H:i" }}</small>
-        </div>
-    </div>
-{% endif %}
 {% endblock %}
 
 {% block extra_js %}

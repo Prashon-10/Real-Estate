@@ -389,6 +389,7 @@
         text-decoration: none;
         color: inherit;
         border: 1px solid #f8f9fa;
+        background: #fdfdfd;
     }
     
     .similar-property-item:hover {
@@ -397,14 +398,16 @@
         box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         color: inherit;
         text-decoration: none;
+        border-color: #e9ecef;
     }
     
     .property-thumbnail {
-        width: 60px;
-        height: 60px;
+        width: 70px;
+        height: 70px;
         border-radius: 8px;
         object-fit: cover;
         margin-right: 15px;
+        border: 2px solid #f8f9fa;
     }
     
     .similarity-info {
@@ -413,14 +416,29 @@
     }
     
     .similarity-badge {
-        font-size: 0.6rem;
-        padding: 0.25rem 0.5rem;
-        border-radius: 10px;
-        background: linear-gradient(45deg, #667eea, #764ba2) !important;
-        color: white !important;
+        font-size: 0.65rem;
+        padding: 0.3rem 0.6rem;
+        border-radius: 15px;
         font-weight: 600;
-        text-transform: uppercase;
         letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+    
+    .similarity-badge.bg-success {
+        background: linear-gradient(45deg, #28a745, #20c997) !important;
+    }
+    
+    .similarity-badge.bg-info {
+        background: linear-gradient(45deg, #17a2b8, #6f42c1) !important;
+    }
+    
+    .similarity-badge.bg-warning {
+        background: linear-gradient(45deg, #ffc107, #fd7e14) !important;
+        color: #212529 !important;
+    }
+    
+    .similarity-badge.bg-secondary {
+        background: linear-gradient(45deg, #6c757d, #495057) !important;
     }
     
     .similar-property-item .similarity-info small {
@@ -1155,12 +1173,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Create similarity reasons display
                         let similarityInfo = '';
                         if (prop.similarity_reasons && prop.similarity_reasons.length > 0) {
-                            const reasons = prop.similarity_reasons.slice(0, 2); // Show top 2 reasons
+                            // Show top 2 reasons and format them nicely
+                            const reasons = prop.similarity_reasons.slice(0, 2);
+                            const formattedReasons = reasons.map(reason => {
+                                // Capitalize first letter and add proper formatting
+                                return reason.charAt(0).toUpperCase() + reason.slice(1);
+                            });
+                            
                             similarityInfo = `
                                 <div class="similarity-info mb-2">
-                                    <small class="text-success">
+                                    <small class="text-success d-flex align-items-center">
                                         <i class="fas fa-check-circle me-1"></i>
-                                        ${reasons.join(' • ')}
+                                        <span>${formattedReasons.join(' • ')}</span>
                                     </small>
                                 </div>
                             `;
@@ -1168,11 +1192,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Add similarity score badge if available
                         let scoreBadge = '';
-                        if (prop.similarity_score > 0) {
-                            const scorePercentage = Math.round(prop.similarity_score * 100);
+                        if (prop.similarity_score && prop.similarity_score > 0) {
+                            // Ensure the score is properly formatted and capped at 100%
+                            const scorePercentage = Math.min(Math.max(Math.round(prop.similarity_score), 15), 100);
+                            let badgeColor = 'bg-primary';
+                            
+                            // Color code based on similarity score
+                            if (scorePercentage >= 80) {
+                                badgeColor = 'bg-success';
+                            } else if (scorePercentage >= 60) {
+                                badgeColor = 'bg-info';
+                            } else if (scorePercentage >= 40) {
+                                badgeColor = 'bg-warning';
+                            } else {
+                                badgeColor = 'bg-secondary';
+                            }
+                            
                             scoreBadge = `
-                                <span class="similarity-badge badge bg-primary ms-2">
-                                    ${scorePercentage}% match
+                                <span class="similarity-badge badge ${badgeColor} ms-2" title="Similarity match score">
+                                    <i class="fas fa-percent me-1"></i>${scorePercentage}% match
                                 </span>
                             `;
                         }

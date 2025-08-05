@@ -8,7 +8,14 @@
     .dashboard-container {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         min-height: 100vh;
-        padding: 2rem 0;
+        padding: 1.5rem 0 3rem 0;
+    }
+    
+    /* Professional Container with Better Spacing */
+    .container {
+        max-width: 1200px;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
     }
     
     .welcome-card {
@@ -16,7 +23,7 @@
         color: white;
         border-radius: 20px;
         padding: 2rem;
-        margin-bottom: 2rem;
+        margin-bottom: 2.5rem;
         box-shadow: 0 15px 35px rgba(102, 126, 234, 0.2);
         position: relative;
         overflow: hidden;
@@ -56,9 +63,10 @@
     
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 1.5rem;
-        margin-bottom: 2rem;
+        margin-bottom: 3rem;
+        padding: 0 0.5rem;
     }
     
     .stat-card {
@@ -220,7 +228,7 @@
         border-radius: 15px;
         box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         border: none;
-        margin-bottom: 2rem;
+        margin-bottom: 2.5rem;
         overflow: hidden;
         transition: all 0.3s ease;
     }
@@ -397,33 +405,62 @@
         text-align: center;
     }
     
-    /* Responsive design */
+    /* Responsive design improvements */
     @media (max-width: 768px) {
         .dashboard-container {
-            padding: 1rem 0;
+            padding: 1rem 0 2rem 0;
+        }
+        
+        .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
         }
         
         .stats-grid {
             grid-template-columns: repeat(2, 1fr);
             gap: 1rem;
+            padding: 0;
         }
         
         .quick-actions {
             grid-template-columns: 1fr;
+            padding: 1rem;
         }
         
         .welcome-card {
             padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .dashboard-card {
+            margin-bottom: 1.5rem;
         }
     }
     
     @media (max-width: 576px) {
         .stats-grid {
             grid-template-columns: 1fr;
+            gap: 1rem;
         }
         
         .stat-number {
             font-size: 2rem;
+        }
+        
+        .welcome-card {
+            padding: 1.25rem;
+        }
+        
+        .dashboard-card {
+            margin-bottom: 1.25rem;
+        }
+        
+        .card-header {
+            padding: 1rem;
+        }
+        
+        .quick-actions {
+            padding: 0.75rem;
         }
     }
 
@@ -619,6 +656,367 @@
     .empty-state h6 {
         color: #333;
         margin-bottom: 8px;
+    }
+
+    /* Compact Recent Searches - Professional & Space-Efficient */
+    .recent-searches-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        background: white;
+        margin-bottom: 2rem;
+    }
+
+    .gradient-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+    }
+
+    .gradient-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%);
+        pointer-events: none;
+    }
+
+    .gradient-header h5 {
+        margin: 0;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .search-count {
+        background: rgba(255,255,255,0.15);
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.1);
+        position: relative;
+        z-index: 1;
+    }
+
+    .search-timeline {
+        padding: 0;
+        max-height: 320px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .search-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        border-bottom: 1px solid #f1f3f5;
+        transition: all 0.2s ease;
+        gap: 1rem;
+        position: relative;
+    }
+
+    .search-item:hover {
+        background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+        border-left: 3px solid #667eea;
+        padding-left: calc(1.5rem - 3px);
+    }
+
+    .search-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-icon {
+        width: 35px;
+        height: 35px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+        box-shadow: 0 3px 10px rgba(102, 126, 234, 0.2);
+    }
+
+    .search-content {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .search-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .search-query {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+        flex-wrap: wrap;
+    }
+
+    .query-text {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 0.9rem;
+        line-height: 1.2;
+    }
+
+    .property-link {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .property-link a {
+        color: #667eea;
+        text-decoration: none;
+        font-size: 0.75rem;
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+
+    .property-link a:hover {
+        color: #5a67d8;
+        text-decoration: underline;
+    }
+
+    .property-link i {
+        font-size: 0.7rem;
+        opacity: 0.7;
+    }
+
+    .search-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .search-time, .search-location {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: #718096;
+        font-size: 0.75rem;
+    }
+
+    .search-time i, .search-location i {
+        font-size: 0.7rem;
+        opacity: 0.7;
+    }
+
+    .search-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .repeat-search {
+        border-radius: 6px;
+        padding: 0.35rem 0.5rem;
+        transition: all 0.2s ease;
+        border: 1px solid #e2e8f0;
+        font-size: 0.75rem;
+        min-width: auto;
+    }
+
+    .repeat-search:hover {
+        background: #667eea;
+        border-color: #667eea;
+        color: white;
+        transform: scale(1.02);
+    }
+
+    .search-footer {
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .search-footer .btn {
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .search-footer .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    }
+
+    .search-footer .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .search-footer .btn-outline-secondary {
+        border: 1px solid #d1d5db;
+        color: #6b7280;
+        background: white;
+    }
+
+    .search-footer .btn-outline-secondary:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+        transform: translateY(-1px);
+    }
+
+    .empty-search-state {
+        text-align: center;
+        padding: 2.5rem 1.5rem;
+        color: #718096;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    }
+
+    .empty-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        border: 3px solid white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.15);
+    }
+
+    .empty-icon i {
+        font-size: 1.5rem;
+        color: white;
+    }
+
+    .empty-search-state h6 {
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .empty-search-state p {
+        margin-bottom: 1.5rem;
+        color: #718096;
+        max-width: 250px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.4;
+        font-size: 0.9rem;
+    }
+
+    .empty-search-state .btn {
+        border-radius: 8px;
+        padding: 0.6rem 1.25rem;
+        font-weight: 500;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+    }
+
+    .empty-search-state .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Responsive Design for Recent Searches */
+    @media (max-width: 768px) {
+        .search-item {
+            padding: 0.6rem 1rem;
+            flex-direction: row;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .search-content {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+        }
+
+        .search-query {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+
+        .search-meta {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-actions {
+            flex-direction: row;
+            justify-content: flex-end;
+            align-self: flex-start;
+        }
+
+        .search-footer {
+            flex-direction: row;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+        }
+
+        .search-footer .btn {
+            font-size: 0.75rem;
+            padding: 0.4rem 0.75rem;
+        }
+
+        .gradient-header {
+            padding: 1rem;
+            flex-direction: row;
+            gap: 0.5rem;
+            text-align: left;
+        }
+
+        .gradient-header h5 {
+            font-size: 0.95rem;
+        }
+
+        .search-count {
+            padding: 0.2rem 0.6rem;
+            font-size: 0.7rem;
+        }
+
+        .query-text {
+            font-size: 0.85rem;
+        }
+
+        .search-time, .search-location {
+            font-size: 0.7rem;
+        }
     }
 </style>
 {% endblock %}
@@ -980,32 +1378,82 @@
                         </div>
                     </div>
 
-                    <!-- Recent Searches -->
-                    <div class="dashboard-card">
-                        <div class="card-header">
-                            <h5><i class="fas fa-search"></i>Recent Searches</h5>
+                    <!-- Compact Recent Searches -->
+                    <div class="dashboard-card recent-searches-card">
+                        <div class="card-header gradient-header">
+                            <h5><i class="fas fa-history"></i>Search History</h5>
+                            <span class="search-count">{{ recent_searches.count|default:"0" }}</span>
                         </div>
                         <div class="card-body p-0">
                             {% if recent_searches %}
-                                {% for search in recent_searches %}
-                                <div class="list-item">
-                                    <div class="item-title">{{ search.query|default:"General Search" }}</div>
-                                    <div class="item-meta">
-                                        <i class="fas fa-calendar-alt me-1"></i>
-                                        {{ search.created_at|date:"M j, Y" }}
-                                        {% if search.location %}
-                                            | <i class="fas fa-map-marker-alt me-1"></i>{{ search.location }}
-                                        {% endif %}
+                                <div class="search-timeline">
+                                    {% for search in recent_searches|slice:":5" %}
+                                    <div class="search-item">
+                                        <div class="search-icon">
+                                            <i class="fas fa-search"></i>
+                                        </div>
+                                        <div class="search-content">
+                                            <div class="search-details">
+                                                <div class="search-query">
+                                                    <span class="query-text">{{ search.query|default:"General Search"|truncatechars:25 }}</span>
+                                                    {% if search.property %}
+                                                        <span class="property-link">
+                                                            <i class="fas fa-external-link-alt"></i>
+                                                            <a href="{% url 'properties:property_detail' search.property.pk %}">View</a>
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="search-meta">
+                                                    <span class="search-time">
+                                                        <i class="fas fa-clock"></i>
+                                                        {{ search.created_at|timesince|truncatewords:2 }} ago
+                                                    </span>
+                                                    {% if search.location %}
+                                                        <span class="search-location">
+                                                            <i class="fas fa-map-marker-alt"></i>{{ search.location|truncatechars:15 }}
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="search-actions">
+                                                <button class="btn btn-sm btn-outline-primary repeat-search" 
+                                                        data-query="{{ search.query }}" 
+                                                        title="Search again">
+                                                    <i class="fas fa-redo"></i>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
+                                {% if recent_searches.count > 5 %}
+                                <div class="search-footer">
+                                    <a href="{% url 'search:search' %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-search"></i> Search More
+                                    </a>
+                                    <a href="#" class="btn btn-outline-secondary btn-sm" onclick="showAllSearches()">
+                                        <i class="fas fa-list"></i> View All ({{ recent_searches.count }})
+                                    </a>
+                                </div>
+                                {% else %}
+                                <div class="search-footer">
+                                    <a href="{% url 'search:search' %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-search"></i> New Search
+                                    </a>
+                                    <button class="btn btn-outline-secondary btn-sm clear-history">
+                                        <i class="fas fa-trash"></i> Clear
+                                    </button>
+                                </div>
+                                {% endif %}
                             {% else %}
-                                <div class="empty-state">
-                                    <i class="fas fa-search"></i>
+                                <div class="empty-search-state">
+                                    <div class="empty-icon">
+                                        <i class="fas fa-search"></i>
+                                    </div>
                                     <h6>No searches yet</h6>
-                                    <p>Start searching for properties to see your history here.</p>
-                                    <a href="{% url 'search:search' %}" class="btn btn-primary">
-                                        <i class="fas fa-search me-2"></i> Start Searching
+                                    <p>Your search history will appear here</p>
+                                    <a href="{% url 'search:search' %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-search me-1"></i> Start Searching
                                     </a>
                                 </div>
                             {% endif %}
@@ -1109,6 +1557,70 @@ function showMessage(message, type) {
             toast.remove();
         }
     }, 3000);
+}
+
+// Recent Searches Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Repeat search functionality
+    const repeatSearchButtons = document.querySelectorAll('.repeat-search');
+    repeatSearchButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const query = this.getAttribute('data-query');
+            const searchUrl = new URL('{% url "search:search" %}', window.location.origin);
+            searchUrl.searchParams.set('q', query);
+            window.location.href = searchUrl.toString();
+        });
+    });
+
+    // Clear history functionality
+    const clearHistoryButton = document.querySelector('.clear-history');
+    if (clearHistoryButton) {
+        clearHistoryButton.addEventListener('click', function() {
+            if (confirm('Are you sure you want to clear your search history? This action cannot be undone.')) {
+                // Add AJAX call to clear search history
+                fetch('{% url "core:dashboard" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        action: 'clear_search_history'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload the page to show updated search history
+                        window.location.reload();
+                    } else {
+                        showMessage('Error clearing search history', 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage('Error clearing search history', 'error');
+                });
+            }
+        });
+    }
+
+    // Add hover effects to search items
+    const searchItems = document.querySelectorAll('.search-item');
+    searchItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateX(4px)';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateX(0)';
+        });
+    });
+});
+
+// Show all searches function
+function showAllSearches() {
+    // Navigate to a dedicated search history page or expand the current view
+    window.location.href = '{% url "search:search" %}?history=all';
 }
 </script>
 {% endblock %}
