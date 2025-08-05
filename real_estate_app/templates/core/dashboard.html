@@ -426,6 +426,200 @@
             font-size: 2rem;
         }
     }
+
+    /* Enhanced Favorite Property Cards */
+    .favorite-property-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        background: white;
+        height: 100%;
+    }
+
+    .favorite-property-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .favorite-image-container {
+        position: relative;
+        height: 160px;
+        overflow: hidden;
+    }
+
+    .favorite-remove-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 10;
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(220, 53, 69, 0.9);
+        border: 2px solid white;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.3s ease;
+    }
+
+    .favorite-property-card:hover .favorite-remove-btn {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .favorite-remove-btn:hover {
+        background: #c82333 !important;
+        transform: scale(1.1) !important;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+    }
+
+    .favorite-property-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .favorite-property-card:hover .favorite-property-image {
+        transform: scale(1.05);
+    }
+
+    .favorite-property-placeholder {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .favorite-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        gap: 8px;
+    }
+
+    .favorite-property-card:hover .favorite-overlay {
+        opacity: 1;
+    }
+
+    .favorite-overlay .btn {
+        border-radius: 20px;
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .favorite-overlay .btn-danger {
+        background: #dc3545;
+        border: none;
+        transition: all 0.2s ease;
+    }
+
+    .favorite-overlay .btn-danger:hover {
+        background: #c82333;
+        transform: scale(1.05);
+    }
+
+    .favorite-property-info {
+        padding: 16px;
+    }
+
+    .favorite-property-price {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #2c5aa0;
+        margin-bottom: 8px;
+    }
+
+    .favorite-property-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+        line-height: 1.3;
+    }
+
+    .favorite-property-details {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .property-detail {
+        font-size: 0.8rem;
+        color: #666;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .property-detail i {
+        color: #2c5aa0;
+        width: 12px;
+    }
+
+    .favorite-property-location {
+        font-size: 0.85rem;
+        color: #666;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .favorite-property-location i {
+        color: #dc3545;
+        width: 12px;
+    }
+
+    .favorite-added-date {
+        border-top: 1px solid #eee;
+        padding-top: 8px;
+        margin-top: 8px;
+    }
+
+    .favorite-added-date small {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .favorite-added-date i {
+        color: #e91e63;
+    }
+
+    /* Empty State Enhancement */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: #e91e63;
+        margin-bottom: 16px;
+    }
+
+    .empty-state h6 {
+        color: #333;
+        margin-bottom: 8px;
+    }
 </style>
 {% endblock %}
 
@@ -723,20 +917,47 @@
                                 <div class="row">
                                     {% for favorite in recent_favorites %}
                                     <div class="col-md-6 mb-3">
-                                        <div class="property-card">
-                                            {% if favorite.property.images.first %}
-                                                <img src="{{ favorite.property.images.first.image.url }}" alt="{{ favorite.property.title }}" class="property-image">
-                                            {% else %}
-                                                <div class="property-image bg-light d-flex align-items-center justify-content-center">
-                                                    <i class="fas fa-image text-muted fa-2x"></i>
+                                        <div class="favorite-property-card" data-property-id="{{ favorite.property.pk }}">
+                                            <div class="favorite-image-container">
+                                                <!-- Floating remove button -->
+                                                <button class="btn btn-danger btn-sm favorite-remove-btn" 
+                                                        onclick="toggleFavorite({{ favorite.property.pk }})" 
+                                                        title="Remove from favorites">
+                                                    <i class="fas fa-heart-broken"></i>
+                                                </button>
+                                                
+                                                {% if favorite.property.get_thumbnail %}
+                                                    <img src="{{ favorite.property.get_thumbnail }}" alt="{{ favorite.property.title }}" class="favorite-property-image">
+                                                {% else %}
+                                                    <div class="favorite-property-placeholder">
+                                                        <i class="fas fa-home text-muted fa-2x"></i>
+                                                    </div>
+                                                {% endif %}
+                                                <div class="favorite-overlay">
+                                                    <a href="{% url 'properties:property_detail' favorite.property.pk %}" class="btn btn-light btn-sm">
+                                                        <i class="fas fa-eye"></i> View Details
+                                                    </a>
                                                 </div>
-                                            {% endif %}
-                                            <div class="property-info">
-                                                <div class="property-price">${{ favorite.property.price|floatformat:0 }}</div>
-                                                <h6 class="property-title">{{ favorite.property.title|truncatechars:40 }}</h6>
-                                                <div class="property-location">
+                                            </div>
+                                            <div class="favorite-property-info">
+                                                <div class="favorite-property-price">{{ favorite.property.get_display_price }}</div>
+                                                <h6 class="favorite-property-title">{{ favorite.property.title|truncatechars:35 }}</h6>
+                                                <div class="favorite-property-details">
+                                                    <span class="property-detail">
+                                                        <i class="fas fa-bed"></i> {{ favorite.property.bedrooms }}
+                                                    </span>
+                                                    <span class="property-detail">
+                                                        <i class="fas fa-bath"></i> {{ favorite.property.bathrooms }}
+                                                    </span>
+                                                </div>
+                                                <div class="favorite-property-location">
                                                     <i class="fas fa-map-marker-alt"></i>
-                                                    {{ favorite.property.location|truncatechars:30 }}
+                                                    {{ favorite.property.address|truncatechars:25 }}
+                                                </div>
+                                                <div class="favorite-added-date">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-heart"></i> Added {{ favorite.added_at|timesince }} ago
+                                                    </small>
                                                 </div>
                                             </div>
                                         </div>
@@ -824,101 +1045,70 @@
 
 {% block extra_js %}
 <script>
-    // Simple animation when the dashboard loads
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-            document.querySelector('.welcome-animation').classList.add('welcome-animation');
-        }, 100);
-    });
-
-    // Message functionality for agents
-    function markAsRead(messageId) {
-        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-        const button = event.target.closest('button');
-        
-        // Add loading state
-        const originalHTML = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        button.disabled = true;
-
-        // Make AJAX request
-        fetch(`/properties/messages/${messageId}/mark-read/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Remove unread styling
-                if (messageElement) {
-                    messageElement.classList.remove('unread');
-                }
-                
-                // Remove the button
-                button.remove();
-                
-                // Update unread count in stats
-                const unreadStat = document.querySelector('.stat-card.message-stat .stat-number');
-                if (unreadStat) {
-                    const currentCount = parseInt(unreadStat.textContent);
-                    if (currentCount > 0) {
-                        unreadStat.textContent = currentCount - 1;
+// Favorites management functions
+function toggleFavorite(propertyId) {
+    fetch(`/properties/favorite/${propertyId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // If removed from favorites, remove the card from the dashboard
+            if (!data.is_favorite) {
+                const propertyCard = document.querySelector(`[data-property-id="${propertyId}"]`);
+                if (propertyCard) {
+                    propertyCard.closest('.col-md-6').style.transition = 'all 0.3s ease';
+                    propertyCard.closest('.col-md-6').style.opacity = '0';
+                    propertyCard.closest('.col-md-6').style.transform = 'scale(0.8)';
+                    
+                    setTimeout(() => {
+                        propertyCard.closest('.col-md-6').remove();
                         
-                        // Remove the notification badge if count reaches 0
-                        if (currentCount - 1 === 0) {
-                            const badge = document.querySelector('.stat-badge');
-                            if (badge) badge.remove();
+                        // Check if no favorites left
+                        const remainingFavorites = document.querySelectorAll('.favorite-property-card').length;
+                        if (remainingFavorites === 0) {
+                            location.reload(); // Reload to show empty state
                         }
-                    }
+                    }, 300);
                 }
                 
-                showToast('Message marked as read!', 'success');
+                showMessage('Property removed from favorites', 'info');
             } else {
-                showToast('Error marking message as read', 'error');
-                // Restore button
-                button.innerHTML = originalHTML;
-                button.disabled = false;
+                showMessage('Property added to favorites', 'success');
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('Error marking message as read', 'error');
-            // Restore button
-            button.innerHTML = originalHTML;
-            button.disabled = false;
-        });
-    }
+        } else {
+            showMessage(data.message || 'Error updating favorites', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Error updating favorites', 'error');
+    });
+}
 
-    function replyToMessage(messageId) {
-        // This could open a modal or redirect to email
-        // For now, let's redirect to the full message inbox
-        window.location.href = '{% url "properties:message_inbox" %}';
-    }
-
-    function showToast(message, type = 'success') {
-        // Create a simple toast notification
-        const toast = document.createElement('div');
-        toast.className = `alert alert-${type === 'error' ? 'danger' : 'success'} position-fixed`;
-        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        toast.innerHTML = `
-            <div class="d-flex align-items-center">
-                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'} me-2"></i>
-                ${message}
-                <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
-            </div>
-        `;
-        
-        document.body.appendChild(toast);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (toast.parentElement) {
-                toast.remove();
-            }
-        }, 5000);
-    }
+// Show message function
+function showMessage(message, type) {
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'error' ? 'danger' : type === 'info' ? 'info' : 'success'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 250px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 3000);
+}
 </script>
 {% endblock %}

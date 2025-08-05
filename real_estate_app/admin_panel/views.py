@@ -289,31 +289,104 @@ def admin_booking_detail(request, booking_id):
 @user_passes_test(is_admin)
 @require_POST
 def admin_update_booking_status(request, booking_id):
-    """Update booking status"""
-    booking = get_object_or_404(PropertyBooking, id=booking_id)
-    
-    data = json.loads(request.body)
-    new_status = data.get('status')
-    admin_notes = data.get('admin_notes', '')
-    
-    if new_status in dict(PropertyBooking.STATUS_CHOICES):
+    """Update booking status with payment handling"""
+    try:
+        booking = get_object_or_404(PropertyBooking, id=booking_id)
+        
+        # Handle both JSON and form data
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+            
+        new_status = data.get('status')
+        admin_notes = data.get('admin_notes', '')
+        
+        if not new_status:
+            return JsonResponse({
+                'success': False,
+                'message': 'Status is required.'
+            })
+        
+        if new_status not in dict(PropertyBooking.STATUS_CHOICES):
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid status provided.'
+            })
+        
+        old_status = booking.status
         booking.status = new_status
         if admin_notes:
             booking.admin_notes = admin_notes
         booking.verified_by = request.user
+        
+        # Handle payment based on booking status change
+        payment_message = ""
+        if new_status == 'confirmed' and old_status != 'confirmed':
+            # CONFIRM: First check if payment needs re-authorization, then capture
+            if booking.payment_status == 'cancelled':
+                # Re-authorize cancelled payment
+                if booking.reauthorize_payment():
+                    # Now capture the re-authorized payment
+                    if booking.capture_payment():
+                        payment_message = f" Payment re-authorized and Rs. {booking.payment_amount} charged successfully."
+                    else:
+                        payment_message = f" Payment re-authorized but capture failed - check manually."
+                else:
+                    payment_message = f" Failed to re-authorize cancelled payment - check manually."
+            elif booking.payment_status == 'authorized':
+                # Normal capture for authorized payment
+                success = booking.capture_payment()
+                payment_message = f" Payment of Rs. {booking.payment_amount} charged successfully." if success else " Payment capture failed - check manually."
+            else:
+                payment_message = f" Booking confirmed (payment status: {booking.get_payment_status_display()})."
+                
+        elif new_status == 'rejected' and old_status != 'rejected':
+            # REJECT: Cancel authorization or refund if captured
+            if booking.payment_status == 'authorized':
+                success = booking.cancel_authorization()
+                payment_message = f" Held payment of Rs. {booking.payment_amount} released to customer." if success else " Payment cancellation failed - check manually."
+            elif booking.payment_status == 'captured':
+                success = booking.refund_payment()
+                payment_message = f" Payment of Rs. {booking.payment_amount} refunded to customer." if success else " Refund failed - process manually."
+                
+        elif new_status == 'cancelled' and old_status != 'cancelled':
+            # CANCEL: Refund captured payments or cancel authorization
+            if booking.payment_status == 'captured':
+                success = booking.refund_payment()
+                payment_message = f" Booking cancelled - Payment of Rs. {booking.payment_amount} refunded to customer." if success else " Booking cancelled but refund failed - process manually."
+            elif booking.payment_status == 'authorized':
+                success = booking.cancel_authorization()
+                payment_message = f" Booking cancelled - Held payment of Rs. {booking.payment_amount} released to customer." if success else " Booking cancelled but payment cancellation failed - check manually."
+            else:
+                payment_message = f" Booking cancelled (payment status: {booking.get_payment_status_display()})."
+        
+        # Set verification timestamp for confirmed/rejected/cancelled bookings
+        if new_status in ['confirmed', 'rejected', 'cancelled']:
+            from django.utils import timezone
+            booking.verified_at = timezone.now()
+        
         booking.save()
         
-        messages.success(request, f"Booking status updated to {booking.get_status_display()}.")
+        messages.success(request, f"Booking status updated to {booking.get_status_display()}.{payment_message}")
         
         return JsonResponse({
             'success': True,
-            'message': 'Booking status updated successfully.',
-            'new_status': booking.get_status_display()
+            'message': f'Booking status updated successfully.{payment_message}',
+            'new_status': booking.get_status_display(),
+            'payment_status': booking.payment_status,
+            'payment_status_display': booking.payment_display_status
+        })
+    
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'An error occurred: {str(e)}'
         })
     
     return JsonResponse({
         'success': False,
-        'message': 'Invalid status provided.'
+        'message': 'Invalid request.'
     })
 
 

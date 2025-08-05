@@ -263,6 +263,72 @@ class PropertyBookingAdmin(admin.ModelAdmin):
         return obj.created_at.strftime("%Y-%m-%d %H:%M")
     created_at_formatted.short_description = "Created"
     created_at_formatted.admin_order_field = 'created_at'
+    
+    def save_model(self, request, obj, form, change):
+        """Override save to handle payment logic when status changes through Django admin"""
+        if change:  # Only for updates, not new objects
+            # Get the original object to compare status
+            try:
+                original = PropertyBooking.objects.get(pk=obj.pk)
+                old_status = original.status
+                new_status = obj.status
+                
+                # Handle payment based on booking status change
+                if new_status == 'confirmed' and old_status != 'confirmed':
+                    # CONFIRM: First check if payment needs re-authorization, then capture
+                    if obj.payment_status == 'cancelled':
+                        # Re-authorize cancelled payment
+                        if obj.reauthorize_payment():
+                            # Now capture the re-authorized payment
+                            if obj.capture_payment():
+                                self.message_user(request, f"Payment re-authorized and Rs. {obj.payment_amount} charged successfully.", level='SUCCESS')
+                            else:
+                                self.message_user(request, f"Payment re-authorized but capture failed - check manually.", level='WARNING')
+                        else:
+                            self.message_user(request, f"Failed to re-authorize cancelled payment - check manually.", level='ERROR')
+                    elif obj.payment_status == 'authorized':
+                        # Normal capture for authorized payment
+                        if obj.capture_payment():
+                            self.message_user(request, f"Payment of Rs. {obj.payment_amount} charged successfully.", level='SUCCESS')
+                        else:
+                            self.message_user(request, f"Payment capture failed - check manually.", level='WARNING')
+                    
+                elif new_status == 'rejected' and old_status != 'rejected':
+                    # REJECT: Cancel authorization or refund if captured
+                    if obj.payment_status == 'authorized':
+                        if obj.cancel_authorization():
+                            self.message_user(request, f"Held payment of Rs. {obj.payment_amount} released to customer.", level='SUCCESS')
+                        else:
+                            self.message_user(request, f"Payment cancellation failed - check manually.", level='WARNING')
+                    elif obj.payment_status == 'captured':
+                        if obj.refund_payment():
+                            self.message_user(request, f"Payment of Rs. {obj.payment_amount} refunded to customer.", level='SUCCESS')
+                        else:
+                            self.message_user(request, f"Refund failed - process manually.", level='ERROR')
+                            
+                elif new_status == 'cancelled' and old_status != 'cancelled':
+                    # CANCEL: Refund captured payments or cancel authorization
+                    if obj.payment_status == 'captured':
+                        if obj.refund_payment():
+                            self.message_user(request, f"Booking cancelled - Payment of Rs. {obj.payment_amount} refunded to customer.", level='SUCCESS')
+                        else:
+                            self.message_user(request, f"Booking cancelled but refund failed - process manually.", level='ERROR')
+                    elif obj.payment_status == 'authorized':
+                        if obj.cancel_authorization():
+                            self.message_user(request, f"Booking cancelled - Held payment of Rs. {obj.payment_amount} released to customer.", level='SUCCESS')
+                        else:
+                            self.message_user(request, f"Booking cancelled but payment cancellation failed - check manually.", level='WARNING')
+                            
+                # Set verification details for confirmed/rejected/cancelled bookings
+                if new_status in ['confirmed', 'rejected', 'cancelled'] and old_status not in ['confirmed', 'rejected', 'cancelled']:
+                    from django.utils import timezone
+                    obj.verified_at = timezone.now()
+                    obj.verified_by = request.user
+                    
+            except PropertyBooking.DoesNotExist:
+                pass  # New object, no comparison needed
+        
+        super().save_model(request, obj, form, change)
 
 
 class BookingFeeAdmin(admin.ModelAdmin):

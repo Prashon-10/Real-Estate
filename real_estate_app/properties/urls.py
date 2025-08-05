@@ -14,6 +14,8 @@ urlpatterns = [
     path('favorite/<int:pk>/', views.toggle_favorite, name='toggle_favorite'),
     path('favorites/', views.favorites_list, name='favorites_list'),
     path('delete-image/<int:image_id>/', views.delete_property_image, name='delete_image'),
+    path('set-primary-image/<int:image_id>/', views.set_primary_property_image, name='set_primary_image'),
+    path('update-image-order/', views.update_image_order, name='update_image_order'),
     path('update-status/<int:pk>/', views.update_property_status, name='update_status'),
     path('similar/<int:pk>/', views.similar_properties, name='similar_properties'),
 

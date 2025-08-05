@@ -123,25 +123,49 @@
                             </div>
                         </td>
                         <td>
-                            <div class="dropdown">
-                                <button class="btn btn-sm dropdown-toggle {% if booking.status == 'confirmed' %}btn-success{% elif booking.status == 'pending' %}btn-warning{% elif booking.status == 'cancelled' %}btn-danger{% else %}btn-secondary{% endif %}" 
-                                        type="button" data-bs-toggle="dropdown">
+                            <div class="dropdown position-relative">
+                                <button class="btn btn-sm dropdown-toggle status-dropdown-btn {% if booking.status == 'confirmed' %}btn-success{% elif booking.status == 'pending' %}btn-warning{% elif booking.status == 'cancelled' %}btn-danger{% else %}btn-secondary{% endif %}" 
+                                        type="button" 
+                                        data-bs-toggle="dropdown" 
+                                        data-bs-auto-close="true"
+                                        id="statusDropdown{{ booking.id }}"
+                                        aria-expanded="false">
                                     {{ booking.get_status_display }}
                                 </button>
-                                <ul class="dropdown-menu">
-                                    <li><button class="dropdown-item update-status" data-booking-id="{{ booking.id }}" data-status="pending">
-                                        <i class="fas fa-clock me-2 text-warning"></i>Pending
-                                    </button></li>
-                                    <li><button class="dropdown-item update-status" data-booking-id="{{ booking.id }}" data-status="confirmed">
-                                        <i class="fas fa-check-circle me-2 text-success"></i>Confirmed
-                                    </button></li>
-                                    <li><button class="dropdown-item update-status" data-booking-id="{{ booking.id }}" data-status="completed">
-                                        <i class="fas fa-flag-checkered me-2 text-info"></i>Completed
-                                    </button></li>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="statusDropdown{{ booking.id }}">
+                                    <li>
+                                        <button class="dropdown-item update-status" 
+                                                data-booking-id="{{ booking.id }}" 
+                                                data-status="pending"
+                                                type="button">
+                                            <i class="fas fa-clock me-2 text-warning"></i>Pending
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item update-status" 
+                                                data-booking-id="{{ booking.id }}" 
+                                                data-status="confirmed"
+                                                type="button">
+                                            <i class="fas fa-check-circle me-2 text-success"></i>Confirmed
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item update-status" 
+                                                data-booking-id="{{ booking.id }}" 
+                                                data-status="completed"
+                                                type="button">
+                                            <i class="fas fa-flag-checkered me-2 text-info"></i>Completed
+                                        </button>
+                                    </li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><button class="dropdown-item update-status" data-booking-id="{{ booking.id }}" data-status="cancelled">
-                                        <i class="fas fa-times-circle me-2 text-danger"></i>Cancelled
-                                    </button></li>
+                                    <li>
+                                        <button class="dropdown-item update-status text-danger" 
+                                                data-booking-id="{{ booking.id }}" 
+                                                data-status="cancelled"
+                                                type="button">
+                                            <i class="fas fa-times-circle me-2"></i>Cancel Booking
+                                        </button>
+                                    </li>
                                 </ul>
                             </div>
                         </td>
@@ -221,6 +245,7 @@
             </div>
             <div class="modal-body">
                 <form id="statusUpdateForm">
+                    {% csrf_token %}
                     <input type="hidden" id="bookingId" name="booking_id">
                     <input type="hidden" id="newStatus" name="status">
                     
@@ -363,13 +388,18 @@
     }
 
     .table-admin tbody tr {
-        transition: all 0.3s ease;
+        transition: background-color 0.2s ease;
+        position: relative;
     }
 
     .table-admin tbody tr:hover {
         background: #f8f9fa;
-        transform: translateY(-1px);
-        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        transform: none; /* Remove transform to prevent dropdown positioning issues */
+        box-shadow: none; /* Remove shadow to prevent z-index conflicts */
+    }
+
+    .table-admin tbody tr:hover .dropdown-menu {
+        z-index: 1055; /* Ensure dropdown stays above other elements */
     }
 
     .avatar-sm {
@@ -388,52 +418,131 @@
         letter-spacing: 0.5px;
     }
 
-    .dropdown-toggle {
+    .status-dropdown-btn {
         border-radius: 8px;
         padding: 8px 12px;
         font-size: 0.85rem;
+        font-weight: 500;
+        min-width: 110px;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+
+    .status-dropdown-btn:focus {
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    .dropdown {
+        position: relative;
     }
 
     .dropdown-menu {
         border: none;
         border-radius: 10px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        padding: 10px 0;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        padding: 8px 0;
+        min-width: 180px;
+        z-index: 1050;
+        margin-top: 5px;
+        animation: dropdownFadeIn 0.15s ease-out;
+    }
+
+    @keyframes dropdownFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .dropdown-item {
-        padding: 10px 20px;
-        transition: all 0.3s ease;
+        padding: 10px 16px;
+        transition: all 0.2s ease;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
     }
 
     .dropdown-item:hover {
         background: #f8f9fa;
-        transform: translateX(5px);
+        color: #495057;
+        transform: none;
+        padding-left: 20px;
+    }
+
+    .dropdown-item:focus {
+        background: #e9ecef;
+        color: #495057;
+        outline: none;
+    }
+
+    .dropdown-item:active {
+        background: #dee2e6;
+        color: #495057;
+    }
+
+    .dropdown-item.text-danger:hover {
+        background: #f8d7da;
+        color: #721c24;
     }
 
     .pagination {
         margin-bottom: 0;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .page-item {
+        margin: 2px;
     }
 
     .page-link {
         border: 2px solid #e9ecef;
         border-radius: 8px;
-        margin: 0 3px;
         padding: 10px 15px;
         color: #667eea;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 45px;
+        min-height: 45px;
     }
 
     .page-link:hover {
         background: #667eea;
         border-color: #667eea;
         color: white;
-        transform: translateY(-2px);
+        transform: none; /* Remove transform to prevent layout shifts */
+        text-decoration: none;
+    }
+
+    .page-link:focus {
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        z-index: 3;
     }
 
     .page-item.active .page-link {
         background: #667eea;
         border-color: #667eea;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        color: #6c757d;
+        pointer-events: none;
+        background-color: #fff;
+        border-color: #dee2e6;
     }
 
     .status-filters {
@@ -476,35 +585,138 @@
         padding-left: 15px;
         padding-right: 15px;
     }
+
+    /* Additional fixes for dropdown and table stability */
+    .table-responsive {
+        position: relative;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dropdown-menu.show {
+        display: block;
+        opacity: 1;
+    }
+
+    .dropdown-toggle::after {
+        transition: transform 0.15s ease-in-out;
+    }
+
+    .dropdown-toggle[aria-expanded="true"]::after {
+        transform: rotate(180deg);
+    }
+
+    /* Prevent layout shift during status updates */
+    .status-dropdown-btn.updating {
+        pointer-events: none;
+        opacity: 0.7;
+    }
+
+    /* Smooth transitions for better UX */
+    * {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Fix for any z-index issues */
+    .modal {
+        z-index: 1070;
+    }
+
+    .modal-backdrop {
+        z-index: 1060;
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Update booking status
-document.querySelectorAll('.update-status').forEach(button => {
-    button.addEventListener('click', function() {
-        const bookingId = this.dataset.bookingId;
-        const newStatus = this.dataset.status;
-        
-        document.getElementById('bookingId').value = bookingId;
-        document.getElementById('newStatus').value = newStatus;
-        document.getElementById('adminNotes').value = '';
-        
-        // Show confirmation modal
-        new bootstrap.Modal(document.getElementById('statusUpdateModal')).show();
+// Global variable to prevent multiple updates
+let isUpdating = false;
+
+// Prevent dropdown flickering and improve performance
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all dropdowns with proper configuration
+    const dropdowns = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+    dropdowns.forEach(function(dropdown) {
+        new bootstrap.Dropdown(dropdown, {
+            autoClose: true,
+            boundary: 'viewport'
+        });
+    });
+
+    // Handle status update clicks with debouncing    
+    document.querySelectorAll('.update-status').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (isUpdating) return; // Prevent multiple clicks
+            
+            const bookingId = this.dataset.bookingId;
+            const newStatus = this.dataset.status;
+            
+            // Close the dropdown immediately
+            const dropdownElement = this.closest('.dropdown');
+            const dropdownToggle = dropdownElement.querySelector('[data-bs-toggle="dropdown"]');
+            const dropdownInstance = bootstrap.Dropdown.getInstance(dropdownToggle);
+            if (dropdownInstance) {
+                dropdownInstance.hide();
+            }
+            
+            document.getElementById('bookingId').value = bookingId;
+            document.getElementById('newStatus').value = newStatus;
+            document.getElementById('adminNotes').value = '';
+            
+            // Show confirmation modal
+            const modal = new bootstrap.Modal(document.getElementById('statusUpdateModal'));
+            modal.show();
+        });
+    });
+
+    // Prevent dropdown from staying open after table row hover
+    document.querySelectorAll('.table-admin tbody tr').forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            // Close any open dropdowns when hovering over other rows
+            const openDropdowns = document.querySelectorAll('.dropdown-menu.show');
+            openDropdowns.forEach(dropdown => {
+                const dropdownToggle = dropdown.previousElementSibling;
+                const dropdownInstance = bootstrap.Dropdown.getInstance(dropdownToggle);
+                if (dropdownInstance) {
+                    dropdownInstance.hide();
+                }
+            });
+        });
     });
 });
 
 function confirmStatusUpdate() {
+    if (isUpdating) return;
+    isUpdating = true;
+    
     const bookingId = document.getElementById('bookingId').value;
     const newStatus = document.getElementById('newStatus').value;
     const adminNotes = document.getElementById('adminNotes').value;
     
+    console.log('Updating booking:', bookingId, 'to status:', newStatus); // Debug log
+    
+    // Show loading state
+    const updateBtn = document.querySelector('[onclick="confirmStatusUpdate()"]');
+    const originalText = updateBtn.innerHTML;
+    updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+    updateBtn.disabled = true;
+    
+    // Get CSRF token from cookie or meta tag
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? 
+                     document.querySelector('[name=csrfmiddlewaretoken]').value : 
+                     getCookie('csrftoken');
+    
+    console.log('CSRF Token:', csrfToken); // Debug log
+    
     fetch(`/admin-panel/bookings/${bookingId}/update-status/`, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
+            'X-CSRFToken': csrfToken,
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -512,21 +724,59 @@ function confirmStatusUpdate() {
             admin_notes: adminNotes
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status); // Debug log
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('Response data:', data); // Debug log
         if (data.success) {
-            location.reload();
+            // Show success message briefly before reload
+            updateBtn.innerHTML = '<i class="fas fa-check me-2"></i>Success!';
+            updateBtn.className = 'btn btn-success';
+            
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         } else {
-            alert(data.message || 'Error updating booking status');
+            throw new Error(data.message || 'Error updating booking status');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Network error');
+        alert(`Error: ${error.message}`);
+        
+        // Reset button
+        updateBtn.innerHTML = originalText;
+        updateBtn.disabled = false;
+        updateBtn.className = 'btn btn-admin';
+        isUpdating = false;
     })
     .finally(() => {
-        bootstrap.Modal.getInstance(document.getElementById('statusUpdateModal')).hide();
+        const modalInstance = bootstrap.Modal.getInstance(document.getElementById('statusUpdateModal'));
+        if (modalInstance && !updateBtn.classList.contains('btn-success')) {
+            modalInstance.hide();
+        }
     });
+}
+
+// Function to get CSRF token from cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 function sendMessage(bookingId) {

@@ -407,6 +407,28 @@
         margin-right: 15px;
     }
     
+    .similarity-info {
+        font-size: 0.75rem;
+        color: #28a745;
+    }
+    
+    .similarity-badge {
+        font-size: 0.6rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 10px;
+        background: linear-gradient(45deg, #667eea, #764ba2) !important;
+        color: white !important;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .similar-property-item .similarity-info small {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
     .section-title {
         color: #333;
         font-weight: 700;
@@ -481,7 +503,7 @@
                 </div>
                 
                 {% if property.images.exists %}
-                    <div id="propertyCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div id="propertyCarousel" class="carousel slide" data-bs-interval="false" data-bs-pause="hover" data-bs-wrap="true">
                         <div class="carousel-indicators">
                             {% for image in property.images.all %}
                                 <button type="button" data-bs-target="#propertyCarousel" data-bs-slide-to="{{ forloop.counter0 }}" 
@@ -493,7 +515,19 @@
                         <div class="carousel-inner">
                             {% for image in property.images.all %}
                                 <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                                    <img src="{{ image.image.url }}" alt="Property Image {{ forloop.counter }}">
+                                    <img src="{{ image.image.url }}" alt="Property Image {{ forloop.counter }}" class="property-carousel-image">
+                                    {% if image.is_primary %}
+                                        <div class="carousel-caption d-none d-md-block">
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-star me-1"></i>Primary Image
+                                            </span>
+                                        </div>
+                                    {% endif %}
+                                    {% if image.caption %}
+                                        <div class="carousel-caption d-none d-md-block">
+                                            <p class="mb-0">{{ image.caption }}</p>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             {% endfor %}
                         </div>
@@ -798,6 +832,88 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced Carousel functionality - Manual control only
+    const carousel = document.getElementById('propertyCarousel');
+    if (carousel) {
+        const carouselInstance = new bootstrap.Carousel(carousel, {
+            interval: false,  // Disable auto-play completely
+            wrap: true,       // Enable infinite looping
+            keyboard: true,   // Enable keyboard navigation
+            touch: true,      // Enable touch/swipe navigation
+            pause: 'hover'    // Pause on hover (though already disabled)
+        });
+        
+        // Explicitly pause to prevent any auto-cycling
+        carouselInstance.pause();
+        
+        // Prevent any other auto-start attempts
+        carousel.addEventListener('slide.bs.carousel', function() {
+            carouselInstance.pause();
+        });
+        
+        // Add keyboard navigation support
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                carouselInstance.prev();
+            } else if (e.key === 'ArrowRight') {
+                carouselInstance.next();
+            }
+        });
+        
+        // Add touch/swipe support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        carousel.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        carousel.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+        
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const swipeDistance = touchEndX - touchStartX;
+            
+            if (Math.abs(swipeDistance) > swipeThreshold) {
+                if (swipeDistance > 0) {
+                    carouselInstance.prev(); // Swipe right - go to previous
+                } else {
+                    carouselInstance.next(); // Swipe left - go to next
+                }
+            }
+        }
+        
+        // Ensure carousel controls are always clickable
+        const prevBtn = carousel.querySelector('.carousel-control-prev');
+        const nextBtn = carousel.querySelector('.carousel-control-next');
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                carouselInstance.prev();
+            });
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                carouselInstance.next();
+            });
+        }
+        
+        // Add click event to indicators for direct navigation
+        const indicators = carousel.querySelectorAll('.carousel-indicators button');
+        indicators.forEach((indicator, index) => {
+            indicator.addEventListener('click', function(e) {
+                e.preventDefault();
+                carouselInstance.to(index);
+            });
+        });
+    }
+    
     // Initialize property location map
     {% if property.latitude and property.longitude %}
     const propertyLat = {{ property.latitude }};
@@ -1036,11 +1152,40 @@ document.addEventListener('DOMContentLoaded', function() {
                     data.properties.forEach(prop => {
                         const thumbnail = prop.thumbnail || '/static/images/property-placeholder.jpg';
                         
+                        // Create similarity reasons display
+                        let similarityInfo = '';
+                        if (prop.similarity_reasons && prop.similarity_reasons.length > 0) {
+                            const reasons = prop.similarity_reasons.slice(0, 2); // Show top 2 reasons
+                            similarityInfo = `
+                                <div class="similarity-info mb-2">
+                                    <small class="text-success">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        ${reasons.join(' • ')}
+                                    </small>
+                                </div>
+                            `;
+                        }
+                        
+                        // Add similarity score badge if available
+                        let scoreBadge = '';
+                        if (prop.similarity_score > 0) {
+                            const scorePercentage = Math.round(prop.similarity_score * 100);
+                            scoreBadge = `
+                                <span class="similarity-badge badge bg-primary ms-2">
+                                    ${scorePercentage}% match
+                                </span>
+                            `;
+                        }
+                        
                         container.innerHTML += `
                             <a href="/properties/${prop.id}/" class="similar-property-item">
                                 <img src="${thumbnail}" alt="${prop.title}" class="property-thumbnail">
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-1">${prop.title}</h6>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <h6 class="mb-0 flex-grow-1">${prop.title}</h6>
+                                        ${scoreBadge}
+                                    </div>
+                                    ${similarityInfo}
                                     <p class="mb-1 text-muted small">${prop.address}</p>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small class="text-muted">
@@ -1058,6 +1203,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="text-center py-4 text-muted">
                             <i class="fas fa-home fa-2x mb-3 opacity-50"></i>
                             <p class="mb-0">No similar properties found</p>
+                            <small>Try searching for properties with different criteria</small>
                         </div>
                     `;
                 }

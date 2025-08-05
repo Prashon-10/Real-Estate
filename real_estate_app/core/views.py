@@ -64,9 +64,11 @@ def dashboard(request):
         try:
             favorites = request.user.favorites.all().select_related('property')
             context['favorites'] = favorites[:5]
+            context['recent_favorites'] = favorites[:5]  # Also pass as recent_favorites for template
             context['total_favorites'] = favorites.count()
         except:
             context['favorites'] = []
+            context['recent_favorites'] = []
             context['total_favorites'] = 0
         
         # Get total available properties

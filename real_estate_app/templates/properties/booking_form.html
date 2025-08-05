@@ -154,6 +154,161 @@ Book Property - {{ property.title }}
         transform: none;
     }
 
+    .nearby-properties-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .property-selection-card {
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .property-selection-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    }
+
+    .property-selection-card.selected {
+        border-color: #667eea;
+        background: #f7fafc;
+    }
+
+    .property-selection-card.already-booked {
+        border-color: #e53e3e;
+        background: #fed7d7;
+        opacity: 0.7;
+        position: relative;
+    }
+
+    .property-selection-card.already-booked::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(229, 62, 62, 0.1) 10px,
+            rgba(229, 62, 62, 0.1) 20px
+        );
+        pointer-events: none;
+    }
+
+    .property-selection-card.already-booked .property-card-header {
+        background: #feb2b2;
+        color: #742a2a;
+    }
+
+    .already-booked-badge {
+        background: #e53e3e;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .property-selection-card.already-booked .form-check-input:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .property-selection-card.already-booked:hover {
+        border-color: #e53e3e;
+        box-shadow: 0 4px 12px rgba(229, 62, 62, 0.15);
+    }
+
+    .property-card-header {
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .property-details-dropdown {
+        padding: 1rem;
+        background: white;
+    }
+
+    .detail-item {
+        padding: 0.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .detail-item i {
+        width: 16px;
+        text-align: center;
+    }
+
+    .property-description {
+        border-top: 1px solid #e2e8f0;
+        padding-top: 1rem;
+    }
+
+    .toggle-details {
+        border: none;
+        background: transparent;
+        color: #667eea;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .toggle-details:hover {
+        background: #e2e8f0;
+        color: #4c51bf;
+    }
+
+    .selected-properties-summary {
+        border: 2px solid #667eea;
+        border-radius: 12px;
+        padding: 1rem;
+        background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    }
+
+    .total-calculation {
+        font-size: 1.1rem;
+        padding: 0.75rem;
+        background: white;
+        border-radius: 8px;
+        margin-top: 0.5rem;
+        border-left: 4px solid #667eea;
+    }
+
+    .nearby-property-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .nearby-property-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+    }
+
+    .distance-badge {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
     @media (max-width: 768px) {
         .booking-container {
             padding: 1rem;
@@ -315,6 +470,116 @@ Book Property - {{ property.title }}
                                 </div>
                             </div>
                             
+                            <!-- Nearby Properties (shown only for visit requests) -->
+                            {% if nearby_properties %}
+                            <div class="form-section" id="nearbyProperties" style="display: none;">
+                                <div class="section-title">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    Additional Properties by {{ property.agent.get_full_name|default:property.agent.username }} (Within 5km)
+                                </div>
+                                
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <strong>Convenient Multi-Property Visit!</strong> Select additional properties below to visit on the same day. All selected properties are within 5km of each other.
+                                </div>
+                                
+                                <div class="property-selection-section">
+                                    <h6 class="mb-3">
+                                        <i class="fas fa-list-check me-2"></i>Select Properties to Visit:
+                                    </h6>
+                                    
+                                    <div class="nearby-properties-list">
+                                        {% for nearby_property, distance, is_already_booked in nearby_properties %}
+                                        <div class="property-selection-card {% if is_already_booked %}already-booked{% endif %}" data-property-id="{{ nearby_property.id }}">
+                                            <div class="property-card-header">
+                                                <div class="form-check">
+                                                    <input class="form-check-input property-checkbox" type="checkbox" 
+                                                           value="{{ nearby_property.id }}" 
+                                                           id="property_{{ nearby_property.id }}"
+                                                           {% if is_already_booked %}disabled{% endif %}
+                                                           onchange="togglePropertyDetails({{ nearby_property.id }})">
+                                                    <label class="form-check-label {% if is_already_booked %}text-muted{% endif %}" for="property_{{ nearby_property.id }}">
+                                                        <strong>{{ nearby_property.title }}</strong>
+                                                        <span class="distance-badge ms-2">
+                                                            <i class="fas fa-route me-1"></i>{{ distance }}km away
+                                                        </span>
+                                                        {% if is_already_booked %}
+                                                        <span class="already-booked-badge ms-2">
+                                                            <i class="fas fa-check-circle me-1"></i>Already Booked
+                                                        </span>
+                                                        {% endif %}
+                                                    </label>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-info toggle-details" 
+                                                        onclick="togglePropertyDetails({{ nearby_property.id }})">
+                                                    <i class="fas fa-chevron-down"></i> Details
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="property-details-dropdown" id="details_{{ nearby_property.id }}" style="display: none;">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="detail-item">
+                                                            <i class="fas fa-map-marker-alt text-primary"></i>
+                                                            <strong>Location:</strong> {{ nearby_property.address }}
+                                                        </div>
+                                                        <div class="detail-item">
+                                                            <i class="fas fa-tag text-success"></i>
+                                                            <strong>Price:</strong> NPR {{ nearby_property.price|floatformat:0 }}
+                                                        </div>
+                                                        <div class="detail-item">
+                                                            <i class="fas fa-home text-info"></i>
+                                                            <strong>Type:</strong> {{ nearby_property.get_property_type_display }}
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="detail-item">
+                                                            <i class="fas fa-bed text-warning"></i>
+                                                            <strong>Bedrooms:</strong> {{ nearby_property.bedrooms }}
+                                                        </div>
+                                                        <div class="detail-item">
+                                                            <i class="fas fa-bath text-primary"></i>
+                                                            <strong>Bathrooms:</strong> {{ nearby_property.bathrooms }}
+                                                        </div>
+                                                        <div class="detail-item">
+                                                            <i class="fas fa-ruler text-secondary"></i>
+                                                            <strong>Area:</strong> {{ nearby_property.square_footage }} sq ft
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                {% if nearby_property.description %}
+                                                <div class="property-description mt-3">
+                                                    <strong>Description:</strong>
+                                                    <p class="text-muted">{{ nearby_property.description|truncatewords:20 }}</p>
+                                                </div>
+                                                {% endif %}
+                                                
+                                                <div class="property-actions mt-3">
+                                                    <a href="{% url 'properties:property_detail' nearby_property.id %}" 
+                                                       class="btn btn-sm btn-outline-primary" target="_blank">
+                                                        <i class="fas fa-external-link-alt me-1"></i>View Full Details
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <div class="selected-properties-summary mt-3" id="selectedSummary" style="display: none;">
+                                        <div class="alert alert-primary">
+                                            <h6><i class="fas fa-calendar-check me-2"></i>Selected Properties for Visit:</h6>
+                                            <ul id="selectedPropertiesList" class="mb-2"></ul>
+                                            <div class="total-calculation">
+                                                <strong>Total Visit Fee: NPR <span id="totalFee">{{ fees.visit_fee }}</span></strong>
+                                                <small class="text-muted d-block">No additional fees for multiple properties</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
                             <!-- Additional Message -->
                             <div class="form-section">
                                 <div class="section-title">
@@ -405,21 +670,33 @@ Book Property - {{ property.title }}
 <script>
 // Blocked visit dates from backend
 const blockedVisitDates = {{ blocked_visit_dates|safe }};
-// User's existing visit dates across all properties
-const userVisitDates = {{ user_visit_dates|safe }};
+// User's existing booking dates across all properties (all types)
+const userBookingDates = {{ user_booking_dates|safe }};
 
 function selectBookingType(type) {
     // Update radio button
     document.querySelector(`input[value="${type}"]`).checked = true;
     
-    // Show/hide visit details
+    // Show/hide visit details and nearby properties
     const visitDetails = document.getElementById('visitDetails');
+    const nearbyProperties = document.getElementById('nearbyProperties');
+    
     if (type === 'visit') {
         visitDetails.style.display = 'block';
         visitDetails.querySelector('input[type="datetime-local"]').required = true;
+        
+        // Show nearby properties if they exist
+        if (nearbyProperties) {
+            nearbyProperties.style.display = 'block';
+        }
     } else {
         visitDetails.style.display = 'none';
         visitDetails.querySelector('input[type="datetime-local"]').required = false;
+        
+        // Hide nearby properties
+        if (nearbyProperties) {
+            nearbyProperties.style.display = 'none';
+        }
     }
     
     // Update payment method cards styling
@@ -438,6 +715,112 @@ function selectPaymentMethod(method) {
         card.classList.remove('selected');
     });
     event.currentTarget.classList.add('selected');
+}
+
+// Property selection and details functions
+function togglePropertyDetails(propertyId) {
+    const detailsDiv = document.getElementById(`details_${propertyId}`);
+    const toggleButton = document.querySelector(`[onclick="togglePropertyDetails(${propertyId})"]`);
+    const checkbox = document.getElementById(`property_${propertyId}`);
+    const card = document.querySelector(`[data-property-id="${propertyId}"]`);
+    
+    // Check if property is already booked
+    if (card.classList.contains('already-booked') && checkbox.disabled) {
+        // Show a helpful message
+        const existingAlert = document.querySelector('.already-booked-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-warning alert-dismissible fade show already-booked-alert mt-2';
+        alertDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Property Already Booked!</strong> You have already made a booking for this property. 
+            You cannot book the same property multiple times.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        card.appendChild(alertDiv);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+        
+        return; // Don't toggle details for already booked properties
+    }
+    
+    if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
+        detailsDiv.style.display = 'block';
+        toggleButton.innerHTML = '<i class="fas fa-chevron-up"></i> Hide';
+    } else {
+        detailsDiv.style.display = 'none';
+        toggleButton.innerHTML = '<i class="fas fa-chevron-down"></i> Details';
+    }
+    
+    // Handle checkbox selection (only if not already booked)
+    if (checkbox && !checkbox.disabled) {
+        if (checkbox.checked) {
+            card.classList.add('selected');
+            updateSelectedProperties();
+        } else {
+            card.classList.remove('selected');
+            updateSelectedProperties();
+        }
+    }
+}
+
+function updateSelectedProperties() {
+    const selectedCheckboxes = document.querySelectorAll('.property-checkbox:checked');
+    const summaryDiv = document.getElementById('selectedSummary');
+    const propertiesList = document.getElementById('selectedPropertiesList');
+    const totalFeeSpan = document.getElementById('totalFee');
+    
+    if (selectedCheckboxes.length > 0) {
+        summaryDiv.style.display = 'block';
+        
+        // Clear and populate the list
+        propertiesList.innerHTML = '';
+        selectedCheckboxes.forEach(checkbox => {
+            const card = document.querySelector(`[data-property-id="${checkbox.value}"]`);
+            const propertyTitle = card.querySelector('label strong').textContent;
+            const distance = card.querySelector('.distance-badge').textContent;
+            
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>${propertyTitle}</strong> - ${distance}`;
+            propertiesList.appendChild(li);
+        });
+        
+        // No additional fees for multiple properties on same date
+        const baseFee = {{ fees.visit_fee }};
+        const totalFee = baseFee; // No additional fees
+        totalFeeSpan.textContent = totalFee;
+        
+    } else {
+        summaryDiv.style.display = 'none';
+        totalFeeSpan.textContent = {{ fees.visit_fee }};
+    }
+}
+
+// Add selected properties to form submission
+function addSelectedPropertiesToForm() {
+    const selectedCheckboxes = document.querySelectorAll('.property-checkbox:checked');
+    const form = document.getElementById('bookingForm');
+    
+    // Remove any existing selected property inputs
+    const existingInputs = form.querySelectorAll('input[name="additional_properties"]');
+    existingInputs.forEach(input => input.remove());
+    
+    // Add selected property IDs as hidden inputs
+    selectedCheckboxes.forEach(checkbox => {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'additional_properties';
+        hiddenInput.value = checkbox.value;
+        form.appendChild(hiddenInput);
+    });
 }
 
 // Form validation
@@ -464,7 +847,7 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
         return;
     }
     
-    // If visit request, check preferred date
+    // If visit request, check preferred date and add selected properties
     if (bookingType.value === 'visit') {
         const preferredDate = document.querySelector('input[name="preferred_date"]');
         if (!preferredDate.value) {
@@ -472,6 +855,9 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
             alert('Please select a preferred date and time for your visit.');
             return;
         }
+        
+        // Add selected additional properties to form
+        addSelectedPropertiesToForm();
     }
 });
 
@@ -489,9 +875,9 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedPaymentMethod.closest('.payment-method-card').classList.add('selected');
     }
     
-    // Setup blocked dates for visit date picker
+    // Setup blocked dates for appointment date picker
     const dateInput = document.querySelector('input[name="preferred_date"]');
-    if (dateInput && typeof blockedVisitDates !== 'undefined' && typeof userVisitDates !== 'undefined') {
+    if (dateInput && typeof blockedVisitDates !== 'undefined' && typeof userBookingDates !== 'undefined') {
         setupBlockedDates(dateInput, blockedVisitDates);
     }
 });
@@ -515,10 +901,10 @@ function setupBlockedDates(dateInput, blockedDates) {
             return;
         }
         
-        // Check if user already has a visit on this date for any property
-        const userConflict = userVisitDates.find(visit => visit.date === selectedDate);
+        // Check if user already has ANY booking on this date for any property/agent
+        const userConflict = userBookingDates.find(booking => booking.date === selectedDate);
         if (userConflict) {
-            alert(`You already have a visit scheduled for "${userConflict.property}" on this date at ${userConflict.time}. Please select a different date as you cannot visit multiple properties on the same day.`);
+            alert(`You already have a ${userConflict.type.toLowerCase()} scheduled for "${userConflict.property}" (Agent: ${userConflict.agent}) on this date at ${userConflict.time}. Please note: You can only book properties that are within 5km of each other on the same day. Please select a different date or check if the properties are within the allowed distance.`);
             this.value = '';
             this.focus();
             return;
@@ -545,10 +931,10 @@ function setupBlockedDates(dateInput, blockedDates) {
         helpTextContent += 'Some dates may be unavailable due to other visit requests. ';
     }
     
-    if (userVisitDates.length > 0) {
-        helpTextContent += 'You cannot schedule visits on dates when you already have other property visits.';
+    if (userBookingDates.length > 0) {
+        helpTextContent += 'You can schedule multiple property visits on the same day only if they are within 5km of each other.';
     } else if (blockedDates.length === 0) {
-        helpTextContent += 'Select your preferred date and time for the visit.';
+        helpTextContent += 'Select your preferred date and time for the appointment.';
     }
     
     helpText.innerHTML = helpTextContent;

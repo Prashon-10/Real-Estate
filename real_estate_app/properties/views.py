@@ -121,6 +121,11 @@ class PropertyListView(LoginRequiredMixin, ListView):
             ).values_list("property_ref__id", flat=True)
         )
 
+        # Initialize default values
+        favorite_property_ids = []
+        booked_property_ids = []
+        visited_property_ids = []
+
         if self.request.user.is_authenticated and self.request.user.is_customer():
             favorite_property_ids = list(
                 Favorite.objects.filter(user=self.request.user).values_list(
@@ -253,11 +258,7 @@ class AgentPropertyListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     context_object_name = "properties"
 
     def test_func(self):
-        return self.request.user.is_authenticated and (
-            self.request.user.is_agent()
-            if hasattr(self.request.user, "is_agent")
-            else False
-        )
+        return self.request.user.is_authenticated and self.request.user.is_agent()
 
     def get_queryset(self):
         return Property.objects.filter(agent=self.request.user).order_by("-created_at")
@@ -280,11 +281,7 @@ class PropertyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     success_url = reverse_lazy("properties:agent_properties")
 
     def test_func(self):
-        return self.request.user.is_authenticated and (
-            self.request.user.is_agent()
-            if hasattr(self.request.user, "is_agent")
-            else False
-        )
+        return self.request.user.is_authenticated and self.request.user.is_agent()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -297,15 +294,17 @@ class PropertyCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         image_form = PropertyImageForm(self.request.POST, self.request.FILES)
         if image_form.is_valid():
+            images = self.request.FILES.getlist('images')
             order = 0
-            for i in range(1, 4):
-                field_name = f"image{i}"
-                image = self.request.FILES.get(field_name)
-                if image:
-                    PropertyImage.objects.create(
-                        property=self.object, image=image, order=order
-                    )
-                    order += 1
+            for image in images:
+                PropertyImage.objects.create(
+                    property=self.object, 
+                    image=image, 
+                    order=order,
+                    caption='',  # Default empty caption
+                    is_primary=(order == 0)  # First image is primary
+                )
+                order += 1
         messages.success(self.request, "Property listing created successfully.")
         return response
 
@@ -329,17 +328,19 @@ class PropertyUpdateView(UpdateView):
 
         image_form = PropertyImageForm(self.request.POST, self.request.FILES)
         if image_form.is_valid():
+            images = self.request.FILES.getlist('images')
             current_max_order = self.object.images.order_by("-order").first()
             order = (current_max_order.order + 1) if current_max_order else 0
 
-            for i in range(1, 4):
-                field_name = f"image{i}"
-                image = self.request.FILES.get(field_name)
-                if image:
-                    PropertyImage.objects.create(
-                        property=self.object, image=image, order=order
-                    )
-                    order += 1
+            for image in images:
+                PropertyImage.objects.create(
+                    property=self.object, 
+                    image=image, 
+                    order=order,
+                    caption='',  # Default empty caption
+                    is_primary=False  # New images are not primary by default
+                )
+                order += 1
         messages.success(self.request, "Property listing updated successfully.")
         return response
 
@@ -419,17 +420,71 @@ def favorites_list(request):
 
 @login_required
 def delete_property_image(request, image_id):
-    image = get_object_or_404(PropertyImage, pk=image_id)
-    property_id = image.property.id
+    if request.method == 'POST':
+        try:
+            image = get_object_or_404(PropertyImage, pk=image_id)
+            
+            # Check if the user is the agent of the property
+            if request.user != image.property.agent:
+                return JsonResponse({'success': False, 'error': 'You can only delete images from your own listings.'})
 
-    # Check if the user is the agent of the property
-    if request.user != image.property.agent:
-        messages.error(request, "You can only delete images from your own listings.")
-        return redirect("properties:property_update", pk=property_id)
+            image.delete()
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
-    image.delete()
-    messages.success(request, "Image deleted successfully.")
-    return redirect("properties:property_update", pk=property_id)
+
+@login_required
+def set_primary_property_image(request, image_id):
+    if request.method == 'POST':
+        try:
+            image = get_object_or_404(PropertyImage, pk=image_id)
+            
+            # Check if the user is the agent of the property
+            if request.user != image.property.agent:
+                return JsonResponse({'success': False, 'error': 'You can only modify images from your own listings.'})
+
+            # Remove primary status from all images of this property
+            PropertyImage.objects.filter(property=image.property).update(is_primary=False)
+            
+            # Set this image as primary
+            image.is_primary = True
+            image.save()
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+@login_required
+def update_image_order(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            images_data = data.get('images', [])
+            
+            for image_data in images_data:
+                image_id = image_data.get('id')
+                order = image_data.get('order')
+                
+                image = get_object_or_404(PropertyImage, pk=image_id)
+                
+                # Check if the user is the agent of the property
+                if request.user != image.property.agent:
+                    return JsonResponse({'success': False, 'error': 'You can only modify images from your own listings.'})
+                
+                image.order = order
+                image.save()
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 
 @login_required
@@ -474,33 +529,252 @@ def similar_properties(request, pk):
     try:
         property_obj = get_object_or_404(Property, pk=pk)
 
-        # Get similar properties based on bedrooms, bathrooms, and property type
-        similar = (
-            Property.objects.filter(
-                status="available",
-                bedrooms=property_obj.bedrooms,
-                property_type=property_obj.property_type,
-            )
-            .exclude(id=property_obj.id)
-            .select_related("agent")
-            .prefetch_related("images")[:4]
-        )
+        # Define keyword groups for semantic similarity - separated by property category
+        keyword_groups = {
+            # Residential-specific keywords
+            'luxury_residential': ['luxury', 'premium', 'elegant', 'upscale', 'high-end', 'deluxe', 'exclusive', 'sophisticated', 'executive', 'prestige'],
+            'cozy': ['cozy', 'comfortable', 'warm', 'inviting', 'charming', 'intimate', 'homely', 'snug', 'cute', 'lovely'],
+            'modern_residential': ['modern', 'contemporary', 'stylish', 'updated', 'renovated', 'new', 'sleek', 'chic', 'fresh', 'latest'],
+            'spacious_residential': ['spacious', 'large', 'big', 'roomy', 'vast', 'expansive', 'wide', 'generous', 'huge', 'massive'],
+            'beautiful': ['beautiful', 'stunning', 'gorgeous', 'lovely', 'attractive', 'magnificent', 'spectacular', 'amazing', 'wonderful', 'fantastic'],
+            'quiet': ['quiet', 'peaceful', 'serene', 'tranquil', 'calm', 'silent', 'secluded', 'private', 'noise-free'],
+            'family': ['family', 'kids', 'children', 'school', 'playground', 'safe', 'friendly', 'child-friendly', 'residential'],
+            'garden': ['garden', 'yard', 'outdoor', 'green', 'lawn', 'patio', 'terrace', 'balcony', 'landscaped', 'park'],
+            
+            # Specific view categories for residential
+            'lake_view': ['lake', 'lakeside', 'waterfront', 'lake view', 'lakefront'],
+            'garden_view': ['garden view', 'garden facing', 'overlooks garden', 'garden-facing'],
+            'mountain_view': ['mountain', 'mountain view', 'hills', 'hillside', 'mountainside'],
+            'city_view': ['city view', 'cityscape', 'urban view', 'downtown view'],
+            'sea_view': ['sea', 'ocean', 'sea view', 'ocean view', 'beachfront', 'seaside'],
+            'river_view': ['river', 'river view', 'riverside', 'riverfront'],
+            'park_view': ['park view', 'park facing', 'overlooks park', 'park-facing'],
+            
+            # Commercial/Office-specific keywords
+            'office_space': ['office', 'workspace', 'business center', 'corporate', 'professional'],
+            'commercial': ['commercial', 'business', 'shop', 'retail', 'store', 'showroom'],
+            'modern_office': ['modern office', 'contemporary workspace', 'tech-ready', 'it-enabled', 'smart office'],
+            'premium_office': ['premium office', 'grade a', 'class a', 'executive suite', 'corner office'],
+            'shared_space': ['coworking', 'shared office', 'flexible workspace', 'hot desk', 'co-working'],
+            
+            # Common categories (applicable to both)
+            'convenient': ['convenient', 'accessible', 'central', 'nearby', 'close', 'walking', 'transport', 'location'],
+            'affordable': ['affordable', 'budget', 'cheap', 'economical', 'reasonable', 'value', 'low-cost'],
+            'furnished': ['furnished', 'equipped', 'ready', 'complete', 'move-in'],
+            'security': ['secure', 'gated', 'protected', 'safe', 'guard', 'security'],
+            'parking': ['parking', 'garage', 'car', 'vehicle', 'covered'],
+            'investment': ['investment', 'rental', 'income', 'profitable', 'return']
+        }
+        
+        def extract_keywords(title):
+            """Extract keywords from property title"""
+            title_lower = title.lower()
+            found_keywords = set()
+            
+            # Check for multi-word phrases first (more specific)
+            for group_name, keywords in keyword_groups.items():
+                for keyword in keywords:
+                    if len(keyword.split()) > 1:  # Multi-word phrases
+                        if keyword in title_lower:
+                            found_keywords.add(group_name)
+                            break
+            
+            # Then check for single words (only if no multi-word match in same group)
+            for group_name, keywords in keyword_groups.items():
+                if group_name not in found_keywords:  # Only if not already matched
+                    for keyword in keywords:
+                        if len(keyword.split()) == 1:  # Single words
+                            if keyword in title_lower:
+                                found_keywords.add(group_name)
+                                break
+            
+            return found_keywords
+        
+        def calculate_title_similarity(title1, title2):
+            """Calculate similarity score between two titles based on keywords and direct word matching"""
+            keywords1 = extract_keywords(title1)
+            keywords2 = extract_keywords(title2)
+            
+            # Calculate keyword group similarity
+            keyword_similarity = 0.0
+            if keywords1 or keywords2:
+                intersection = len(keywords1.intersection(keywords2))
+                union = len(keywords1.union(keywords2))
+                keyword_similarity = intersection / union if union > 0 else 0.0
+            
+            # Calculate direct word similarity (excluding common words and being more precise)
+            exclude_words = {'for', 'sale', 'rent', 'at', 'in', 'the', 'and', 'or', 'with', 'a', 'an', 'is', 'are', 'be', 'by', 'on', 'to', 'from'}
+            
+            title1_words = set()
+            title2_words = set()
+            
+            # Extract meaningful words (length > 2, not common words)
+            for word in title1.split():
+                clean_word = word.lower().strip('.,!?()[]{}";:')
+                if len(clean_word) > 2 and clean_word not in exclude_words:
+                    title1_words.add(clean_word)
+            
+            for word in title2.split():
+                clean_word = word.lower().strip('.,!?()[]{}";:')
+                if len(clean_word) > 2 and clean_word not in exclude_words:
+                    title2_words.add(clean_word)
+            
+            word_similarity = 0.0
+            if title1_words or title2_words:
+                # Only count exact word matches (no partial matches)
+                word_intersection = len(title1_words.intersection(title2_words))
+                word_union = len(title1_words.union(title2_words))
+                word_similarity = word_intersection / word_union if word_union > 0 else 0.0
+            
+            # Combine both similarities (70% keyword groups, 30% direct words)
+            final_similarity = (keyword_similarity * 0.7) + (word_similarity * 0.3)
+            
+            return final_similarity
+        
+        def get_property_category(property_obj):
+            """Simple category detection - only separate clear commercial properties"""
+            title_lower = property_obj.title.lower()
+            
+            # Only treat as commercial if explicitly commercial
+            clear_commercial = ['office space', 'business center', 'commercial building', 'retail space', 'warehouse']
+            
+            if any(keyword in title_lower for keyword in clear_commercial):
+                return 'commercial'
+            else:
+                return 'residential'  # Default to residential for broader matching
+        
+        # Get category of current property
+        current_category = get_property_category(property_obj)
+        
+        # Get all available properties except the current one
+        all_properties = Property.objects.filter(
+            status="available"
+        ).exclude(id=property_obj.id).select_related("agent").prefetch_related("images")
+        
+        # Be more inclusive with compatible properties
+        compatible_properties = []
+        for prop in all_properties:
+            prop_category = get_property_category(prop)
+            # Include if same category OR if we don't have many properties
+            if prop_category == current_category or len(all_properties) <= 10:
+                compatible_properties.append(prop)
+        
+        # If still no compatible properties, use all
+        if not compatible_properties:
+            compatible_properties = list(all_properties)
+        
+        # Score properties based on title similarity primarily
+        property_scores = []
+        
+        for prop in compatible_properties:
+            score = 0.0
+            
+            # 1. Title similarity (80% weight) - PRIMARY FACTOR
+            title_similarity = calculate_title_similarity(property_obj.title, prop.title)
+            score += title_similarity * 0.8
+            
+            # 2. Price range similarity (15% weight) - SECONDARY
+            price_ratio = min(float(prop.price), float(property_obj.price)) / max(float(prop.price), float(property_obj.price))
+            if price_ratio >= 0.5:  # Within 50% price range
+                score += 0.15 * price_ratio
+            
+            # 3. Location similarity (5% weight) - MINOR
+            # Check if they share similar location keywords
+            prop_address_words = set(prop.address.lower().split())
+            current_address_words = set(property_obj.address.lower().split())
+            location_overlap = len(prop_address_words.intersection(current_address_words))
+            if location_overlap > 0:
+                score += 0.05 * min(location_overlap / 3, 1.0)  # Cap at 3 word matches
+            
+            # Extract words from both titles for comparison
+            current_words = set(word.lower().strip('.,!?()[]{}";:') for word in property_obj.title.split() 
+                               if len(word) > 2 and word.lower() not in ['for', 'sale', 'rent', 'at', 'in', 'the', 'and', 'or', 'with', 'a', 'an'])
+            prop_words = set(word.lower().strip('.,!?()[]{}";:') for word in prop.title.split() 
+                            if len(word) > 2 and word.lower() not in ['for', 'sale', 'rent', 'at', 'in', 'the', 'and', 'or', 'with', 'a', 'an'])
+            
+            shared_words = current_words.intersection(prop_words)
+            
+            # Simplified matching criteria - focus on title similarity
+            has_strong_similarity = title_similarity > 0.2  # 20%+ similarity
+            has_moderate_similarity = title_similarity > 0.1  # 10%+ similarity  
+            has_word_match = len(shared_words) >= 2  # At least 2 shared words
+            has_single_word_match = len(shared_words) >= 1  # At least 1 shared word
+            has_same_type = prop.property_type == property_obj.property_type  # Same property type
+            
+            # Include property if it meets any criteria (be inclusive to ensure we get results)
+            if (has_strong_similarity or has_moderate_similarity or 
+                has_word_match or has_single_word_match or has_same_type):
+                property_scores.append((prop, score))
+        
+        # Sort by score and get properties
+        property_scores.sort(key=lambda x: x[1], reverse=True)
+        similar = [prop for prop, score in property_scores[:6]]
+        
+        # If we don't have enough matches, be more lenient
+        if len(similar) < 3:
+            # Add properties from same category regardless of similarity score
+            remaining_compatible = [p for p in compatible_properties if p not in similar]
+            similar.extend(remaining_compatible[:3-len(similar)])
+        
+        # If still not enough, add any available properties
+        if len(similar) < 2:
+            any_available = [p for p in all_properties if p not in similar]
+            similar.extend(any_available[:2-len(similar)])
 
         data = []
         for prop in similar:
-            data.append(
-                {
-                    "id": prop.id,
-                    "title": prop.title,
-                    "address": prop.address,
-                    "price": float(prop.price),
-                    "bedrooms": prop.bedrooms,
-                    "bathrooms": float(prop.bathrooms),
-                    "thumbnail": prop.get_thumbnail(),
-                    "agent": prop.agent.get_full_name() or prop.agent.username,
-                    "has_image": prop.images.exists(),
-                }
-            )
+            # Calculate title similarity percentage
+            title_similarity = calculate_title_similarity(property_obj.title, prop.title)
+            match_percentage = max(int(title_similarity * 100), 10)  # Minimum 10% to show something
+            
+            # Simple similarity reasons based on title analysis
+            similarity_reasons = []
+            
+            # Check for shared keywords
+            current_keywords = extract_keywords(property_obj.title)
+            prop_keywords = extract_keywords(prop.title)
+            shared_keywords = current_keywords.intersection(prop_keywords)
+            
+            if shared_keywords:
+                similarity_reasons.append(f"Similar features: {', '.join(list(shared_keywords)[:2])}")
+            
+            # Check for shared words in title
+            current_words = set(word.lower().strip('.,!?()[]{}";:') for word in property_obj.title.split() 
+                               if len(word) > 2)
+            prop_words = set(word.lower().strip('.,!?()[]{}";:') for word in prop.title.split() 
+                            if len(word) > 2)
+            shared_words = current_words.intersection(prop_words)
+            
+            if shared_words and not shared_keywords:
+                word_list = [word for word in shared_words if word not in ['for', 'sale', 'rent', 'apartment', 'house']]
+                if word_list:
+                    similarity_reasons.append(f"Shared terms: {', '.join(list(word_list)[:2])}")
+            
+            # Add property type if same
+            if prop.property_type == property_obj.property_type:
+                similarity_reasons.append(f"Same type: {prop.get_property_type_display()}")
+            
+            # Add bedroom similarity
+            if prop.bedrooms == property_obj.bedrooms:
+                similarity_reasons.append(f"Same size: {prop.bedrooms} bedrooms")
+            
+            # If no specific reasons, add generic one
+            if not similarity_reasons:
+                similarity_reasons.append("Available property")
+            
+            data.append({
+                "id": prop.id,
+                "title": prop.title,
+                "address": prop.address,
+                "price": float(prop.price),
+                "bedrooms": prop.bedrooms,
+                "bathrooms": float(prop.bathrooms),
+                "thumbnail": prop.get_thumbnail(),
+                "agent": prop.agent.get_full_name() or prop.agent.username,
+                "has_image": prop.images.exists(),
+                "similarity_reasons": similarity_reasons,
+                "similarity_score": match_percentage  # Show as percentage
+            })
 
         return JsonResponse({"properties": data})
 

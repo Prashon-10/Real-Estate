@@ -64,6 +64,12 @@ class PropertyBookingForm(forms.ModelForm):
         initial='stripe'
     )
     
+    additional_properties = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(),
+        help_text="Comma-separated list of additional property IDs for multi-property visits (no additional fees)"
+    )
+    
     class Meta:
         model = PropertyBooking
         fields = [
@@ -106,25 +112,41 @@ class PropertyBookingForm(forms.ModelForm):
         if preferred_date and preferred_date > timezone.now() + timedelta(days=180):
             raise forms.ValidationError("Please select a date within the next 6 months.")
         
-        # Check for conflicts with user's existing visit requests on the same date
-        if preferred_date and booking_type == 'visit' and hasattr(self, 'user') and self.user:
-            # Check if user has already booked a visit on the same date for ANY property
-            existing_visit_on_same_date = PropertyBooking.objects.filter(
+        # Check if user has already booked this exact property
+        if preferred_date and hasattr(self, 'user') and self.user and hasattr(self, 'current_property'):
+            from .models import PropertyBooking
+            
+            existing_booking = PropertyBooking.objects.filter(
                 customer=self.user,
-                booking_type='visit',
-                status__in=['pending', 'confirmed'],
-                preferred_date__date=preferred_date.date()  # Same date (ignoring time)
-            ).exclude(
-                property_ref=self.current_property  # Exclude current property
+                property_ref=self.current_property,
+                status__in=['pending', 'confirmed', 'cancelled']  # Include all non-rejected bookings
             ).first()
             
-            if existing_visit_on_same_date:
-                property_title = existing_visit_on_same_date.property_ref.title
-                existing_time = existing_visit_on_same_date.preferred_date.strftime('%I:%M %p')
-                raise forms.ValidationError(
-                    f"You already have a visit scheduled for '{property_title}' on {preferred_date.strftime('%B %d, %Y')} at {existing_time}. "
-                    f"Please select a different date as you cannot visit multiple properties on the same day."
-                )
+            if existing_booking:
+                if existing_booking.status == 'cancelled':
+                    raise forms.ValidationError(
+                        f"You previously cancelled a booking for this property on {existing_booking.preferred_date.strftime('%Y-%m-%d at %H:%M')}. "
+                        f"Please contact support if you want to rebook this property."
+                    )
+                else:
+                    raise forms.ValidationError(
+                        f"You have already booked this property on {existing_booking.preferred_date.strftime('%Y-%m-%d at %H:%M')} (Status: {existing_booking.get_status_display()}). "
+                        f"You cannot book the same property multiple times."
+                    )
+        
+        # Check for conflicts with user's existing bookings on the same date
+        # Allow same-date bookings only if properties are within 5km of each other
+        if preferred_date and hasattr(self, 'user') and self.user and hasattr(self, 'current_property'):
+            from .utils import check_booking_distance_compatibility
+            
+            is_compatible, error_message, conflicting_bookings = check_booking_distance_compatibility(
+                self.user, 
+                self.current_property, 
+                preferred_date
+            )
+            
+            if not is_compatible:
+                raise forms.ValidationError(error_message)
         
         return preferred_date
     
@@ -148,14 +170,95 @@ class PropertyBookingForm(forms.ModelForm):
         return cleaned_data
     
     def get_payment_amount(self):
-        """Calculate payment amount based on booking type"""
+        """Calculate payment amount based on booking type and user's previous bookings with the same agent"""
         booking_type = self.cleaned_data.get('booking_type', 'booking')
-        fees = BookingFee.get_current_fees()
+        preferred_date = self.cleaned_data.get('preferred_date')
         
-        if booking_type == 'visit':
-            return float(fees['visit_fee'])
-        else:
-            return float(fees['booking_fee'])
+        return self._calculate_payment_amount(booking_type, preferred_date)
+    
+    def get_initial_payment_amount(self, booking_type='visit'):
+        """Calculate payment amount for initial display (before form submission)"""
+        return self._calculate_payment_amount(booking_type, None)
+    
+    def _calculate_payment_amount(self, booking_type='visit', preferred_date=None):
+        """Internal method to calculate payment amount"""
+        # Base amount is Rs. 500 for first-time bookings
+        base_amount = 500.00
+        
+        # Check if user has previous bookings with this agent on different dates
+        if (hasattr(self, 'user') and self.user and self.user.is_authenticated and 
+            hasattr(self, 'current_property') and self.current_property):
+            
+            from .models import PropertyBooking
+            from django.db.models import Q
+            
+            # Get previous bookings with the same agent
+            query = PropertyBooking.objects.filter(
+                customer=self.user,
+                property_ref__agent=self.current_property.agent,
+                status__in=['pending', 'confirmed'],
+                preferred_date__isnull=False
+            )
+            
+            # If we have a preferred_date, exclude same-date bookings
+            if preferred_date:
+                query = query.exclude(preferred_date__date=preferred_date.date())
+            
+            previous_bookings = query
+            
+            # If user has previous bookings with this agent on different dates, charge Rs. 250
+            if previous_bookings.exists():
+                base_amount = 250.00
+        
+        # No additional fees for multiple properties on the same date
+        return base_amount
+    
+    def get_additional_property_objects(self):
+        """Get Property objects for additional properties"""
+        from .models import Property
+        
+        additional_properties = self.cleaned_data.get('additional_properties', '')
+        if not additional_properties:
+            return []
+        
+        property_ids = [int(pid.strip()) for pid in additional_properties.split(',') if pid.strip().isdigit()]
+        return Property.objects.filter(id__in=property_ids)
+    
+    def clean_additional_properties(self):
+        """Validate additional properties for existing bookings"""
+        additional_properties = self.cleaned_data.get('additional_properties', '')
+        
+        if not additional_properties or not hasattr(self, 'user') or not self.user:
+            return additional_properties
+        
+        property_ids = [int(pid.strip()) for pid in additional_properties.split(',') if pid.strip().isdigit()]
+        
+        if property_ids:
+            from .models import Property, PropertyBooking
+            
+            # Check each additional property for existing bookings
+            for property_id in property_ids:
+                try:
+                    property_obj = Property.objects.get(id=property_id)
+                    
+                    # Check if user has already booked this property
+                    existing_booking = PropertyBooking.objects.filter(
+                        customer=self.user,
+                        property_ref=property_obj,
+                        status__in=['pending', 'confirmed']
+                    ).first()
+                    
+                    if existing_booking:
+                        raise forms.ValidationError(
+                            f"You have already booked '{property_obj.title}' on {existing_booking.preferred_date.strftime('%Y-%m-%d at %H:%M')} "
+                            f"(Status: {existing_booking.get_status_display()}). "
+                            f"Please remove this property from your selection as you cannot book the same property multiple times."
+                        )
+                        
+                except Property.DoesNotExist:
+                    continue  # Skip invalid property IDs
+        
+        return additional_properties
 
 
 class BookingVerificationForm(forms.ModelForm):

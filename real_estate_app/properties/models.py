@@ -47,11 +47,21 @@ class Property(models.Model):
         return self.title
     
     def get_thumbnail(self):
-        """Get the first image as thumbnail"""
+        """Get the primary image as thumbnail, fallback to first image"""
+        # Try to get the primary image first
+        primary_image = self.images.filter(is_primary=True).first()
+        if primary_image:
+            return primary_image.image.url
+        
+        # Fallback to the first image if no primary image is set
         first_image = self.images.first()
         if first_image:
             return first_image.image.url
         return None
+    
+    def get_primary_image(self):
+        """Get the primary image object"""
+        return self.images.filter(is_primary=True).first()
     
     def get_display_price(self):
         """Get formatted price for display"""
@@ -60,10 +70,18 @@ class Property(models.Model):
 class PropertyImage(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='property_images')
+    caption = models.CharField(max_length=255, blank=True, default='')
     order = models.PositiveSmallIntegerField(default=0)
+    is_primary = models.BooleanField(default=False)
     
     class Meta:
         ordering = ['order']
+    
+    def save(self, *args, **kwargs):
+        # If this image is being set as primary, ensure no other images for this property are primary
+        if self.is_primary:
+            PropertyImage.objects.filter(property=self.property, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
+        super().save(*args, **kwargs)
     
     def __str__(self):
         return f"Image for {self.property.title} - {self.id}"
@@ -123,6 +141,15 @@ class PropertyBooking(models.Model):
         ('cancelled', 'Cancelled'),
     ]
     
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Payment Pending'),
+        ('authorized', 'Payment Authorized (Hold)'),
+        ('captured', 'Payment Captured (Charged)'),
+        ('failed', 'Payment Failed'),
+        ('refunded', 'Payment Refunded'),
+        ('cancelled', 'Payment Cancelled'),
+    ]
+    
     BOOKING_TYPE_CHOICES = [
         ('booking', 'Property Booking'),
         ('visit', 'Property Visit Request'),
@@ -141,13 +168,23 @@ class PropertyBooking(models.Model):
     # Visit Details (for visit requests)
     preferred_date = models.DateTimeField(null=True, blank=True)
     message = models.TextField(blank=True, help_text="Additional message or requirements")
+    additional_properties = models.TextField(
+        blank=True, 
+        help_text="Comma-separated list of additional property IDs for multi-property visits"
+    )
     
     # Payment Information
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
     transaction_id = models.CharField(max_length=255, unique=True)
+    payment_intent_id = models.CharField(max_length=255, blank=True, help_text="Stripe Payment Intent ID for authorization/capture")
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_status = models.CharField(max_length=20, default='completed')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
     payment_data = models.JSONField(blank=True, null=True, help_text="Store payment gateway response")
+    
+    # Payment timestamps
+    payment_authorized_at = models.DateTimeField(null=True, blank=True, help_text="When payment was authorized (money held)")
+    payment_captured_at = models.DateTimeField(null=True, blank=True, help_text="When payment was captured (money charged)")
+    payment_refunded_at = models.DateTimeField(null=True, blank=True, help_text="When payment was refunded")
     
     # Booking Status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
@@ -186,6 +223,71 @@ class PropertyBooking(models.Model):
     @property
     def can_be_verified(self):
         return self.status == 'pending'
+    
+    @property
+    def payment_display_status(self):
+        """Human-readable payment status"""
+        status_mapping = {
+            'pending': 'Payment Pending',
+            'authorized': 'Payment on Hold (Will be charged on confirmation)',
+            'captured': 'Payment Completed',
+            'failed': 'Payment Failed',
+            'refunded': 'Payment Refunded',
+            'cancelled': 'Payment Cancelled'
+        }
+        return status_mapping.get(self.payment_status, self.payment_status.title())
+    
+    def authorize_payment(self):
+        """Authorize payment (hold money without charging)"""
+        from django.utils import timezone
+        if self.payment_status == 'pending':
+            # In real implementation, this would call Stripe payment authorization
+            self.payment_status = 'authorized'
+            self.payment_authorized_at = timezone.now()
+            self.save()
+            return True
+        return False
+    
+    def capture_payment(self):
+        """Capture authorized payment (actually charge the money)"""
+        from django.utils import timezone
+        if self.payment_status == 'authorized':
+            # In real implementation, this would call Stripe payment capture
+            self.payment_status = 'captured'
+            self.payment_captured_at = timezone.now()
+            self.save()
+            return True
+        return False
+    
+    def refund_payment(self):
+        """Refund captured payment"""
+        from django.utils import timezone
+        if self.payment_status == 'captured':
+            # In real implementation, this would call Stripe refund
+            self.payment_status = 'refunded'
+            self.payment_refunded_at = timezone.now()
+            self.save()
+            return True
+        return False
+    
+    def cancel_authorization(self):
+        """Cancel payment authorization (release held money)"""
+        if self.payment_status == 'authorized':
+            self.payment_status = 'cancelled'
+            self.save()
+            return True
+        return False
+    
+    def reauthorize_payment(self):
+        """Re-authorize a previously cancelled payment"""
+        from django.utils import timezone
+        if self.payment_status == 'cancelled':
+            # In real implementation, this would create a new payment intent
+            self.payment_status = 'authorized'
+            self.payment_authorized_at = timezone.now()
+            self.save()
+            return True
+        return False
 
 
 class BookingFee(models.Model):
@@ -200,8 +302,8 @@ class BookingFee(models.Model):
     visit_fee = models.DecimalField(
         max_digits=8, 
         decimal_places=2, 
-        default=200.00,
-        help_text="Visit request fee amount in NPR"
+        default=500.00,
+        help_text="Visit request fee amount in NPR (same as booking fee)"
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -224,6 +326,6 @@ class BookingFee(models.Model):
                 'visit_fee': fee_config.visit_fee
             }
         return {
-            'booking_fee': 500.00,  # Default values
-            'visit_fee': 200.00
+            'booking_fee': 500.00,  # Updated default values
+            'visit_fee': 500.00
         }

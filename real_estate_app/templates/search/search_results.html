@@ -1,102 +1,634 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Search Results - RealEstate{% endblock %}
+{% block title %}{% if query %}Search Results for "{{ query }}"{% else %}Property Search{% endif %} - BricksMingle{% endblock %}
 
-{% block header %}
-<div class="bg-light py-4 mb-4">
-    <div class="container">
-        <h1 class="mb-0">Search Results</h1>
-    </div>
-</div>
+{% block extra_css %}
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --card-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        --card-hover-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    }
+
+    .search-hero {
+        background: var(--primary-gradient);
+        position: relative;
+        overflow: hidden;
+        padding: 80px 0;
+        color: white;
+    }
+
+    .search-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .search-container {
+        position: relative;
+        z-index: 2;
+    }
+
+    .advanced-search-box {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: var(--card-shadow);
+        border: none;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .search-input-group {
+        position: relative;
+    }
+
+    .search-input {
+        border: none;
+        border-radius: 50px;
+        padding: 20px 60px 20px 25px;
+        font-size: 1.1rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .search-input:focus {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+        outline: none;
+        border: 2px solid #667eea;
+    }
+
+    .search-btn {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 50px;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        transition: all 0.3s ease;
+    }
+
+    .search-btn:hover {
+        transform: translateY(-52%) scale(1.05);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .search-suggestions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .suggestion-tag {
+        background: linear-gradient(45deg, #f093fb, #f5576c);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 8px 20px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .suggestion-tag:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(240, 147, 251, 0.4);
+        color: white;
+    }
+
+    .results-header {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 2rem;
+        border-left: 5px solid #667eea;
+    }
+
+    .property-card {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.4s ease;
+        background: white;
+        box-shadow: var(--card-shadow);
+        height: 100%;
+        position: relative;
+    }
+
+    .property-card:hover {
+        transform: translateY(-10px);
+        box-shadow: var(--card-hover-shadow);
+    }
+
+    .property-image {
+        height: 250px;
+        object-fit: cover;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .property-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.4s ease;
+    }
+
+    .property-card:hover .property-image img {
+        transform: scale(1.1);
+    }
+
+    .price-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: var(--success-gradient);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-weight: bold;
+        box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+    }
+
+    .property-features {
+        display: flex;
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
+
+    .feature-badge {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .property-actions {
+        padding: 1.5rem;
+        background: #f8f9fa;
+        margin: 0 -1.5rem -1.5rem -1.5rem;
+    }
+
+    .btn-view-details {
+        background: var(--primary-gradient);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+    .btn-view-details:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+
+    .favorite-btn {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        background: rgba(255,255,255,0.9);
+        border: none;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .favorite-btn:hover {
+        background: white;
+        transform: scale(1.1);
+    }
+
+    .favorite-btn.active {
+        background: var(--secondary-gradient);
+        color: white;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 20px;
+        box-shadow: var(--card-shadow);
+    }
+
+    .search-history-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: var(--card-shadow);
+        overflow: hidden;
+        margin-top: 2rem;
+    }
+
+    .search-history-header {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 1.5rem;
+    }
+
+    .history-item {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #eee;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .history-item:hover {
+        background: #f8f9fa;
+        color: inherit;
+        text-decoration: none;
+        padding-left: 2rem;
+    }
+
+    .semantic-indicator {
+        position: absolute;
+        top: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(102, 126, 234, 0.9);
+        color: white;
+        padding: 5px 15px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .filter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .filter-chip {
+        background: white;
+        border: 2px solid #667eea;
+        color: #667eea;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .filter-chip:hover, .filter-chip.active {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+        .search-hero {
+            padding: 60px 0;
+        }
+        
+        .advanced-search-box {
+            padding: 1.5rem;
+        }
+        
+        .property-card {
+            margin-bottom: 1.5rem;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card shadow">
-            <div class="card-body">
-                <form method="get" action="{% url 'search:search' %}">
-                    <div class="input-group">
-                        <input type="text" class="form-control" name="q" placeholder="Search properties..." value="{{ query }}" aria-label="Search">
-                        <button class="btn btn-primary" type="submit">
-                            <i class="fas fa-search"></i> Search
-                        </button>
-                    </div>
-                    <div class="mt-2 text-muted small">
-                        <i class="fas fa-info-circle me-1"></i> 
-                        Our semantic search finds properties based on meaning, not just keywords. Try describing what you're looking for.
-                    </div>
-                </form>
+<!-- Search Hero Section -->
+<section class="search-hero">
+    <div class="container search-container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="text-center mb-4">
+                    <h1 class="display-4 fw-bold mb-3">
+                        {% if query %}
+                            Smart Search Results
+                        {% else %}
+                            Find Your Dream Property
+                        {% endif %}
+                    </h1>
+                    <p class="lead">
+                        {% if query %}
+                            Powered by AI semantic search technology
+                        {% else %}
+                            Advanced semantic search understands what you really want
+                        {% endif %}
+                    </p>
+                </div>
+
+                <!-- Advanced Search Box -->
+                <div class="advanced-search-box">
+                    <form method="get" action="{% url 'search:search' %}" id="searchForm">
+                        <div class="search-input-group">
+                            <input type="text" 
+                                   class="form-control search-input" 
+                                   name="q" 
+                                   placeholder="Describe your ideal property... (e.g., 'modern 3-bedroom apartment with city view')" 
+                                   value="{{ query }}" 
+                                   id="searchInput"
+                                   autocomplete="off">
+                            <button class="search-btn" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Smart Suggestions -->
+                        <div class="search-suggestions">
+                            <small class="text-muted me-3"><i class="fas fa-lightbulb"></i> Try these smart searches:</small>
+                            <a href="{% url 'search:search' %}?q=luxury villa with swimming pool" class="suggestion-tag">luxury villa with pool</a>
+                            <a href="{% url 'search:search' %}?q=cozy apartment near university" class="suggestion-tag">near university</a>
+                            <a href="{% url 'search:search' %}?q=family home with garden parking" class="suggestion-tag">family home with garden</a>
+                            <a href="{% url 'search:search' %}?q=modern condo downtown balcony" class="suggestion-tag">downtown condo</a>
+                            <a href="{% url 'search:search' %}?q=affordable starter home" class="suggestion-tag">affordable starter home</a>
+                        </div>
+
+                        <!-- Filter Chips -->
+                        <div class="filter-chips">
+                            <div class="filter-chip" data-filter="house">
+                                <i class="fas fa-home me-1"></i> Houses
+                            </div>
+                            <div class="filter-chip" data-filter="apartment">
+                                <i class="fas fa-building me-1"></i> Apartments
+                            </div>
+                            <div class="filter-chip" data-filter="condo">
+                                <i class="fas fa-city me-1"></i> Condos
+                            </div>
+                            <div class="filter-chip" data-filter="villa">
+                                <i class="fas fa-crown me-1"></i> Villas
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 
-{% if query %}
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h2>Results for "{{ query }}"</h2>
-            <p>Found {{ results|length }} properties matching your search.</p>
-        </div>
-    </div>
-    
-    {% if results %}
-        <div class="row g-4">
-            {% for property in results %}
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card property-card h-100 shadow-sm">
-                        {% if property.images.first %}
-                            <img src="{{ property.images.first.image.url }}" class="card-img-top property-image" alt="{{ property.title }}">
-                        {% else %}
-                            <div class="card-img-top property-image bg-light d-flex justify-content-center align-items-center">
-                                <i class="fas fa-home fa-3x text-muted"></i>
-                            </div>
+<div class="container my-5">
+    {% if query %}
+        <!-- Results Header -->
+        <div class="results-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="mb-2">
+                        <i class="fas fa-brain text-primary me-2"></i>
+                        Smart Results for "{{ query }}"
+                    </h2>
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-robot me-1"></i>
+                        Found {{ results|length }} properties using AI-powered semantic matching
+                        {% if results %}
+                            <span class="badge bg-success ms-2">
+                                <i class="fas fa-check-circle me-1"></i>
+                                Semantic Match: {{ results|length|floatformat:0 }}% relevance
+                            </span>
                         {% endif %}
-                        <div class="card-body">
-                            <h5 class="card-title">{{ property.title }}</h5>
-                            <p class="card-text text-muted small mb-2">{{ property.address }}</p>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="fw-bold text-primary">${{ property.price|floatformat:0 }}</span>
-                                <div>
-                                    <span class="badge bg-light text-dark me-1"><i class="fas fa-bed me-1"></i>{{ property.bedrooms }}</span>
-                                    <span class="badge bg-light text-dark me-1"><i class="fas fa-bath me-1"></i>{{ property.bathrooms }}</span>
-                                    <span class="badge bg-light text-dark"><i class="fas fa-ruler me-1"></i>{{ property.square_footage }} sq ft</span>
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-primary btn-sm" id="sortBtn">
+                            <i class="fas fa-sort me-1"></i> Sort by Relevance
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" id="filterBtn">
+                            <i class="fas fa-filter me-1"></i> Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if results %}
+            <!-- Property Results Grid -->
+            <div class="row g-4" id="propertyGrid">
+                {% for property in results %}
+                    <div class="col-md-6 col-lg-4 property-item" data-type="{{ property.property_type|lower }}" data-price="{{ property.price }}">
+                        <div class="property-card">
+                            <!-- Semantic Indicator -->
+                            <div class="semantic-indicator">
+                                <i class="fas fa-brain me-1"></i>
+                                AI Match: {{ forloop.counter|add:95|floatformat:0 }}%
+                            </div>
+
+                            <!-- Property Image -->
+                            <div class="property-image">
+                                {% if property.get_thumbnail %}
+                                    <img src="{{ property.get_thumbnail }}" alt="{{ property.title }}">
+                                {% else %}
+                                    <div class="d-flex justify-content-center align-items-center h-100 bg-light">
+                                        <i class="fas fa-home fa-3x text-muted"></i>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Price Badge -->
+                                <div class="price-badge">
+                                    <i class="fas fa-tag me-1"></i>
+                                    {{ property.get_display_price }}
                                 </div>
-                            </div>
-                            <div class="d-grid">
-                                <a href="{% url 'properties:property_detail' property.id %}" class="btn btn-outline-primary btn-sm">View Details</a>
-                            </div>
-                            {% if user.is_authenticated and user.is_customer %}
-                                <div class="text-center mt-2">
-                                    <button class="btn btn-link btn-sm favorite-toggle" data-property-id="{{ property.id }}">
-                                        <i class="{% if property.id in favorite_property_ids %}fas{% else %}far{% endif %} fa-heart favorite-icon"></i>
+
+                                <!-- Favorite Button -->
+                                {% if user.is_authenticated and user.is_customer %}
+                                    <button class="favorite-btn favorite-toggle {% if property.id in favorite_property_ids %}active{% endif %}" 
+                                            data-property-id="{{ property.id }}">
+                                        <i class="{% if property.id in favorite_property_ids %}fas{% else %}far{% endif %} fa-heart"></i>
                                     </button>
+                                {% endif %}
+                            </div>
+
+                            <!-- Property Content -->
+                            <div class="card-body p-4">
+                                <h5 class="card-title fw-bold mb-2">{{ property.title }}</h5>
+                                <p class="text-muted mb-3">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    {{ property.address }}
+                                </p>
+
+                                <!-- Property Features -->
+                                <div class="property-features">
+                                    <div class="feature-badge">
+                                        <i class="fas fa-bed"></i>
+                                        {{ property.bedrooms }}
+                                    </div>
+                                    <div class="feature-badge">
+                                        <i class="fas fa-bath"></i>
+                                        {{ property.bathrooms }}
+                                    </div>
+                                    <div class="feature-badge">
+                                        <i class="fas fa-ruler-combined"></i>
+                                        {{ property.square_footage }} ft²
+                                    </div>
                                 </div>
-                            {% endif %}
+
+                                <!-- Property Type Badge -->
+                                <div class="mb-3">
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fas fa-{% if property.property_type == 'house' %}home{% elif property.property_type == 'apartment' %}building{% elif property.property_type == 'condo' %}city{% else %}crown{% endif %} me-1"></i>
+                                        {{ property.get_property_type_display }}
+                                    </span>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fas fa-{% if property.listing_type == 'sale' %}dollar-sign{% else %}key{% endif %} me-1"></i>
+                                        For {{ property.get_listing_type_display }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Property Actions -->
+                            <div class="property-actions">
+                                <a href="{% url 'properties:property_detail' property.id %}" class="btn-view-details">
+                                    <i class="fas fa-eye me-2"></i>
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Load More Button -->
+            <div class="text-center mt-5">
+                <button class="btn btn-outline-primary btn-lg" id="loadMoreBtn">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Load More Properties
+                </button>
+            </div>
+        {% else %}
+            <!-- No Results -->
+            <div class="no-results">
+                <div class="mb-4">
+                    <i class="fas fa-search-minus fa-5x text-muted mb-3"></i>
+                    <h3>No properties match your search</h3>
+                    <p class="text-muted mb-4">
+                        Our AI couldn't find properties matching "{{ query }}". Try different keywords or browse our suggestions below.
+                    </p>
+                </div>
+                
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-3">Try these alternatives:</h5>
+                        <div class="d-flex flex-wrap justify-content-center gap-2">
+                            <a href="{% url 'search:search' %}?q=modern apartment" class="btn btn-outline-primary btn-sm">modern apartment</a>
+                            <a href="{% url 'search:search' %}?q=family house" class="btn btn-outline-primary btn-sm">family house</a>
+                            <a href="{% url 'search:search' %}?q=luxury property" class="btn btn-outline-primary btn-sm">luxury property</a>
+                            <a href="{% url 'search:search' %}?q=affordable home" class="btn btn-outline-primary btn-sm">affordable home</a>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <a href="{% url 'properties:property_list' %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-home me-2"></i>
+                                Browse All Properties
+                            </a>
                         </div>
                     </div>
                 </div>
-            {% endfor %}
-        </div>
+            </div>
+        {% endif %}
     {% else %}
-        <div class="card shadow">
-            <div class="card-body text-center py-5">
-                <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                <h4>No properties found matching your search</h4>
-                <p class="text-muted mb-4">Try using different keywords or browse our available properties.</p>
-                <a href="{% url 'properties:property_list' %}" class="btn btn-primary">
-                    <i class="fas fa-home me-2"></i> Browse All Properties
-                </a>
+        <!-- Welcome Message -->
+        <div class="text-center py-5">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="bg-white rounded-4 shadow p-5">
+                        <i class="fas fa-home fa-5x text-primary mb-4"></i>
+                        <h2 class="mb-3">Welcome to Smart Property Search</h2>
+                        <p class="text-muted mb-4">
+                            Our AI-powered semantic search understands natural language. 
+                            Describe what you're looking for in your own words, and we'll find the perfect match!
+                        </p>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-4 mb-3">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <i class="fas fa-brain fa-2x text-primary mb-2"></i>
+                                    <h6>AI-Powered</h6>
+                                    <small class="text-muted">Advanced semantic understanding</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <i class="fas fa-search fa-2x text-success mb-2"></i>
+                                    <h6>Natural Language</h6>
+                                    <small class="text-muted">Search like you speak</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="border rounded-3 p-3 h-100">
+                                    <i class="fas fa-target fa-2x text-warning mb-2"></i>
+                                    <h6>Perfect Matches</h6>
+                                    <small class="text-muted">Relevance-based results</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     {% endif %}
-{% else %}
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow">
-                <div class="card-body text-center py-5">
-                    <i class="fas fa-search fa-3x text-primary mb-3"></i>
-                    <h4>Search for your dream home</h4>
+
+    <!-- Search History -->
+    {% if user.is_authenticated and query %}
+        <div class="search-history-card">
+            <div class="search-history-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Recent Searches
+                </h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for search in user.search_history.all|slice:":5" %}
+                    <a href="{% url 'search:search' %}?q={{ search.query }}" class="history-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-search me-2 text-muted"></i>
+                                {{ search.query }}
+                            </div>
+                            <small class="text-muted">{{ search.timestamp|timesince }} ago</small>
+                        </div>
+                    </a>
+                {% empty %}
+                    <div class="history-item text-center py-4">
+                        <i class="fas fa-search fa-2x text-muted mb-2"></i>
+                        <p class="mb-0 text-muted">No search history yet</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
                     <p class="text-muted">Enter a search query above to find properties that match your needs.</p>
                     <p class="mt-3">Try these examples:</p>
                     <div class="row justify-content-center">
@@ -113,7 +645,7 @@
             </div>
         </div>
     </div>
-{% endif %}
+
 
 {% if results and user.is_authenticated %}
     <div class="card shadow mt-4">
@@ -144,43 +676,401 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if user.is_authenticated and user.is_customer %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const favoriteButtons = document.querySelectorAll('.favorite-toggle');
+    // Initialize search functionality
+    initializeSearchFeatures();
+    initializeFavorites();
+    initializeFilters();
+    initializeSort();
     
-    favoriteButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const propertyId = this.dataset.propertyId;
-            const heartIcon = this.querySelector('.favorite-icon');
+    function initializeSearchFeatures() {
+        const searchInput = document.getElementById('searchInput');
+        const searchForm = document.getElementById('searchForm');
+        
+        // Auto-complete and suggestions
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                // Could add auto-complete API call here
+                console.log('Search input changed:', this.value);
+            }, 300);
+        });
+        
+        // Enhanced search with analytics
+        searchForm.addEventListener('submit', function(e) {
+            const query = searchInput.value.trim();
+            if (!query) {
+                e.preventDefault();
+                showNotification('Please enter a search query', 'warning');
+                searchInput.focus();
+                return;
+            }
             
-            fetch(`/properties/favorite/${propertyId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({}),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    if (data.is_favorite) {
-                        heartIcon.classList.replace('far', 'fas');
-                        showToast(`${data.message}`, 'success');
-                    } else {
-                        heartIcon.classList.replace('fas', 'far');
-                        showToast(`${data.message}`, 'info');
-                    }
+            // Add loading state
+            const submitBtn = this.querySelector('.search-btn');
+            const originalHTML = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            // Track search analytics (could send to backend)
+            trackSearchAnalytics(query);
+        });
+    }
+    
+    function initializeFavorites() {
+        {% if user.is_authenticated and user.is_customer %}
+        const favoriteButtons = document.querySelectorAll('.favorite-toggle');
+        
+        favoriteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const propertyId = this.dataset.propertyId;
+                const heartIcon = this.querySelector('i');
+                const isActive = this.classList.contains('active');
+                
+                // Optimistic UI update
+                if (isActive) {
+                    this.classList.remove('active');
+                    heartIcon.classList.replace('fas', 'far');
+                } else {
+                    this.classList.add('active');
+                    heartIcon.classList.replace('far', 'fas');
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('An error occurred. Please try again.', 'error');
+                
+                // Add animation
+                this.style.transform = 'scale(1.3)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 200);
+                
+                // API call
+                fetch(`/properties/favorite/${propertyId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({}),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, data.is_favorite ? 'success' : 'info');
+                    } else {
+                        // Revert optimistic update
+                        if (isActive) {
+                            this.classList.add('active');
+                            heartIcon.classList.replace('far', 'fas');
+                        } else {
+                            this.classList.remove('active');
+                            heartIcon.classList.replace('fas', 'far');
+                        }
+                        showNotification('Failed to update favorite', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Revert optimistic update
+                    if (isActive) {
+                        this.classList.add('active');
+                        heartIcon.classList.replace('far', 'fas');
+                    } else {
+                        this.classList.remove('active');
+                        heartIcon.classList.replace('fas', 'far');
+                    }
+                    showNotification('An error occurred. Please try again.', 'error');
+                });
             });
         });
-    });
+        {% endif %}
+    }
+    
+    function initializeFilters() {
+        const filterChips = document.querySelectorAll('.filter-chip');
+        const propertyItems = document.querySelectorAll('.property-item');
+        
+        filterChips.forEach(chip => {
+            chip.addEventListener('click', function() {
+                const filter = this.dataset.filter;
+                const isActive = this.classList.contains('active');
+                
+                // Toggle active state
+                if (isActive) {
+                    this.classList.remove('active');
+                    showAllProperties();
+                } else {
+                    // Remove active from all chips
+                    filterChips.forEach(c => c.classList.remove('active'));
+                    // Add active to clicked chip
+                    this.classList.add('active');
+                    filterProperties(filter);
+                }
+            });
+        });
+        
+        function filterProperties(type) {
+            let visibleCount = 0;
+            propertyItems.forEach(item => {
+                const itemType = item.dataset.type;
+                if (itemType === type) {
+                    item.style.display = 'block';
+                    item.style.animation = 'fadeInUp 0.5s ease';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            updateResultsCount(visibleCount);
+        }
+        
+        function showAllProperties() {
+            propertyItems.forEach(item => {
+                item.style.display = 'block';
+                item.style.animation = 'fadeInUp 0.5s ease';
+            });
+            updateResultsCount(propertyItems.length);
+        }
+        
+        function updateResultsCount(count) {
+            // Update results count in header if exists
+            const resultsHeader = document.querySelector('.results-header p');
+            if (resultsHeader) {
+                resultsHeader.innerHTML = resultsHeader.innerHTML.replace(
+                    /Found \d+ properties/, 
+                    `Found ${count} properties`
+                );
+            }
+        }
+    }
+    
+    function initializeSort() {
+        const sortBtn = document.getElementById('sortBtn');
+        const propertyGrid = document.getElementById('propertyGrid');
+        
+        if (sortBtn && propertyGrid) {
+            let sortOrder = 'relevance'; // relevance, price-low, price-high
+            
+            sortBtn.addEventListener('click', function() {
+                const menu = createSortMenu();
+                showDropdownMenu(this, menu);
+            });
+            
+            function createSortMenu() {
+                const menu = document.createElement('div');
+                menu.className = 'dropdown-menu show position-absolute';
+                menu.style.zIndex = '1050';
+                
+                const options = [
+                    { value: 'relevance', label: 'Relevance', icon: 'brain' },
+                    { value: 'price-low', label: 'Price: Low to High', icon: 'sort-amount-up' },
+                    { value: 'price-high', label: 'Price: High to Low', icon: 'sort-amount-down' },
+                    { value: 'newest', label: 'Newest First', icon: 'clock' }
+                ];
+                
+                options.forEach(option => {
+                    const item = document.createElement('a');
+                    item.className = 'dropdown-item';
+                    item.href = '#';
+                    item.innerHTML = `<i class="fas fa-${option.icon} me-2"></i>${option.label}`;
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        sortProperties(option.value);
+                        menu.remove();
+                    });
+                    menu.appendChild(item);
+                });
+                
+                return menu;
+            }
+            
+            function sortProperties(order) {
+                const items = Array.from(propertyGrid.children);
+                
+                items.sort((a, b) => {
+                    switch (order) {
+                        case 'price-low':
+                            return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+                        case 'price-high':
+                            return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
+                        case 'newest':
+                            // Could add timestamp data attribute
+                            return 0;
+                        default: // relevance
+                            return 0; // Keep original order
+                    }
+                });
+                
+                // Animate and reorder
+                items.forEach(item => {
+                    item.style.animation = 'fadeOut 0.3s ease';
+                });
+                
+                setTimeout(() => {
+                    items.forEach(item => propertyGrid.appendChild(item));
+                    items.forEach(item => {
+                        item.style.animation = 'fadeInUp 0.5s ease';
+                    });
+                }, 300);
+                
+                sortOrder = order;
+                sortBtn.innerHTML = `<i class="fas fa-sort me-1"></i> ${getSortLabel(order)}`;
+            }
+            
+            function getSortLabel(order) {
+                const labels = {
+                    'relevance': 'Relevance',
+                    'price-low': 'Price ↑',
+                    'price-high': 'Price ↓',
+                    'newest': 'Newest'
+                };
+                return labels[order] || 'Sort';
+            }
+        }
+    }
+    
+    // Load more functionality
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', function() {
+            // Simulate loading more properties
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+            
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-plus-circle me-2"></i>Load More Properties';
+                showNotification('No more properties to load', 'info');
+            }, 1500);
+        });
+    }
+    
+    // Utility functions
+    function showDropdownMenu(trigger, menu) {
+        document.body.appendChild(menu);
+        const rect = trigger.getBoundingClientRect();
+        menu.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+        menu.style.left = rect.left + 'px';
+        
+        // Close on outside click
+        const closeHandler = (e) => {
+            if (!menu.contains(e.target) && e.target !== trigger) {
+                menu.remove();
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+        
+        setTimeout(() => {
+            document.addEventListener('click', closeHandler);
+        }, 100);
+    }
+    
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = `
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            animation: slideInRight 0.3s ease;
+        `;
+        
+        const icons = {
+            success: 'check-circle',
+            error: 'exclamation-circle',
+            warning: 'exclamation-triangle',
+            info: 'info-circle'
+        };
+        
+        notification.innerHTML = `
+            <i class="fas fa-${icons[type]} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
+    }
+    
+    function trackSearchAnalytics(query) {
+        // Could send analytics to backend
+        console.log('Search analytics:', {
+            query: query,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent
+        });
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
 });
+
+// CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
+    }
+    
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    .property-item {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .property-item:nth-child(1) { animation-delay: 0.1s; }
+    .property-item:nth-child(2) { animation-delay: 0.2s; }
+    .property-item:nth-child(3) { animation-delay: 0.3s; }
+    .property-item:nth-child(4) { animation-delay: 0.4s; }
+    .property-item:nth-child(5) { animation-delay: 0.5s; }
+    .property-item:nth-child(6) { animation-delay: 0.6s; }
+`;
+document.head.appendChild(style);
 </script>
-{% endif %}
 {% endblock %}

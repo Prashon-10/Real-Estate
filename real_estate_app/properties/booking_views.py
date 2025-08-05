@@ -29,6 +29,22 @@ def property_booking_view(request, property_id):
     """Handle property booking form and payment initiation"""
     property_obj = get_object_or_404(Property, id=property_id, status='available')
     
+    # Check if user has already booked this property
+    if request.user.is_authenticated:
+        existing_booking = PropertyBooking.objects.filter(
+            customer=request.user,
+            property_ref=property_obj,
+            status__in=['pending', 'confirmed', 'cancelled']
+        ).first()
+        
+        if existing_booking:
+            messages.error(
+                request, 
+                f"You have already booked this property on {existing_booking.preferred_date.strftime('%Y-%m-%d at %H:%M')} "
+                f"(Status: {existing_booking.get_status_display()}). You cannot book the same property multiple times."
+            )
+            return redirect('properties:property_detail', property_id=property_obj.id)
+    
     # Get booking type from URL parameter
     booking_type = request.GET.get('type', 'booking')  # 'booking' or 'visit'
     
@@ -50,6 +66,7 @@ def property_booking_view(request, property_id):
                 'message': form.cleaned_data.get('message', ''),
                 'payment_method': form.cleaned_data['payment_method'],
                 'payment_amount': payment_amount,
+                'additional_properties': form.cleaned_data.get('additional_properties', ''),
             }
             
             request.session['booking_data'] = booking_data
@@ -64,6 +81,11 @@ def property_booking_view(request, property_id):
     
     # Get current fees for display
     fees = BookingFee.get_current_fees()
+    
+    # Calculate the actual payment amount for this user (considering repeat customer discount)
+    if hasattr(form, 'get_initial_payment_amount'):
+        actual_visit_fee = form.get_initial_payment_amount('visit')
+        fees['visit_fee'] = actual_visit_fee
     
     # Get blocked visit dates for this property (dates already taken by other users)
     blocked_dates = list(
@@ -83,26 +105,31 @@ def property_booking_view(request, property_id):
         cls=DjangoJSONEncoder
     )
     
-    # Get user's existing visit dates across ALL properties for conflict checking
-    user_visit_dates = []
+    # Get user's existing booking dates across ALL properties for conflict checking
+    user_booking_dates = []
     if request.user.is_authenticated:
-        user_visits = PropertyBooking.objects.filter(
+        user_bookings = PropertyBooking.objects.filter(
             customer=request.user,
-            booking_type='visit',
             status__in=['pending', 'confirmed'],
             preferred_date__isnull=False
         ).exclude(property_ref=property_obj)  # Exclude current property
         
-        user_visit_dates = [
+        user_booking_dates = [
             {
-                'date': visit.preferred_date.strftime('%Y-%m-%d'),
-                'time': visit.preferred_date.strftime('%I:%M %p'),
-                'property': visit.property_ref.title
+                'date': booking.preferred_date.strftime('%Y-%m-%d'),
+                'time': booking.preferred_date.strftime('%I:%M %p'),
+                'property': booking.property_ref.title,
+                'agent': booking.property_ref.agent.get_full_name() or booking.property_ref.agent.username,
+                'type': booking.get_booking_type_display()
             }
-            for visit in user_visits
+            for booking in user_bookings
         ]
     
-    user_visit_dates_json = json.dumps(user_visit_dates, cls=DjangoJSONEncoder)
+    user_booking_dates_json = json.dumps(user_booking_dates, cls=DjangoJSONEncoder)
+    
+    # Get nearby properties by the same agent (within 5km)
+    from .utils import get_properties_within_distance
+    nearby_properties = get_properties_within_distance(property_obj, max_distance_km=5.0, user=request.user)
     
     context = {
         'form': form,
@@ -110,7 +137,8 @@ def property_booking_view(request, property_id):
         'fees': fees,
         'booking_type': booking_type,
         'blocked_visit_dates': blocked_dates_json,
-        'user_visit_dates': user_visit_dates_json,
+        'user_booking_dates': user_booking_dates_json,
+        'nearby_properties': nearby_properties,
     }
     return render(request, 'properties/booking_form.html', context)
 
@@ -234,7 +262,8 @@ def esewa_payment_view(request):
 
 
 def create_demo_booking(user, booking_data, payment_method, transaction_id):
-    """Create a booking with demo payment data"""
+    """Create a booking with demo payment authorization (not immediate charge)"""
+    from django.utils import timezone
     property_obj = get_object_or_404(Property, id=booking_data['property_id'])
     
     booking = PropertyBooking(
@@ -247,15 +276,26 @@ def create_demo_booking(user, booking_data, payment_method, transaction_id):
         message=booking_data.get('message', ''),
         payment_method=payment_method,
         transaction_id=transaction_id,
+        payment_intent_id=f"pi_demo_{uuid.uuid4().hex[:16]}",  # Demo payment intent ID
         payment_amount=Decimal(str(booking_data['payment_amount'])),
-        payment_status='completed',
-        payment_data={'demo': True, 'payment_method': payment_method}
+        payment_status='authorized',  # Start with authorized status (money on hold)
+        payment_authorized_at=timezone.now(),  # Record when authorization happened
+        payment_data={
+            'demo': True, 
+            'payment_method': payment_method,
+            'authorization_demo': True,
+            'note': 'Demo payment - Money is held until booking confirmation'
+        }
     )
     
     # Set preferred date if it exists
     if booking_data.get('preferred_date'):
         from django.utils.dateparse import parse_datetime
         booking.preferred_date = parse_datetime(booking_data['preferred_date'])
+    
+    # Handle additional properties
+    if booking_data.get('additional_properties'):
+        booking.additional_properties = booking_data['additional_properties']
     
     booking.save()
     return booking
@@ -429,17 +469,88 @@ class VerifyBookingView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         form = BookingVerificationForm(request.POST, instance=booking)
         
         if form.is_valid():
+            old_status = booking.status
             booking = form.save(commit=False)
             booking.verified_by = request.user
             
             if booking.status in ['confirmed', 'rejected']:
                 from django.utils import timezone
                 booking.verified_at = timezone.now()
+                
+                # Handle payment based on booking status
+                if booking.status == 'confirmed' and old_status != 'confirmed':
+                    # CONFIRM: First check if payment needs re-authorization, then capture
+                    if booking.payment_status == 'cancelled':
+                        # Re-authorize cancelled payment
+                        if booking.reauthorize_payment():
+                            messages.info(request, 
+                                f'Payment re-authorized for booking {booking.id}.')
+                            # Now capture the re-authorized payment
+                            if booking.capture_payment():
+                                messages.success(request, 
+                                    f'Booking confirmed and payment of Rs. {booking.payment_amount} has been charged successfully.')
+                            else:
+                                messages.warning(request, 
+                                    'Payment re-authorized but capture failed. Please check payment manually.')
+                        else:
+                            messages.error(request, 
+                                'Failed to re-authorize cancelled payment. Please check payment manually.')
+                    elif booking.payment_status == 'authorized':
+                        # Normal capture for authorized payment
+                        success = booking.capture_payment()
+                        if success:
+                            messages.success(request, 
+                                f'Booking confirmed and payment of Rs. {booking.payment_amount} has been charged successfully.')
+                        else:
+                            messages.warning(request, 
+                                'Booking confirmed but payment capture failed. Please check payment manually.')
+                    else:
+                        messages.success(request, f'Booking has been confirmed.')
+                        
+                elif booking.status == 'rejected' and old_status != 'rejected':
+                    # REJECT: Cancel the authorization (release held money)
+                    if booking.payment_status == 'authorized':
+                        success = booking.cancel_authorization()
+                        if success:
+                            messages.success(request, 
+                                f'Booking rejected and held payment of Rs. {booking.payment_amount} has been released back to customer.')
+                        else:
+                            messages.warning(request, 
+                                'Booking rejected but payment cancellation failed. Please check payment manually.')
+                    elif booking.payment_status == 'captured':
+                        # If somehow payment was already captured, refund it
+                        success = booking.refund_payment()
+                        if success:
+                            messages.success(request, 
+                                f'Booking rejected and payment of Rs. {booking.payment_amount} has been refunded.')
+                        else:
+                            messages.warning(request, 
+                                'Booking rejected but refund failed. Please process refund manually.')
+                    else:
+                        messages.success(request, f'Booking has been rejected.')
+                        
+                elif booking.status == 'cancelled' and old_status != 'cancelled':
+                    # CANCEL: Refund captured payments or cancel authorization
+                    if booking.payment_status == 'captured':
+                        success = booking.refund_payment()
+                        if success:
+                            messages.success(request, 
+                                f'Booking cancelled and payment of Rs. {booking.payment_amount} has been refunded to customer.')
+                        else:
+                            messages.warning(request, 
+                                'Booking cancelled but refund failed. Please process refund manually.')
+                    elif booking.payment_status == 'authorized':
+                        success = booking.cancel_authorization()
+                        if success:
+                            messages.success(request, 
+                                f'Booking cancelled and held payment of Rs. {booking.payment_amount} has been released back to customer.')
+                        else:
+                            messages.warning(request, 
+                                'Booking cancelled but payment cancellation failed. Please check payment manually.')
+                    else:
+                        messages.success(request, f'Booking has been cancelled.')
             
             booking.save()
-            
-            action = 'confirmed' if booking.status == 'confirmed' else 'rejected'
-            messages.success(request, f'Booking has been {action} successfully.')
             
             return redirect('properties:admin_bookings')
         
@@ -473,6 +584,47 @@ def update_booking_status(request, booking_id):
             if new_status in ['confirmed', 'rejected']:
                 from django.utils import timezone
                 booking.verified_at = timezone.now()
+                
+                # Handle payment based on booking status change
+                payment_message = ""
+                if new_status == 'confirmed' and old_status != 'confirmed':
+                    # CONFIRM: First check if payment needs re-authorization, then capture
+                    if booking.payment_status == 'cancelled':
+                        # Re-authorize cancelled payment
+                        if booking.reauthorize_payment():
+                            # Now capture the re-authorized payment
+                            if booking.capture_payment():
+                                payment_message = f" Payment re-authorized and Rs. {booking.payment_amount} charged successfully."
+                            else:
+                                payment_message = f" Payment re-authorized but capture failed - check manually."
+                        else:
+                            payment_message = f" Failed to re-authorize cancelled payment - check manually."
+                    elif booking.payment_status == 'authorized':
+                        # Normal capture for authorized payment
+                        success = booking.capture_payment()
+                        payment_message = f" Payment of Rs. {booking.payment_amount} charged successfully." if success else " Payment capture failed - check manually."
+                    else:
+                        payment_message = f" Booking confirmed (payment status: {booking.get_payment_status_display()})."
+                        
+                elif new_status == 'rejected' and old_status != 'rejected':
+                    # REJECT: Cancel authorization or refund if captured
+                    if booking.payment_status == 'authorized':
+                        success = booking.cancel_authorization()
+                        payment_message = f" Held payment of Rs. {booking.payment_amount} released to customer." if success else " Payment cancellation failed - check manually."
+                    elif booking.payment_status == 'captured':
+                        success = booking.refund_payment()
+                        payment_message = f" Payment of Rs. {booking.payment_amount} refunded to customer." if success else " Refund failed - process manually."
+                        
+                elif new_status == 'cancelled' and old_status != 'cancelled':
+                    # CANCEL: Refund captured payments or cancel authorization
+                    if booking.payment_status == 'captured':
+                        success = booking.refund_payment()
+                        payment_message = f" Booking cancelled - Payment of Rs. {booking.payment_amount} refunded to customer." if success else " Booking cancelled but refund failed - process manually."
+                    elif booking.payment_status == 'authorized':
+                        success = booking.cancel_authorization()
+                        payment_message = f" Booking cancelled - Held payment of Rs. {booking.payment_amount} released to customer." if success else " Booking cancelled but payment cancellation failed - check manually."
+                    else:
+                        payment_message = f" Booking cancelled (payment status: {booking.get_payment_status_display()})."
             
             booking.save()
             
@@ -480,14 +632,16 @@ def update_booking_status(request, booking_id):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
-                    'message': f'Booking status updated from {old_status} to {new_status}',
+                    'message': f'Booking status updated from {old_status} to {new_status}.{payment_message}',
                     'new_status': new_status,
                     'new_status_display': booking.get_status_display(),
+                    'payment_status': booking.payment_status,
+                    'payment_status_display': booking.payment_display_status,
                     'verified_by': request.user.get_full_name() or request.user.email,
                     'verified_at': booking.verified_at.strftime('%Y-%m-%d %H:%M:%S') if booking.verified_at else None
                 })
             else:
-                messages.success(request, f'Booking status updated to {booking.get_status_display()}')
+                messages.success(request, f'Booking status updated to {booking.get_status_display()}.{payment_message}')
                 
                 # Redirect based on user type
                 if request.user.is_staff:
