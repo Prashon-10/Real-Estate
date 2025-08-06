@@ -134,7 +134,7 @@
                     <div class="col-md-9">
                         <h6 class="mb-2">{{ booking.property_ref.title }}</h6>
                         <p class="text-muted mb-2">{{ booking.property_ref.address }}</p>
-                        <p class="text-success fw-bold mb-2">${{ booking.property_ref.price|floatformat:0 }}</p>
+                        <p class="text-success fw-bold mb-2">Rs. {{ booking.property_ref.price|floatformat:0 }}</p>
                         <div class="d-flex gap-2">
                             <span class="badge bg-light text-dark">{{ booking.property_ref.bedrooms }} bed</span>
                             <span class="badge bg-light text-dark">{{ booking.property_ref.bathrooms }} bath</span>

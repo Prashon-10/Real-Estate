@@ -46,7 +46,7 @@
                                 {% endif %}
                                 <div>
                                     <h6 class="mb-0">{{ search.property.title }}</h6>
-                                    <small class="text-primary">${{ search.property.price|floatformat:0 }}</small>
+                                    <small class="text-primary">Rs. {{ search.property.price|floatformat:0 }}</small>
                                 </div>
                             </div>
                             <small class="text-muted">{{ search.timestamp|timesince }} ago</small>

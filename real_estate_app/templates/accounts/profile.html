@@ -478,7 +478,7 @@
                                         <div class="property-address">
                                             <i class="fas fa-map-marker-alt me-1"></i>{{ property.address }}
                                         </div>
-                                        <div class="property-price">${{ property.price|floatformat:0 }}</div>
+                                        <div class="property-price">Rs. {{ property.price|floatformat:0 }}</div>
                                     </div>
                                     <span class="status-badge status-{{ property.status }}">
                                         {{ property.get_status_display }}
@@ -516,7 +516,7 @@
                                         <div class="favorite-address">
                                             <i class="fas fa-map-marker-alt me-1"></i>{{ favorite.property.address }}
                                         </div>
-                                        <div class="favorite-price">${{ favorite.property.price|floatformat:0 }}</div>
+                                        <div class="favorite-price">Rs. {{ favorite.property.price|floatformat:0 }}</div>
                                     </div>
                                     <small class="text-muted">
                                         <i class="fas fa-clock me-1"></i>{{ favorite.added_at|timesince }} ago

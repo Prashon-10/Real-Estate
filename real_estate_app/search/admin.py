@@ -66,7 +66,7 @@ class RecommendationAdmin(admin.ModelAdmin):
     
     def property_price(self, obj):
         if obj.property and obj.property.price:
-            return f"${obj.property.price:,.2f}"
+            return f"Rs. {obj.property.price:,.2f}"
         return "N/A"
     property_price.short_description = "Price"
     property_price.admin_order_field = 'property__price'

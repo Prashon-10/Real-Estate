@@ -44,6 +44,10 @@ class CustomerRegistrationForm(UserCreationForm):
         user.email = self.cleaned_data['email']
         user.is_active = True  # Account active immediately with valid email domain
         
+        # Preserve profile image from form
+        if 'profile_image' in self.cleaned_data:
+            user.profile_image = self.cleaned_data['profile_image']
+        
         if commit:
             user.save()
         return user
@@ -89,6 +93,10 @@ class AgentRegistrationForm(UserCreationForm):
         user.user_type = 'agent'
         user.email = self.cleaned_data['email']
         user.is_active = True  # Account active immediately with valid email domain
+        
+        # Preserve profile image from form
+        if 'profile_image' in self.cleaned_data:
+            user.profile_image = self.cleaned_data['profile_image']
         
         if commit:
             user.save()

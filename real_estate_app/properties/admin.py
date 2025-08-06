@@ -70,7 +70,7 @@ class PropertyAdmin(admin.ModelAdmin):
     
     def price_formatted(self, obj):
         if obj.price is not None:
-            return f"${obj.price:,.2f}"
+            return f"Rs. {obj.price:,.2f}"
         return "No price"
     price_formatted.short_description = "Price"
     price_formatted.admin_order_field = 'price'
@@ -174,7 +174,7 @@ class FavoriteAdmin(admin.ModelAdmin):
     date_hierarchy = 'added_at'
     
     def property_price(self, obj):
-        return f"${obj.property.price:,.2f}"
+        return f"Rs. {obj.property.price:,.2f}"
     property_price.short_description = "Price"
     property_price.admin_order_field = 'property__price'
     

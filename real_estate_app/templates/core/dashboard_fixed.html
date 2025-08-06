@@ -509,7 +509,7 @@
                                                 </div>
                                             {% endif %}
                                             <div class="property-info">
-                                                <div class="property-price">${{ property.price|floatformat:0 }}</div>
+                                                <div class="property-price">Rs. {{ property.price|floatformat:0 }}</div>
                                                 <h6 class="property-title">{{ property.title|truncatechars:40 }}</h6>
                                                 <div class="property-location">
                                                     <i class="fas fa-map-marker-alt"></i>
@@ -555,7 +555,7 @@
                                                 </div>
                                             {% endif %}
                                             <div class="property-info">
-                                                <div class="property-price">${{ favorite.property.price|floatformat:0 }}</div>
+                                                <div class="property-price">Rs. {{ favorite.property.price|floatformat:0 }}</div>
                                                 <h6 class="property-title">{{ favorite.property.title|truncatechars:40 }}</h6>
                                                 <div class="property-location">
                                                     <i class="fas fa-map-marker-alt"></i>

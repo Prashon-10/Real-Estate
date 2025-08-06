@@ -317,7 +317,7 @@
                 <!-- Property Info -->
                 <div class="property-info">
                     <h3 class="property-title">{{ property.title }}</h3>
-                    <div class="property-price">${{ property.price|floatformat:0 }}</div>
+                    <div class="property-price">Rs. {{ property.price|floatformat:0 }}</div>
                     
                     {% if property.chatrooms.exists %}
                         <div class="conversation-list">
