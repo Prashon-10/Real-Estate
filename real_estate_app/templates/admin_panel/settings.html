@@ -194,31 +194,41 @@ input:checked + .slider:before {
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="setting-label">Site Name</label>
-                                    <input type="text" class="form-control" name="site_name" value="RealEstate Platform">
+                                    <input type="text" class="form-control" name="site_name" value="{{ settings.site_name }}">
                                     <div class="setting-description">The name that appears throughout the platform</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="setting-label">Contact Email</label>
-                                    <input type="email" class="form-control" name="contact_email" value="admin@realestate.com">
-                                    <div class="setting-description">Primary contact email for inquiries</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="setting-label">Phone Number</label>
-                                    <input type="tel" class="form-control" name="phone_number" value="+1 (555) 123-4567">
-                                    <div class="setting-description">Main business phone number</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="setting-label">Business Address</label>
-                                    <input type="text" class="form-control" name="business_address" value="123 Business St, City">
-                                    <div class="setting-description">Physical business location</div>
-                                </div>
-                                <div class="col-12">
-                                    <label class="setting-label">Site Description</label>
-                                    <textarea class="form-control" name="site_description" rows="3">Your trusted real estate platform for buying, selling, and renting properties.</textarea>
-                                    <div class="setting-description">Brief description shown on the homepage</div>
+                                    <input type="email" class="form-control" name="contact_email" value="{{ settings.contact_email }}">
+                                    <div class="setting-description">Primary contact email for the platform</div>
                                 </div>
                             </div>
                         </div>
+                        
+                        <div class="setting-item">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="setting-label">Phone Number</label>
+                                    <input type="text" class="form-control" name="phone_number" value="{{ settings.phone_number }}">
+                                    <div class="setting-description">Business phone number</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="setting-label">Business Address</label>
+                                    <textarea class="form-control" name="business_address" rows="2">{{ settings.business_address }}</textarea>
+                                    <div class="setting-description">Physical business address</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="setting-label">Site Description</label>
+                            <textarea class="form-control" name="site_description" rows="3">{{ settings.site_description }}</textarea>
+                            <div class="setting-description">Brief description of your platform</div>
+                        </div>
+                        
+                        <button type="submit" name="site_info" value="1" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Site Information
+                        </button>
                     </div>
                     
                     <div class="settings-section">
@@ -230,22 +240,31 @@ input:checked + .slider:before {
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="setting-label">Max Properties per Agent</label>
-                                    <input type="number" class="form-control" name="max_properties" value="50">
+                                    <input type="number" class="form-control" name="max_properties_per_agent" value="{{ settings.max_properties_per_agent }}">
                                     <div class="setting-description">Maximum properties an agent can list</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="setting-label">Max Images per Property</label>
-                                    <input type="number" class="form-control" name="max_images" value="10">
+                                    <input type="number" class="form-control" name="max_images_per_property" value="{{ settings.max_images_per_property }}">
                                     <div class="setting-description">Maximum images allowed per property</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="setting-label">Commission Rate (%)</label>
-                                    <input type="number" class="form-control" name="commission_rate" value="5" step="0.1">
+                                    <input type="number" class="form-control" name="commission_rate" value="{{ settings.commission_rate }}" step="0.1">
                                     <div class="setting-description">Default commission percentage</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="setting-label">Booking Expiry (Days)</label>
-                                    <input type="number" class="form-control" name="booking_expiry" value="7">
+                                    <input type="number" class="form-control" name="booking_expiry_days" value="{{ settings.booking_expiry_days }}">
+                                    <div class="setting-description">How long bookings remain valid</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" name="platform_limits" value="1" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Save Platform Limits
+                        </button>
+                    </div>
                                     <div class="setting-description">Days before pending bookings expire</div>
                                 </div>
                             </div>
@@ -265,7 +284,7 @@ input:checked + .slider:before {
                                         <div class="setting-description">Allow new users to register</div>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" name="allow_registration" checked>
+                                        <input type="checkbox" name="allow_registration" {% if settings.allow_registration %}checked{% endif %}>
                                         <span class="slider"></span>
                                     </label>
                                 </div>
@@ -275,7 +294,7 @@ input:checked + .slider:before {
                                         <div class="setting-description">Send automated email alerts</div>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" name="email_notifications" checked>
+                                        <input type="checkbox" name="email_notifications" {% if settings.email_notifications %}checked{% endif %}>
                                         <span class="slider"></span>
                                     </label>
                                 </div>
@@ -285,7 +304,7 @@ input:checked + .slider:before {
                                         <div class="setting-description">Put site in maintenance mode</div>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" name="maintenance_mode">
+                                        <input type="checkbox" name="maintenance_mode" {% if settings.maintenance_mode %}checked{% endif %}>
                                         <span class="slider"></span>
                                     </label>
                                 </div>
@@ -295,12 +314,26 @@ input:checked + .slider:before {
                                         <div class="setting-description">Automatically approve new listings</div>
                                     </div>
                                     <label class="toggle-switch">
-                                        <input type="checkbox" name="auto_approve" checked>
+                                        <input type="checkbox" name="auto_approve_listings" {% if settings.auto_approve_listings %}checked{% endif %}>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="col-md-6 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <label class="setting-label">Email Verification</label>
+                                        <div class="setting-description">Require email verification for new users</div>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="require_email_verification" {% if settings.require_email_verification %}checked{% endif %}>
                                         <span class="slider"></span>
                                     </label>
                                 </div>
                             </div>
                         </div>
+                        
+                        <button type="submit" name="feature_toggles" value="1" class="btn btn-warning">
+                            <i class="fas fa-save me-2"></i>Save Feature Settings
+                        </button>
                     </div>
                 </form>
             </div>
@@ -324,18 +357,54 @@ input:checked + .slider:before {
                         <div class="fw-bold">Create Backup</div>
                         <small>Backup system data</small>
                     </button>
+    
+    <!-- Quick Actions -->
+    <div class="col-lg-4">
+        <div class="settings-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-primary"></i>
+                    Quick Actions
+                </h5>
+                <small>Commonly used system operations</small>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3">
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" name="action" value="backup_database" class="quick-setting backup-system w-100">
+                            <i class="fas fa-download"></i>
+                            <div class="fw-bold">Create Backup</div>
+                            <small>Backup system data</small>
+                        </button>
+                    </form>
                     
-                    <button class="quick-setting security-check" onclick="runSecurityCheck()">
-                        <i class="fas fa-shield-alt"></i>
-                        <div class="fw-bold">Security Scan</div>
-                        <small>Run security check</small>
-                    </button>
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" name="action" value="test_email" class="quick-setting security-check w-100">
+                            <i class="fas fa-envelope"></i>
+                            <div class="fw-bold">Test Email</div>
+                            <small>Test email configuration</small>
+                        </button>
+                    </form>
                     
-                    <button class="quick-setting maintenance-mode" onclick="toggleMaintenance()">
-                        <i class="fas fa-tools"></i>
-                        <div class="fw-bold">Maintenance</div>
-                        <small>Enable/Disable maintenance</small>
-                    </button>
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" name="action" value="clear_cache" class="quick-setting maintenance-mode w-100">
+                            <i class="fas fa-broom"></i>
+                            <div class="fw-bold">Clear Cache</div>
+                            <small>Clear system cache</small>
+                        </button>
+                    </form>
+                    
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" name="action" value="optimize_database" class="quick-setting security-check w-100">
+                            <i class="fas fa-database"></i>
+                            <div class="fw-bold">Optimize DB</div>
+                            <small>Optimize database performance</small>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -350,20 +419,57 @@ input:checked + .slider:before {
             </div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-3">
-                    <span class="text-muted">Version:</span>
-                    <span class="fw-bold">v2.1.0</span>
+                    <span class="text-muted">Total Users:</span>
+                    <span class="fw-bold">{{ total_users }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Total Properties:</span>
+                    <span class="fw-bold">{{ total_properties }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Total Bookings:</span>
+                    <span class="fw-bold">{{ total_bookings }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-3">
                     <span class="text-muted">Last Backup:</span>
-                    <span class="fw-bold">Today, 3:00 AM</span>
+                    <span class="fw-bold">
+                        {% if settings.last_backup %}
+                            {{ settings.last_backup|date:"M d, Y H:i" }}
+                        {% else %}
+                            Never
+                        {% endif %}
+                    </span>
                 </div>
                 <div class="d-flex justify-content-between mb-3">
                     <span class="text-muted">Storage Used:</span>
-                    <span class="fw-bold">2.4 GB / 10 GB</span>
+                    <span class="fw-bold">{{ settings.storage_used_gb }} GB</span>
                 </div>
                 <div class="d-flex justify-content-between">
                     <span class="text-muted">Uptime:</span>
-                    <span class="fw-bold">15 days, 7 hours</span>
+                    <span class="fw-bold">{{ settings.uptime_days }} days, {{ settings.uptime_hours }} hours</span>
+                </div>
+                
+                <!-- System Status -->
+                <div class="mt-4">
+                    <h6 class="fw-bold mb-3">System Status</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Database:</span>
+                        <span class="badge bg-{% if system_status.database == 'healthy' %}success{% elif system_status.database == 'warning' %}warning{% else %}danger{% endif %}">
+                            {{ system_status.database|title }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Cache:</span>
+                        <span class="badge bg-{% if system_status.cache == 'healthy' %}success{% elif system_status.cache == 'warning' %}warning{% else %}danger{% endif %}">
+                            {{ system_status.cache|title }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Media Storage:</span>
+                        <span class="badge bg-{% if system_status.media_storage == 'healthy' %}success{% elif system_status.media_storage == 'warning' %}warning{% else %}danger{% endif %}">
+                            {{ system_status.media_storage|title }}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

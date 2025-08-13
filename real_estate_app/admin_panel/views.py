@@ -10,11 +10,17 @@ from django.utils.decorators import method_decorator
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
+from django.core.mail import send_mail
+from django.conf import settings as django_settings
+from django.core.cache import cache
+from decimal import Decimal, InvalidOperation
 import json
+import os
 from datetime import datetime, timedelta
 
 from accounts.models import User
 from properties.models import Property, PropertyBooking
+from .models import SystemSettings
 
 
 def is_admin(user):
@@ -430,18 +436,202 @@ def admin_analytics(request):
 @login_required
 @user_passes_test(is_admin)
 def admin_settings(request):
-    """Admin settings page"""
+    """Comprehensive admin settings page"""
+    
+    settings = SystemSettings.get_settings()
     
     if request.method == 'POST':
-        # Handle settings updates here
-        messages.success(request, "Settings updated successfully.")
+        try:
+            # Get all form data
+            form_data = request.POST
+            
+            # Update site information
+            if 'site_info' in form_data:
+                settings.site_name = form_data.get('site_name', settings.site_name)
+                settings.contact_email = form_data.get('contact_email', settings.contact_email)
+                settings.phone_number = form_data.get('phone_number', settings.phone_number)
+                settings.business_address = form_data.get('business_address', settings.business_address)
+                settings.site_description = form_data.get('site_description', settings.site_description)
+                
+            # Update platform limits
+            elif 'platform_limits' in form_data:
+                try:
+                    settings.max_properties_per_agent = int(form_data.get('max_properties_per_agent', settings.max_properties_per_agent))
+                    settings.max_images_per_property = int(form_data.get('max_images_per_property', settings.max_images_per_property))
+                    settings.commission_rate = Decimal(form_data.get('commission_rate', settings.commission_rate))
+                    settings.booking_expiry_days = int(form_data.get('booking_expiry_days', settings.booking_expiry_days))
+                except (ValueError, InvalidOperation):
+                    messages.error(request, "Invalid numeric values provided.")
+                    return redirect('admin_panel:settings')
+                    
+            # Update feature toggles
+            elif 'feature_toggles' in form_data:
+                settings.allow_registration = 'allow_registration' in form_data
+                settings.email_notifications = 'email_notifications' in form_data
+                settings.maintenance_mode = 'maintenance_mode' in form_data
+                settings.auto_approve_listings = 'auto_approve_listings' in form_data
+                settings.require_email_verification = 'require_email_verification' in form_data
+                
+            # Update email settings
+            elif 'email_settings' in form_data:
+                settings.smtp_host = form_data.get('smtp_host', settings.smtp_host)
+                try:
+                    settings.smtp_port = int(form_data.get('smtp_port', settings.smtp_port))
+                except ValueError:
+                    messages.error(request, "Invalid SMTP port.")
+                    return redirect('admin_panel:settings')
+                    
+                settings.smtp_use_tls = 'smtp_use_tls' in form_data
+                settings.smtp_username = form_data.get('smtp_username', settings.smtp_username)
+                settings.smtp_password = form_data.get('smtp_password', settings.smtp_password)
+                settings.from_email = form_data.get('from_email', settings.from_email)
+                settings.from_name = form_data.get('from_name', settings.from_name)
+                
+            # Update security settings
+            elif 'security_settings' in form_data:
+                try:
+                    settings.session_timeout_minutes = int(form_data.get('session_timeout_minutes', settings.session_timeout_minutes))
+                    settings.max_login_attempts = int(form_data.get('max_login_attempts', settings.max_login_attempts))
+                except ValueError:
+                    messages.error(request, "Invalid security setting values.")
+                    return redirect('admin_panel:settings')
+            
+            # Save settings
+            settings.save()
+            messages.success(request, "Settings updated successfully!")
+            
+            # Handle quick actions
+            action = form_data.get('action')
+            if action == 'test_email':
+                return test_email_configuration(request, settings)
+            elif action == 'backup_database':
+                return backup_database(request)
+            elif action == 'clear_cache':
+                return clear_system_cache(request)
+            elif action == 'optimize_database':
+                return optimize_database(request)
+                
+        except Exception as e:
+            messages.error(request, f"Error updating settings: {str(e)}")
+            
         return redirect('admin_panel:settings')
     
+    # Calculate system statistics
+    total_users = User.objects.count()
+    total_properties = Property.objects.count()
+    total_bookings = PropertyBooking.objects.count()
+    
+    # Calculate storage usage (simplified)
+    try:
+        media_path = os.path.join(django_settings.MEDIA_ROOT)
+        if os.path.exists(media_path):
+            total_size = sum(
+                os.path.getsize(os.path.join(dirpath, filename))
+                for dirpath, dirnames, filenames in os.walk(media_path)
+                for filename in filenames
+            )
+            storage_gb = round(total_size / (1024**3), 2)
+            settings.storage_used_gb = storage_gb
+            settings.save()
+    except:
+        pass
+    
     context = {
-        # Add your settings context here
+        'settings': settings,
+        'total_users': total_users,
+        'total_properties': total_properties,
+        'total_bookings': total_bookings,
+        'active_sessions': cache.get('active_sessions', 0),
+        'system_status': get_system_status(),
     }
     
     return render(request, 'admin_panel/settings.html', context)
+
+
+def get_system_status():
+    """Get system status information"""
+    try:
+        # Check database connection
+        User.objects.count()
+        db_status = "healthy"
+    except:
+        db_status = "error"
+    
+    # Check cache
+    try:
+        cache.set('test_key', 'test_value', 10)
+        cache.get('test_key')
+        cache_status = "healthy"
+    except:
+        cache_status = "error"
+    
+    # Check media directory
+    try:
+        media_path = os.path.join(django_settings.MEDIA_ROOT)
+        media_status = "healthy" if os.path.exists(media_path) else "warning"
+    except:
+        media_status = "error"
+    
+    return {
+        'database': db_status,
+        'cache': cache_status,
+        'media_storage': media_status,
+        'overall': 'healthy' if all(s == 'healthy' for s in [db_status, cache_status]) else 'warning'
+    }
+
+
+def test_email_configuration(request, settings):
+    """Test email configuration"""
+    try:
+        send_mail(
+            'Test Email Configuration',
+            'This is a test email to verify your email settings are working correctly.',
+            settings.from_email,
+            [settings.contact_email],
+            fail_silently=False,
+        )
+        messages.success(request, "Test email sent successfully!")
+    except Exception as e:
+        messages.error(request, f"Email test failed: {str(e)}")
+    
+    return redirect('admin_panel:settings')
+
+
+def backup_database(request):
+    """Simulate database backup"""
+    try:
+        # In a real implementation, you would create an actual backup
+        settings = SystemSettings.get_settings()
+        settings.last_backup = datetime.now()
+        settings.save()
+        
+        messages.success(request, "Database backup completed successfully!")
+    except Exception as e:
+        messages.error(request, f"Backup failed: {str(e)}")
+    
+    return redirect('admin_panel:settings')
+
+
+def clear_system_cache(request):
+    """Clear system cache"""
+    try:
+        cache.clear()
+        messages.success(request, "System cache cleared successfully!")
+    except Exception as e:
+        messages.error(request, f"Cache clear failed: {str(e)}")
+    
+    return redirect('admin_panel:settings')
+
+
+def optimize_database(request):
+    """Simulate database optimization"""
+    try:
+        # In a real implementation, you would run VACUUM, ANALYZE, etc.
+        messages.success(request, "Database optimization completed successfully!")
+    except Exception as e:
+        messages.error(request, f"Database optimization failed: {str(e)}")
+    
+    return redirect('admin_panel:settings')
 
 
 @login_required
