@@ -282,7 +282,7 @@
     <div class="row">
         {% for favorite in favorites %}
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="property-card fade-in stagger-animation" style="--delay: {{ forloop.counter0|mul:0.1 }}s;">
+            <div class="property-card fade-in stagger-animation" style="--delay: 0.{{ forloop.counter0 }}s;">
                 <!-- Property Image -->
                 <div class="property-image"
                     style="background-image: url('{% if favorite.property.images.first %}{{ favorite.property.images.first.image.url }}{% else %}{% static "images/default-property.jpg" %}{% endif %}');">
@@ -325,7 +325,7 @@
                             <i class="fas fa-eye me-2"></i>View Details
                         </a>
                         <button class="btn btn-remove" onclick="removeFavorite(this, '{{ favorite.property.pk }}')"
-                            title="Remove from favorites">
+                            title="Remove from favorites" data-property-id="{{ favorite.property.pk }}">
                             <i class="fas fa-heart-broken"></i>
                         </button>
                     </div>
@@ -365,7 +365,11 @@
     </div>
 </div>
 
-{% csrf_token %}
+<!-- Hidden form for CSRF token -->
+<form style="display: none;" id="csrf-form">
+    {% csrf_token %}
+</form>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -391,38 +395,65 @@
         button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         button.disabled = true;
 
+        // Get CSRF token
+        const csrfToken = document.querySelector('#csrf-form [name=csrfmiddlewaretoken]').value || 
+                         document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        if (!csrfToken) {
+            console.error('CSRF token not found');
+            showToast('Error: Security token not found', 'error');
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+            return;
+        }
+
+        console.log('Removing favorite for property ID:', propertyId);
+
         // Make AJAX request to remove favorite
         fetch(`/properties/favorite/${propertyId}/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-CSRFToken': csrfToken,
                 'Content-Type': 'application/json',
             },
         })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Response data:', data);
                 if (data.success && !data.is_favorite) {
                     // Remove the property card with animation
-                    const card = button.closest('.col-lg-4');
-                    card.style.transition = 'all 0.3s ease';
-                    card.style.transform = 'scale(0)';
-                    card.style.opacity = '0';
+                    const card = button.closest('.col-lg-4') || button.closest('.property-card').parentElement;
+                    if (card) {
+                        card.style.transition = 'all 0.3s ease';
+                        card.style.transform = 'scale(0)';
+                        card.style.opacity = '0';
 
-                    setTimeout(() => {
-                        card.remove();
+                        setTimeout(() => {
+                            card.remove();
 
-                        // Check if no favorites left
-                        const remainingCards = document.querySelectorAll('.property-card').length;
-                        if (remainingCards === 0) {
-                            // Reload page to show empty state
-                            window.location.reload();
-                        }
-                    }, 300);
+                            // Check if no favorites left
+                            const remainingCards = document.querySelectorAll('.col-lg-4').length;
+                            if (remainingCards === 0) {
+                                // Reload page to show empty state
+                                window.location.reload();
+                            }
+                        }, 300);
 
-                    // Show success message
-                    showToast('Property removed from favorites successfully!');
+                        // Show success message
+                        showToast(data.message || 'Property removed from favorites successfully!');
+                    } else {
+                        console.error('Could not find card element to remove');
+                        window.location.reload(); // Fallback: reload page
+                    }
                 } else {
-                    showToast('Error removing property from favorites', 'error');
+                    console.error('Failed to remove favorite:', data);
+                    showToast(data.message || 'Error removing property from favorites', 'error');
                     // Restore button
                     button.innerHTML = originalHTML;
                     button.disabled = false;

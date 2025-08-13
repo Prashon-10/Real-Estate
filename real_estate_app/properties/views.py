@@ -372,50 +372,59 @@ class PropertyDeleteView(DeleteView):
 @login_required
 @require_POST
 def toggle_favorite(request, pk):
-    property_obj = get_object_or_404(Property, pk=pk)
-    favorite, created = Favorite.objects.get_or_create(
-        user=request.user, property=property_obj
-    )
+    try:
+        property_obj = get_object_or_404(Property, pk=pk)
+        favorite, created = Favorite.objects.get_or_create(
+            user=request.user, property=property_obj
+        )
 
-    if not created:
-        favorite.delete()
-        is_favorite = False
-        action = "removed from"
-    else:
-        is_favorite = True
-        action = "added to"
+        if not created:
+            favorite.delete()
+            is_favorite = False
+            action = "removed from"
+        else:
+            is_favorite = True
+            action = "added to"
 
-        # Update recommendations when user adds a favorite
-        if request.user.is_customer():
-            from search.views import update_recommendations
+            # Update recommendations when user adds a favorite
+            if request.user.is_customer():
+                from search.views import update_recommendations
 
-            # Get similar properties based on the favorited property
-            similar_properties = Property.objects.filter(
-                status="available",
-                property_type=property_obj.property_type,
-                listing_type=property_obj.listing_type,
-            ).exclude(id=property_obj.id)[:10]
+                # Get similar properties based on the favorited property
+                similar_properties = Property.objects.filter(
+                    status="available",
+                    property_type=property_obj.property_type,
+                    listing_type=property_obj.listing_type,
+                ).exclude(id=property_obj.id)[:10]
 
-            if similar_properties:
-                update_recommendations(
-                    request.user,
-                    f"Properties like {property_obj.title}",
-                    similar_properties,
-                )
+                if similar_properties:
+                    update_recommendations(
+                        request.user,
+                        f"Properties like {property_obj.title}",
+                        similar_properties,
+                    )
 
-    return JsonResponse(
-        {
-            "success": True,
-            "is_favorite": is_favorite,
-            "message": f"{property_obj.title} {action} favorites.",
-        }
-    )
+        return JsonResponse(
+            {
+                "success": True,
+                "is_favorite": is_favorite,
+                "message": f"{property_obj.title} {action} favorites.",
+            }
+        )
+    except Exception as e:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": f"Error: {str(e)}",
+            },
+            status=500
+        )
 
 
 @login_required
 def favorites_list(request):
     favorites = Favorite.objects.filter(user=request.user).select_related("property")
-    return render(request, "properties/favorites.html", {"favorites": favorites})
+    return render(request, "properties/favorites_simple.html", {"favorites": favorites})
 
 
 @login_required

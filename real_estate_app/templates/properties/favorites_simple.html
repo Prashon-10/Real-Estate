@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Favorites - Real Estate App{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">My Favorite Properties</h2>
+            
+            {% if favorites %}
+                <div class="row">
+                    {% for favorite in favorites %}
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card h-100">
+                            {% if favorite.property.images.first %}
+                                <img src="{{ favorite.property.images.first.image.url }}" 
+                                     class="card-img-top" alt="{{ favorite.property.title }}" style="height: 200px; object-fit: cover;">
+                            {% else %}
+                                <div class="card-img-top d-flex align-items-center justify-content-center" 
+                                     style="height: 200px; background-color: #f8f9fa;">
+                                    <i class="fas fa-home fa-3x text-muted"></i>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="card-body">
+                                <h5 class="card-title">{{ favorite.property.title }}</h5>
+                                <p class="card-text">
+                                    <i class="fas fa-map-marker-alt"></i> {{ favorite.property.address }}
+                                </p>
+                                <p class="card-text">
+                                    <strong class="text-success">Rs. {{ favorite.property.price|floatformat:0 }}</strong>
+                                </p>
+                                <div class="mb-3">
+                                    <span class="badge bg-secondary me-1">
+                                        <i class="fas fa-bed"></i> {{ favorite.property.bedrooms }} Beds
+                                    </span>
+                                    <span class="badge bg-secondary me-1">
+                                        <i class="fas fa-bath"></i> {{ favorite.property.bathrooms }} Baths
+                                    </span>
+                                    {% if favorite.property.area %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-ruler"></i> {{ favorite.property.area }} sqft
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="card-footer bg-transparent">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'properties:property_detail' favorite.property.pk %}" 
+                                       class="btn btn-primary">
+                                        <i class="fas fa-eye"></i> View Details
+                                    </a>
+                                    <button class="btn btn-outline-danger" 
+                                            onclick="removeFavorite(this, '{{ favorite.property.pk }}')"
+                                            data-property-id="{{ favorite.property.pk }}">
+                                        <i class="fas fa-heart-broken"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-heart-broken fa-5x text-muted mb-3"></i>
+                    <h4>No Favorite Properties</h4>
+                    <p class="text-muted">You haven't added any properties to your favorites yet.</p>
+                    <a href="{% url 'properties:property_list' %}" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Browse Properties
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for CSRF token -->
+<form style="display: none;" id="csrf-form">
+    {% csrf_token %}
+</form>
+
+<!-- Toast notification -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="favoriteToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            <!-- Message will be inserted here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function removeFavorite(button, propertyId) {
+    // Add loading state
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removing...';
+    button.disabled = true;
+
+    // Get CSRF token
+    const csrfToken = document.querySelector('#csrf-form [name=csrfmiddlewaretoken]').value;
+
+    if (!csrfToken) {
+        console.error('CSRF token not found');
+        showToast('Error: Security token not found', 'error');
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+        return;
+    }
+
+    // Make AJAX request to remove favorite
+    fetch(`/properties/favorite/${propertyId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success && !data.is_favorite) {
+            // Remove the property card with animation
+            const card = button.closest('.col-lg-4');
+            if (card) {
+                card.style.transition = 'all 0.3s ease';
+                card.style.transform = 'scale(0)';
+                card.style.opacity = '0';
+
+                setTimeout(() => {
+                    card.remove();
+                    
+                    // Check if no favorites left
+                    const remainingCards = document.querySelectorAll('.col-lg-4').length;
+                    if (remainingCards === 0) {
+                        // Reload page to show empty state
+                        window.location.reload();
+                    }
+                }, 300);
+
+                // Show success message
+                showToast(data.message || 'Property removed from favorites!', 'success');
+            } else {
+                // Fallback: reload page
+                window.location.reload();
+            }
+        } else {
+            showToast(data.message || 'Error removing property from favorites', 'error');
+            // Restore button
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error removing property from favorites', 'error');
+        // Restore button
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+    });
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('favoriteToast');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastHeader = toast.querySelector('.toast-header');
+
+    // Update message
+    toastMessage.textContent = message;
+
+    // Update styling based on type
+    if (type === 'error') {
+        toastHeader.className = 'toast-header bg-danger text-white';
+    } else {
+        toastHeader.className = 'toast-header bg-success text-white';
+    }
+
+    // Show toast
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+</script>
+{% endblock %}
