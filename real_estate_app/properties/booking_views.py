@@ -47,6 +47,25 @@ def property_booking_view(request, property_id):
     
     # Get booking type from URL parameter
     booking_type = request.GET.get('type', 'booking')  # 'booking' or 'visit'
+    after_visit_id = request.GET.get('after_visit')  # ID of completed visit for after-visit booking
+    
+    # Handle after-visit booking
+    completed_visit = None
+    if after_visit_id and booking_type == 'booking':
+        try:
+            completed_visit = PropertyBooking.objects.get(
+                id=after_visit_id,
+                customer=request.user,
+                property_ref=property_obj,
+                booking_type='visit',
+                visit_completed=True
+            )
+            if not completed_visit.can_book_now:
+                messages.error(request, "The booking deadline for this visit has expired.")
+                return redirect('properties:property_detail', property_id=property_obj.id)
+        except PropertyBooking.DoesNotExist:
+            messages.error(request, "Invalid visit reference.")
+            return redirect('properties:property_detail', property_id=property_obj.id)
     
     if request.method == 'POST':
         form = PropertyBookingForm(request.POST, user=request.user, initial_booking_type=booking_type, current_property=property_obj)
@@ -139,6 +158,8 @@ def property_booking_view(request, property_id):
         'blocked_visit_dates': blocked_dates_json,
         'user_booking_dates': user_booking_dates_json,
         'nearby_properties': nearby_properties,
+        'completed_visit': completed_visit,
+        'is_after_visit_booking': completed_visit is not None,
     }
     return render(request, 'properties/booking_form.html', context)
 
@@ -675,3 +696,39 @@ def stripe_webhook_view(request):
         return HttpResponse(status=200)
     except Exception as e:
         return HttpResponse(status=400)
+
+
+@login_required
+@require_POST
+def complete_visit_view(request, booking_id):
+    """Allow agents to mark visit as completed"""
+    booking = get_object_or_404(PropertyBooking, id=booking_id)
+    
+    # Check if user is the agent for this property
+    if request.user != booking.property_ref.agent:
+        messages.error(request, "You can only complete visits for your own properties.")
+        return redirect('properties:agent_bookings')
+    
+    # Check if this is a confirmed visit that hasn't been completed yet
+    if booking.booking_type != 'visit':
+        messages.error(request, "This is not a visit request.")
+        return redirect('properties:agent_bookings')
+    
+    if booking.status != 'confirmed':
+        messages.error(request, "Only confirmed visits can be marked as completed.")
+        return redirect('properties:agent_bookings')
+    
+    if booking.visit_completed:
+        messages.info(request, "This visit has already been marked as completed.")
+        return redirect('properties:agent_bookings')
+    
+    # Complete the visit
+    if booking.complete_visit(request.user):
+        messages.success(
+            request, 
+            f"Visit completed successfully! {booking.customer_name} can now book this property until {booking.booking_deadline_display}."
+        )
+    else:
+        messages.error(request, "Failed to complete the visit.")
+    
+    return redirect('properties:agent_bookings')

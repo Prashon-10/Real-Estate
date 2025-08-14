@@ -734,6 +734,27 @@
                             <button class="btn btn-action btn-disabled" disabled>
                                 <i class="fas fa-check-circle me-2"></i>Already Booked
                             </button>
+                        {% elif has_completed_visit %}
+                            <!-- User has completed a visit - prioritize this over has_visit_request -->
+                            {% if can_book_after_visit %}
+                                <!-- Show book property button after visit completion -->
+                                <a href="{% url 'properties:property_booking' property.id %}?type=booking&after_visit={{ completed_visit.id }}" class="btn btn-action btn-book">
+                                    <i class="fas fa-key me-2"></i>Book Property (After Visit)
+                                </a>
+                                <div class="alert alert-success mt-2 mb-0">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    Visit completed! You can book this property until {{ completed_visit.booking_deadline_display }}.
+                                </div>
+                            {% else %}
+                                <!-- Visit completed but booking deadline passed or property unavailable -->
+                                <button class="btn btn-action btn-disabled" disabled style="background: #6c757d; color: white;">
+                                    <i class="fas fa-check-circle me-2"></i>Visit Completed
+                                </button>
+                                <div class="alert alert-warning mt-2 mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Visit completed, but booking period has expired or property is no longer available.
+                                </div>
+                            {% endif %}
                         {% elif has_visit_request %}
                             <!-- User has already requested a visit for this property -->
                             <button class="btn btn-action btn-disabled" disabled>
@@ -753,9 +774,12 @@
                             <a href="{% url 'properties:property_booking' property.id %}?type=booking" class="btn btn-action btn-book">
                                 <i class="fas fa-key me-2"></i>Book Property
                             </a>
-                            <a href="{% url 'properties:property_booking' property.id %}?type=visit" class="btn btn-action btn-visit">
-                                <i class="fas fa-eye me-2"></i>Schedule Visit
-                            </a>
+                            {% if not has_completed_visit %}
+                                <!-- Only show visit option if user hasn't completed a visit already -->
+                                <a href="{% url 'properties:property_booking' property.id %}?type=visit" class="btn btn-action btn-visit">
+                                    <i class="fas fa-eye me-2"></i>Schedule Visit
+                                </a>
+                            {% endif %}
                         {% endif %}
                         
                         {% if visit_count > 0 %}

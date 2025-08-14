@@ -190,6 +190,20 @@ class PropertyBooking(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     admin_notes = models.TextField(blank=True, help_text="Admin verification notes")
     
+    # Visit Completion Fields (for visit requests)
+    visit_completed = models.BooleanField(default=False, help_text="Whether the visit has been completed")
+    visit_completed_at = models.DateTimeField(null=True, blank=True, help_text="When the visit was completed")
+    visit_completed_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='completed_visits',
+        help_text="Agent who marked the visit as completed"
+    )
+    can_book_after_visit = models.BooleanField(default=True, help_text="Whether customer can book after completing visit")
+    booking_deadline = models.DateTimeField(null=True, blank=True, help_text="Deadline for booking after visit completion")
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -224,6 +238,30 @@ class PropertyBooking(models.Model):
     def can_be_verified(self):
         return self.status == 'pending'
     
+    @property
+    def is_visit_completed(self):
+        """Check if this is a completed visit"""
+        return self.is_visit_request and self.visit_completed
+    
+    @property
+    def booking_deadline_display(self):
+        """Human-readable booking deadline"""
+        if self.booking_deadline:
+            return self.booking_deadline.strftime('%B %d, %Y at %I:%M %p')
+        return None
+    
+    @property
+    def can_book_now(self):
+        """Check if customer can book after completing visit"""
+        if not self.is_visit_completed:
+            return False
+        if not self.can_book_after_visit:
+            return False
+        if self.booking_deadline:
+            from django.utils import timezone
+            return timezone.now() <= self.booking_deadline
+        return True
+
     @property
     def payment_display_status(self):
         """Human-readable payment status"""
@@ -285,6 +323,21 @@ class PropertyBooking(models.Model):
             # In real implementation, this would create a new payment intent
             self.payment_status = 'authorized'
             self.payment_authorized_at = timezone.now()
+            self.save()
+            return True
+        return False
+    
+    def complete_visit(self, completed_by_user, booking_deadline_days=7):
+        """Mark visit as completed and set booking deadline"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        if self.is_visit_request and not self.visit_completed:
+            self.visit_completed = True
+            self.visit_completed_at = timezone.now()
+            self.visit_completed_by = completed_by_user
+            self.can_book_after_visit = True
+            self.booking_deadline = timezone.now() + timedelta(days=booking_deadline_days)
             self.save()
             return True
         return False

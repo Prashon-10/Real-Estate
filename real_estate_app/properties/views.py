@@ -210,6 +210,19 @@ class PropertyDetailView(LoginRequiredMixin, DetailView):
                     ],  # Don't show button if visit is pending or confirmed
                 ).exists()
 
+                # Check for completed visits and after-visit booking eligibility
+                completed_visit = PropertyBooking.objects.filter(
+                    customer=self.request.user,
+                    property_ref=self.object,
+                    booking_type="visit",
+                    status="confirmed",
+                    visit_completed=True
+                ).first()
+                
+                context["has_completed_visit"] = completed_visit is not None
+                context["completed_visit"] = completed_visit
+                context["can_book_after_visit"] = completed_visit.can_book_now if completed_visit else False
+
                 # Check if ANY user has booked this property (not visited) - to disable booking
                 context["is_booked_by_anyone"] = PropertyBooking.objects.filter(
                     property_ref=self.object,

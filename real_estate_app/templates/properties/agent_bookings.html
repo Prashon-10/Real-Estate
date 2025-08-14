@@ -463,6 +463,31 @@
                                 <i class="fas fa-times me-2"></i>Reject Booking
                             </button>
                         {% elif booking.status == 'confirmed' %}
+                            {% if booking.booking_type == 'visit' and not booking.visit_completed %}
+                                <!-- Complete Visit button for confirmed visit requests -->
+                                <form method="post" action="{% url 'properties:complete_visit' booking.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-status btn-accept" onclick="return confirm('Mark this visit as completed? The customer will be able to book the property for 7 days.')">
+                                        <i class="fas fa-check-circle me-2"></i>Complete Visit
+                                    </button>
+                                </form>
+                            {% elif booking.booking_type == 'visit' and booking.visit_completed %}
+                                <!-- Visit already completed -->
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check-circle me-1"></i>Visit Completed
+                                    {% if booking.visit_completed_at %}
+                                        on {{ booking.visit_completed_at|date:"M j, Y" }}
+                                    {% endif %}
+                                </span>
+                                {% if booking.can_book_after_visit %}
+                                    <div class="alert alert-info mt-2 mb-0">
+                                        <small>
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Customer can book until {{ booking.booking_deadline_display }}
+                                        </small>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
                             <button type="button" class="btn btn-status btn-pending" onclick="updateStatus({{ booking.id }}, 'pending')">
                                 <i class="fas fa-undo me-2"></i>Mark as Pending
                             </button>

@@ -70,6 +70,14 @@ class PropertyBookingForm(forms.ModelForm):
         help_text="Comma-separated list of additional property IDs for multi-property visits (no additional fees)"
     )
     
+    terms_accepted = forms.BooleanField(
+        required=True,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input'
+        }),
+        help_text="You must accept the terms and conditions to proceed"
+    )
+
     class Meta:
         model = PropertyBooking
         fields = [
