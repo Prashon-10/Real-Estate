@@ -464,21 +464,73 @@
                             </button>
                         {% elif booking.status == 'confirmed' %}
                             {% if booking.booking_type == 'visit' and not booking.visit_completed %}
-                                <!-- Complete Visit button for confirmed visit requests -->
-                                <form method="post" action="{% url 'properties:complete_visit' booking.id %}" style="display: inline;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-status btn-accept" onclick="return confirm('Mark this visit as completed? The customer will be able to book the property for 7 days.')">
-                                        <i class="fas fa-check-circle me-2"></i>Complete Visit
-                                    </button>
-                                </form>
+                                <!-- Dual confirmation system for visit completion -->
+                                {% if booking.agent_confirmed_completion|default:False %}
+                                    <!-- Agent confirmed, waiting for customer -->
+                                    <div class="d-flex flex-column gap-2">
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-user-check me-1"></i>You confirmed
+                                            {% if booking.agent_confirmation_at %}
+                                                on {{ booking.agent_confirmation_at|date:"M j" }}
+                                            {% endif %}
+                                        </span>
+                                        {% if not booking.customer_confirmed_completion|default:False %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-clock me-1"></i>Waiting for customer confirmation
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <!-- Agent hasn't confirmed yet -->
+                                    <div class="d-flex flex-column gap-2">
+                                        {% now "c" as current_time %}
+                                        {% if booking.preferred_date %}
+                                            <small class="text-muted">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                Scheduled: {{ booking.preferred_date|date:"M j, Y \a\t H:i" }}
+                                            </small>
+                                        {% endif %}
+                                        <form method="post" action="{% url 'properties:complete_visit' booking.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-status btn-accept" onclick="return confirm('Confirm visit completion? This can only be done during or after the scheduled visit time. Once both you and the customer confirm, booking will be available for 7 days.')">
+                                                <i class="fas fa-check-circle me-2"></i>Confirm Visit
+                                            </button>
+                                        </form>
+                                        <small class="text-info">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Can confirm 30 minutes before scheduled time
+                                        </small>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Show customer confirmation status -->
+                                {% if booking.customer_confirmed_completion|default:False %}
+                                    <span class="badge bg-success ms-2">
+                                        <i class="fas fa-user-check me-1"></i>Customer confirmed
+                                        {% if booking.customer_confirmation_at %}
+                                            on {{ booking.customer_confirmation_at|date:"M j" }}
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+                                
                             {% elif booking.booking_type == 'visit' and booking.visit_completed %}
-                                <!-- Visit already completed -->
-                                <span class="badge bg-success">
-                                    <i class="fas fa-check-circle me-1"></i>Visit Completed
-                                    {% if booking.visit_completed_at %}
-                                        on {{ booking.visit_completed_at|date:"M j, Y" }}
-                                    {% endif %}
-                                </span>
+                                <!-- Visit fully completed (both confirmations received) -->
+                                <div class="d-flex flex-column gap-2">
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i>Visit Completed
+                                        {% if booking.visit_completed_at %}
+                                            on {{ booking.visit_completed_at|date:"M j, Y" }}
+                                        {% endif %}
+                                    </span>
+                                    <div class="d-flex gap-2">
+                                        <small class="text-success">
+                                            <i class="fas fa-user-check me-1"></i>Agent: {{ booking.agent_confirmation_at|date:"M j" }}
+                                        </small>
+                                        <small class="text-success">
+                                            <i class="fas fa-user-check me-1"></i>Customer: {{ booking.customer_confirmation_at|date:"M j" }}
+                                        </small>
+                                    </div>
+                                </div>
                                 {% if booking.can_book_after_visit %}
                                     <div class="alert alert-info mt-2 mb-0">
                                         <small>

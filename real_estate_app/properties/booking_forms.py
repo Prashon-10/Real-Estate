@@ -190,11 +190,18 @@ class PropertyBookingForm(forms.ModelForm):
     
     def _calculate_payment_amount(self, booking_type='visit', preferred_date=None):
         """Internal method to calculate payment amount"""
-        # Base amount is Rs. 500 for first-time bookings
-        base_amount = 500.00
+        # Get current fees from BookingFee model
+        from .models import BookingFee
+        current_fees = BookingFee.get_current_fees()
         
-        # Check if user has previous bookings with this agent on different dates
-        if (hasattr(self, 'user') and self.user and self.user.is_authenticated and 
+        # Base amount depends on booking type
+        if booking_type == 'booking':
+            base_amount = float(current_fees['booking_fee'])
+        else:  # visit
+            base_amount = float(current_fees['visit_fee'])
+        
+        # Check if user has previous bookings with this agent on different dates (for visit discount only)
+        if (booking_type == 'visit' and hasattr(self, 'user') and self.user and self.user.is_authenticated and 
             hasattr(self, 'current_property') and self.current_property):
             
             from .models import PropertyBooking
@@ -214,11 +221,10 @@ class PropertyBookingForm(forms.ModelForm):
             
             previous_bookings = query
             
-            # If user has previous bookings with this agent on different dates, charge Rs. 250
+            # If user has previous bookings with this agent on different dates, give visit discount
             if previous_bookings.exists():
-                base_amount = 250.00
+                base_amount = 250.00  # Discounted visit fee for repeat customers
         
-        # No additional fees for multiple properties on the same date
         return base_amount
     
     def get_additional_property_objects(self):

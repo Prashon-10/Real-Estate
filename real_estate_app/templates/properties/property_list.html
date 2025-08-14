@@ -1356,9 +1356,17 @@
                                                 <i class="fas fa-check-circle me-2"></i>Already Booked
                                             </div>
                                         {% elif property.id in visited_property_ids %}
-                                            <!-- User has already requested a visit for this property -->
+                                            <!-- User has already requested a visit for this property (pending/incomplete) -->
                                             <div class="btn btn-visited disabled" title="You have already requested a visit for this property">
                                                 <i class="fas fa-calendar-check me-2"></i>Visit Requested
+                                            </div>
+                                        {% elif property.id in completed_visit_property_ids %}
+                                            <!-- User has completed a visit - show book option -->
+                                            <a href="{% url 'properties:property_booking' property.id %}?type=booking" class="btn btn-book">
+                                                <i class="fas fa-calendar-plus me-2"></i>Book Property
+                                            </a>
+                                            <div class="btn btn-success disabled" title="You have completed a visit for this property">
+                                                <i class="fas fa-check-circle me-2"></i>Visit Completed
                                             </div>
                                         {% else %}
                                             <!-- Normal booking buttons -->

@@ -201,6 +201,14 @@ class PropertyBooking(models.Model):
         related_name='completed_visits',
         help_text="Agent who marked the visit as completed"
     )
+    
+    # Dual Confirmation System
+    agent_confirmed_completion = models.BooleanField(default=False, help_text="Agent confirmed visit completion")
+    agent_confirmation_at = models.DateTimeField(null=True, blank=True, help_text="When agent confirmed completion")
+    customer_confirmed_completion = models.BooleanField(default=False, help_text="Customer confirmed visit completion")
+    customer_confirmation_at = models.DateTimeField(null=True, blank=True, help_text="When customer confirmed completion")
+    
+    # Only available after both confirmations
     can_book_after_visit = models.BooleanField(default=True, help_text="Whether customer can book after completing visit")
     booking_deadline = models.DateTimeField(null=True, blank=True, help_text="Deadline for booking after visit completion")
 
@@ -240,8 +248,41 @@ class PropertyBooking(models.Model):
     
     @property
     def is_visit_completed(self):
-        """Check if this is a completed visit"""
-        return self.is_visit_request and self.visit_completed
+        """Check if this is a completed visit with dual confirmation"""
+        try:
+            agent_confirmed = getattr(self, 'agent_confirmed_completion', False)
+            customer_confirmed = getattr(self, 'customer_confirmed_completion', False)
+            return (self.is_visit_request and 
+                    agent_confirmed and 
+                    customer_confirmed and 
+                    self.visit_completed)
+        except AttributeError:
+            # Fallback for when columns don't exist yet
+            return (self.is_visit_request and self.visit_completed)
+    
+    @property
+    def is_pending_customer_confirmation(self):
+        """Check if agent confirmed but waiting for customer confirmation"""
+        try:
+            agent_confirmed = getattr(self, 'agent_confirmed_completion', False)
+            customer_confirmed = getattr(self, 'customer_confirmed_completion', False)
+            return (self.is_visit_request and 
+                    agent_confirmed and 
+                    not customer_confirmed)
+        except AttributeError:
+            return False
+    
+    @property
+    def is_pending_agent_confirmation(self):
+        """Check if customer confirmed but waiting for agent confirmation"""
+        try:
+            agent_confirmed = getattr(self, 'agent_confirmed_completion', False)
+            customer_confirmed = getattr(self, 'customer_confirmed_completion', False)
+            return (self.is_visit_request and 
+                    customer_confirmed and 
+                    not agent_confirmed)
+        except AttributeError:
+            return False
     
     @property
     def booking_deadline_display(self):
@@ -328,19 +369,83 @@ class PropertyBooking(models.Model):
         return False
     
     def complete_visit(self, completed_by_user, booking_deadline_days=7):
-        """Mark visit as completed and set booking deadline"""
+        """Mark visit as completed and set booking deadline (DEPRECATED - use confirm_visit_completion)"""
+        return self.confirm_visit_completion(completed_by_user, booking_deadline_days)
+    
+    def confirm_visit_completion(self, confirming_user, booking_deadline_days=7):
+        """Agent or customer confirms visit completion"""
         from django.utils import timezone
         from datetime import timedelta
         
-        if self.is_visit_request and not self.visit_completed:
-            self.visit_completed = True
-            self.visit_completed_at = timezone.now()
-            self.visit_completed_by = completed_by_user
-            self.can_book_after_visit = True
-            self.booking_deadline = timezone.now() + timedelta(days=booking_deadline_days)
-            self.save()
-            return True
-        return False
+        if not self.is_visit_request or self.status != 'confirmed':
+            return False
+        
+        try:
+            # Check if this is agent confirmation
+            if confirming_user == self.property_ref.agent:
+                agent_confirmed = getattr(self, 'agent_confirmed_completion', False)
+                if not agent_confirmed:
+                    self.agent_confirmed_completion = True
+                    self.agent_confirmation_at = timezone.now()
+                    self.visit_completed_by = confirming_user
+            
+            # Check if this is customer confirmation  
+            elif confirming_user == self.customer:
+                customer_confirmed = getattr(self, 'customer_confirmed_completion', False)
+                if not customer_confirmed:
+                    self.customer_confirmed_completion = True
+                    self.customer_confirmation_at = timezone.now()
+            
+            else:
+                return False  # User not authorized to confirm
+            
+            # If both have confirmed, mark visit as fully completed
+            agent_confirmed = getattr(self, 'agent_confirmed_completion', False)
+            customer_confirmed = getattr(self, 'customer_confirmed_completion', False)
+            if agent_confirmed and customer_confirmed:
+                if not self.visit_completed:
+                    self.visit_completed = True
+                    self.visit_completed_at = timezone.now()
+                    self.can_book_after_visit = True
+                    self.booking_deadline = timezone.now() + timedelta(days=booking_deadline_days)
+            
+        except AttributeError:
+            # Fallback to old behavior if columns don't exist
+            if not self.visit_completed:
+                self.visit_completed = True
+                self.visit_completed_at = timezone.now()
+                self.visit_completed_by = confirming_user
+                self.can_book_after_visit = True
+                self.booking_deadline = timezone.now() + timedelta(days=booking_deadline_days)
+        
+        self.save()
+        return True
+    
+    def get_confirmation_status(self):
+        """Get human-readable confirmation status"""
+        if not self.is_visit_request:
+            return "Not a visit request"
+        
+        try:
+            agent_confirmed = getattr(self, 'agent_confirmed_completion', False)
+            customer_confirmed = getattr(self, 'customer_confirmed_completion', False)
+            
+            if self.visit_completed:
+                return "Visit completed (both parties confirmed)"
+            elif agent_confirmed and customer_confirmed:
+                return "Both confirmed - processing completion"
+            elif agent_confirmed:
+                return "Agent confirmed - waiting for customer"
+            elif customer_confirmed:
+                return "Customer confirmed - waiting for agent"
+            else:
+                return "Visit pending - no confirmations yet"
+        except AttributeError:
+            # Fallback if columns don't exist
+            if self.visit_completed:
+                return "Visit completed"
+            else:
+                return "Visit pending completion"
 
 
 class BookingFee(models.Model):

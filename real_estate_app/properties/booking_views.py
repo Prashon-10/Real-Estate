@@ -29,25 +29,63 @@ def property_booking_view(request, property_id):
     """Handle property booking form and payment initiation"""
     property_obj = get_object_or_404(Property, id=property_id, status='available')
     
-    # Check if user has already booked this property
-    if request.user.is_authenticated:
-        existing_booking = PropertyBooking.objects.filter(
-            customer=request.user,
-            property_ref=property_obj,
-            status__in=['pending', 'confirmed', 'cancelled']
-        ).first()
-        
-        if existing_booking:
-            messages.error(
-                request, 
-                f"You have already booked this property on {existing_booking.preferred_date.strftime('%Y-%m-%d at %H:%M')} "
-                f"(Status: {existing_booking.get_status_display()}). You cannot book the same property multiple times."
-            )
-            return redirect('properties:property_detail', property_id=property_obj.id)
-    
     # Get booking type from URL parameter
     booking_type = request.GET.get('type', 'booking')  # 'booking' or 'visit'
     after_visit_id = request.GET.get('after_visit')  # ID of completed visit for after-visit booking
+    
+    # Check if user has already ACTUALLY BOOKED this property (not just visited)
+    if request.user.is_authenticated and booking_type == 'booking':
+        existing_property_booking = PropertyBooking.objects.filter(
+            customer=request.user,
+            property_ref=property_obj,
+            booking_type='booking',  # Only check actual property bookings, not visits
+            status__in=['pending', 'confirmed']  # Don't include cancelled
+        ).first()
+        
+        if existing_property_booking:
+            messages.error(
+                request, 
+                f"You have already booked this property on {existing_property_booking.preferred_date.strftime('%Y-%m-%d at %H:%M')} "
+                f"(Status: {existing_property_booking.get_status_display()}). You cannot book the same property multiple times."
+            )
+            return redirect('properties:property_detail', pk=property_obj.id)
+    
+    # Check if user has already requested a visit (separate check)
+    if request.user.is_authenticated and booking_type == 'visit':
+        # First check if user has already completed a visit for this property
+        completed_visit_exists = PropertyBooking.objects.filter(
+            customer=request.user,
+            property_ref=property_obj,
+            booking_type='visit',
+            status='confirmed',
+            visit_completed=True
+        ).exists()
+        
+        if completed_visit_exists:
+            messages.error(
+                request, 
+                f"You have already completed a visit for this property. "
+                f"You can now book this property directly or choose a different property. "
+                f"Multiple visits for the same property are not allowed."
+            )
+            return redirect('properties:property_detail', pk=property_obj.id)
+        
+        # Then check for pending/confirmed visit requests
+        existing_visit_request = PropertyBooking.objects.filter(
+            customer=request.user,
+            property_ref=property_obj,
+            booking_type='visit',  # Only check visit requests
+            status__in=['pending', 'confirmed'],  # Don't include cancelled
+            visit_completed=False  # Only incomplete visits
+        ).first()
+        
+        if existing_visit_request:
+            messages.error(
+                request, 
+                f"You have already requested a visit for this property on {existing_visit_request.preferred_date.strftime('%Y-%m-%d at %H:%M')} "
+                f"(Status: {existing_visit_request.get_status_display()}). Please wait for the current visit to be completed."
+            )
+            return redirect('properties:property_detail', pk=property_obj.id)
     
     # Handle after-visit booking
     completed_visit = None
@@ -62,10 +100,10 @@ def property_booking_view(request, property_id):
             )
             if not completed_visit.can_book_now:
                 messages.error(request, "The booking deadline for this visit has expired.")
-                return redirect('properties:property_detail', property_id=property_obj.id)
+                return redirect('properties:property_detail', pk=property_obj.id)
         except PropertyBooking.DoesNotExist:
             messages.error(request, "Invalid visit reference.")
-            return redirect('properties:property_detail', property_id=property_obj.id)
+            return redirect('properties:property_detail', pk=property_obj.id)
     
     if request.method == 'POST':
         form = PropertyBookingForm(request.POST, user=request.user, initial_booking_type=booking_type, current_property=property_obj)
@@ -101,10 +139,12 @@ def property_booking_view(request, property_id):
     # Get current fees for display
     fees = BookingFee.get_current_fees()
     
-    # Calculate the actual payment amount for this user (considering repeat customer discount)
+    # Calculate the actual payment amount for this user (considering repeat customer discount for visits)
     if hasattr(form, 'get_initial_payment_amount'):
         actual_visit_fee = form.get_initial_payment_amount('visit')
+        actual_booking_fee = form.get_initial_payment_amount('booking')
         fees['visit_fee'] = actual_visit_fee
+        fees['booking_fee'] = actual_booking_fee
     
     # Get blocked visit dates for this property (dates already taken by other users)
     blocked_dates = list(
@@ -150,6 +190,17 @@ def property_booking_view(request, property_id):
     from .utils import get_properties_within_distance
     nearby_properties = get_properties_within_distance(property_obj, max_distance_km=5.0, user=request.user)
     
+    # Check if user has already completed a visit for this property (for template logic)
+    has_completed_visit = False
+    if request.user.is_authenticated:
+        has_completed_visit = PropertyBooking.objects.filter(
+            customer=request.user,
+            property_ref=property_obj,
+            booking_type='visit',
+            status='confirmed',
+            visit_completed=True
+        ).exists()
+    
     context = {
         'form': form,
         'property': property_obj,
@@ -160,6 +211,7 @@ def property_booking_view(request, property_id):
         'nearby_properties': nearby_properties,
         'completed_visit': completed_visit,
         'is_after_visit_booking': completed_visit is not None,
+        'has_completed_visit': has_completed_visit,  # Add this for template logic
     }
     return render(request, 'properties/booking_form.html', context)
 
@@ -701,15 +753,15 @@ def stripe_webhook_view(request):
 @login_required
 @require_POST
 def complete_visit_view(request, booking_id):
-    """Allow agents to mark visit as completed"""
+    """Allow agents to confirm visit completion (part of dual confirmation system)"""
     booking = get_object_or_404(PropertyBooking, id=booking_id)
     
     # Check if user is the agent for this property
     if request.user != booking.property_ref.agent:
-        messages.error(request, "You can only complete visits for your own properties.")
+        messages.error(request, "You can only confirm visits for your own properties.")
         return redirect('properties:agent_bookings')
     
-    # Check if this is a confirmed visit that hasn't been completed yet
+    # Check if this is a confirmed visit
     if booking.booking_type != 'visit':
         messages.error(request, "This is not a visit request.")
         return redirect('properties:agent_bookings')
@@ -718,17 +770,131 @@ def complete_visit_view(request, booking_id):
         messages.error(request, "Only confirmed visits can be marked as completed.")
         return redirect('properties:agent_bookings')
     
-    if booking.visit_completed:
-        messages.info(request, "This visit has already been marked as completed.")
+    # Check if visit time has passed (time authentication)
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    current_time = timezone.now()
+    
+    # Check if the scheduled visit time has passed
+    if booking.preferred_date and booking.preferred_date > current_time:
+        time_remaining = booking.preferred_date - current_time
+        hours = int(time_remaining.total_seconds() // 3600)
+        minutes = int((time_remaining.total_seconds() % 3600) // 60)
+        
+        messages.error(
+            request, 
+            f"Cannot confirm visit completion before the scheduled time. "
+            f"Visit is scheduled for {booking.preferred_date.strftime('%Y-%m-%d at %H:%M')}. "
+            f"Time remaining: {hours}h {minutes}m"
+        )
         return redirect('properties:agent_bookings')
     
-    # Complete the visit
-    if booking.complete_visit(request.user):
-        messages.success(
+    # Allow confirmation within 30 minutes of scheduled time (buffer for early arrivals)
+    buffer_time = timedelta(minutes=30)
+    if booking.preferred_date and booking.preferred_date - buffer_time > current_time:
+        messages.error(
             request, 
-            f"Visit completed successfully! {booking.customer_name} can now book this property until {booking.booking_deadline_display}."
+            f"Visit confirmation is available from 30 minutes before the scheduled time. "
+            f"Visit scheduled for {booking.preferred_date.strftime('%Y-%m-%d at %H:%M')}."
         )
+        return redirect('properties:agent_bookings')
+    
+    agent_confirmed = getattr(booking, 'agent_confirmed_completion', False)
+    if agent_confirmed:
+        messages.info(request, "You have already confirmed this visit completion.")
+        return redirect('properties:agent_bookings')
+    
+    # Agent confirms the visit
+    if booking.confirm_visit_completion(request.user):
+        if booking.visit_completed:
+            messages.success(
+                request, 
+                f"Visit fully completed! Both you and {booking.customer_name} have confirmed. "
+                f"Customer can now book this property until {booking.booking_deadline_display}."
+            )
+        else:
+            messages.success(
+                request, 
+                f"You confirmed the visit completion. Waiting for {booking.customer_name} to also confirm. "
+                f"Once both parties confirm, booking will be available."
+            )
     else:
-        messages.error(request, "Failed to complete the visit.")
+        messages.error(request, "Failed to confirm the visit.")
     
     return redirect('properties:agent_bookings')
+
+
+@login_required
+@require_POST
+def customer_confirm_visit_view(request, booking_id):
+    """Allow customers to confirm visit completion (part of dual confirmation system)"""
+    booking = get_object_or_404(PropertyBooking, id=booking_id)
+    
+    # Check if user is the customer for this booking
+    if request.user != booking.customer:
+        messages.error(request, "You can only confirm your own visit completions.")
+        return redirect('properties:property_detail', pk=booking.property_ref.id)
+    
+    # Check if this is a confirmed visit
+    if booking.booking_type != 'visit':
+        messages.error(request, "This is not a visit request.")
+        return redirect('properties:property_detail', pk=booking.property_ref.id)
+    
+    if booking.status != 'confirmed':
+        messages.error(request, "Only confirmed visits can be marked as completed.")
+        return redirect('properties:property_detail', pk=booking.property_ref.id)
+    
+    # Check if visit time has passed (time authentication)
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    current_time = timezone.now()
+    
+    # Check if the scheduled visit time has passed
+    if booking.preferred_date and booking.preferred_date > current_time:
+        time_remaining = booking.preferred_date - current_time
+        hours = int(time_remaining.total_seconds() // 3600)
+        minutes = int((time_remaining.total_seconds() % 3600) // 60)
+        
+        messages.error(
+            request, 
+            f"Cannot confirm visit completion before the scheduled time. "
+            f"Visit is scheduled for {booking.preferred_date.strftime('%Y-%m-%d at %H:%M')}. "
+            f"Time remaining: {hours}h {minutes}m"
+        )
+        return redirect('properties:property_detail', pk=booking.property_ref.id)
+    
+    # Allow confirmation within 30 minutes of scheduled time (buffer for early arrivals)
+    buffer_time = timedelta(minutes=30)
+    if booking.preferred_date and booking.preferred_date - buffer_time > current_time:
+        messages.error(
+            request, 
+            f"Visit confirmation is available from 30 minutes before the scheduled time. "
+            f"Visit scheduled for {booking.preferred_date.strftime('%Y-%m-%d at %H:%M')}."
+        )
+        return redirect('properties:property_detail', pk=booking.property_ref.id)
+    
+    customer_confirmed = getattr(booking, 'customer_confirmed_completion', False)
+    if customer_confirmed:
+        messages.info(request, "You have already confirmed this visit completion.")
+        return redirect('properties:property_detail', pk=booking.property_ref.id)
+    
+    # Customer confirms the visit
+    if booking.confirm_visit_completion(request.user):
+        if booking.visit_completed:
+            messages.success(
+                request, 
+                f"Visit fully completed! Both you and the agent have confirmed. "
+                f"You can now book this property until {booking.booking_deadline_display}."
+            )
+        else:
+            messages.success(
+                request, 
+                f"You confirmed the visit completion. Waiting for the agent to also confirm. "
+                f"Once both parties confirm, booking will be available."
+            )
+    else:
+        messages.error(request, "Failed to confirm the visit.")
+    
+    return redirect('properties:property_detail', pk=booking.property_ref.id)

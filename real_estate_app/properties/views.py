@@ -125,6 +125,7 @@ class PropertyListView(LoginRequiredMixin, ListView):
         favorite_property_ids = []
         booked_property_ids = []
         visited_property_ids = []
+        completed_visit_property_ids = []
 
         if self.request.user.is_authenticated and self.request.user.is_customer():
             favorite_property_ids = list(
@@ -145,7 +146,7 @@ class PropertyListView(LoginRequiredMixin, ListView):
                 ).values_list("property_ref__id", flat=True)
             )
 
-            # Get properties that the current user has already requested visits for
+            # Get properties that the current user has already requested visits for (pending/incomplete visits only)
             visited_property_ids = list(
                 PropertyBooking.objects.filter(
                     customer=self.request.user,
@@ -154,14 +155,26 @@ class PropertyListView(LoginRequiredMixin, ListView):
                         "pending",
                         "confirmed",
                     ],  # Don't show button if visit is pending or confirmed
+                    visit_completed=False,  # Only incomplete visits
+                ).values_list("property_ref__id", flat=True)
+            )
+            
+            # Get properties where user has completed a visit (should show book option)
+            completed_visit_property_ids = list(
+                PropertyBooking.objects.filter(
+                    customer=self.request.user,
+                    booking_type="visit",
+                    status="confirmed",
+                    visit_completed=True,  # Only completed visits
                 ).values_list("property_ref__id", flat=True)
             )
 
         context["favorite_property_ids"] = favorite_property_ids
         context["booked_property_ids"] = booked_property_ids
         context["visited_property_ids"] = (
-            visited_property_ids  # User's own visit requests
+            visited_property_ids  # User's own incomplete visit requests
         )
+        context["completed_visit_property_ids"] = completed_visit_property_ids  # User's completed visits
         context["all_booked_property_ids"] = all_booked_property_ids  # For graying out
         context["all_visited_property_ids"] = (
             all_visited_property_ids  # For "Being Visited" indicator
@@ -219,9 +232,20 @@ class PropertyDetailView(LoginRequiredMixin, DetailView):
                     visit_completed=True
                 ).first()
                 
+                # Check for visits pending confirmation (dual confirmation system)
+                pending_confirmation_visit = PropertyBooking.objects.filter(
+                    customer=self.request.user,
+                    property_ref=self.object,
+                    booking_type="visit",
+                    status="confirmed",
+                    visit_completed=False  # Visit not fully completed yet
+                ).first()
+                
                 context["has_completed_visit"] = completed_visit is not None
                 context["completed_visit"] = completed_visit
                 context["can_book_after_visit"] = completed_visit.can_book_now if completed_visit else False
+                context["pending_confirmation_visit"] = pending_confirmation_visit
+                context["has_pending_confirmation"] = pending_confirmation_visit is not None
 
                 # Check if ANY user has booked this property (not visited) - to disable booking
                 context["is_booked_by_anyone"] = PropertyBooking.objects.filter(

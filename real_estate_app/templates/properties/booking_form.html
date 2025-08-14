@@ -388,38 +388,66 @@ Book Property - {{ property.title }}
                                     Booking Type
                                 </div>
                                 
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="payment-method-card" onclick="selectBookingType('booking')">
-                                            <div class="form-check">
-                                                {{ form.booking_type.0 }}
-                                                <label class="form-check-label">
-                                                    <strong>Property Booking</strong><br>
-                                                    <small class="text-muted">Book this property with payment</small>
-                                                </label>
-                                            </div>
-                                            <div class="fee-display mt-2">
-                                                <div class="fee-amount">NPR {{ fees.booking_fee }}</div>
-                                                <small>Booking Fee</small>
+                                {% if has_completed_visit %}
+                                    <!-- User has completed a visit - only show booking option -->
+                                    <div class="alert alert-info mb-3">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        <strong>You have already completed a visit for this property.</strong><br>
+                                        You can now book this property or choose a different one. Multiple visits are not allowed.
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="payment-method-card active" onclick="selectBookingType('booking')">
+                                                <div class="form-check">
+                                                    <input type="radio" name="booking_type" value="booking" checked id="id_booking_type_0" class="form-check-input">
+                                                    <label class="form-check-label">
+                                                        <strong>Property Booking</strong><br>
+                                                        <small class="text-muted">Book this property with payment</small>
+                                                    </label>
+                                                </div>
+                                                <div class="fee-display mt-2">
+                                                    <div class="fee-amount">NPR {{ fees.booking_fee }}</div>
+                                                    <small>Booking Fee</small>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="payment-method-card" onclick="selectBookingType('visit')">
-                                            <div class="form-check">
-                                                {{ form.booking_type.1 }}
-                                                <label class="form-check-label">
-                                                    <strong>Visit Request</strong><br>
-                                                    <small class="text-muted">Schedule a property visit</small>
-                                                </label>
+                                {% else %}
+                                    <!-- Normal booking type selection -->
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="payment-method-card" onclick="selectBookingType('booking')">
+                                                <div class="form-check">
+                                                    {{ form.booking_type.0 }}
+                                                    <label class="form-check-label">
+                                                        <strong>Property Booking</strong><br>
+                                                        <small class="text-muted">Book this property with payment</small>
+                                                    </label>
+                                                </div>
+                                                <div class="fee-display mt-2">
+                                                    <div class="fee-amount">NPR {{ fees.booking_fee }}</div>
+                                                    <small>Booking Fee</small>
+                                                </div>
                                             </div>
-                                            <div class="fee-display mt-2">
-                                                <div class="fee-amount">NPR {{ fees.visit_fee }}</div>
-                                                <small>Visit Fee</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="payment-method-card" onclick="selectBookingType('visit')">
+                                                <div class="form-check">
+                                                    {{ form.booking_type.1 }}
+                                                    <label class="form-check-label">
+                                                        <strong>Visit Request</strong><br>
+                                                        <small class="text-muted">Schedule a property visit</small>
+                                                    </label>
+                                                </div>
+                                                <div class="fee-display mt-2">
+                                                    <div class="fee-amount">NPR {{ fees.visit_fee }}</div>
+                                                    <small>Visit Fee</small>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                {% endif %}
                             </div>
                             
                             <!-- Customer Information -->

@@ -734,6 +734,67 @@
                             <button class="btn btn-action btn-disabled" disabled>
                                 <i class="fas fa-check-circle me-2"></i>Already Booked
                             </button>
+                        {% elif has_pending_confirmation %}
+                            <!-- Visit is pending dual confirmation -->
+                            {% with visit=pending_confirmation_visit %}
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-clock me-2"></i>Visit Completion Pending</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <small class="d-block">
+                                                {% if visit.agent_confirmed_completion|default:False %}
+                                                    <i class="fas fa-check text-success me-1"></i>Agent confirmed
+                                                    {% if visit.agent_confirmation_at %}
+                                                        on {{ visit.agent_confirmation_at|date:"M j" }}
+                                                    {% endif %}
+                                                {% else %}
+                                                    <i class="fas fa-clock text-warning me-1"></i>Waiting for agent confirmation
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="d-block">
+                                                {% if visit.customer_confirmed_completion|default:False %}
+                                                    <i class="fas fa-check text-success me-1"></i>You confirmed
+                                                    {% if visit.customer_confirmation_at %}
+                                                        on {{ visit.customer_confirmation_at|date:"M j" %}
+                                                    {% endif %}
+                                                {% else %}
+                                                    <i class="fas fa-clock text-warning me-1"></i>Your confirmation needed
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if not visit.customer_confirmed_completion|default:False %}
+                                        <div class="mt-2">
+                                            {% if visit.preferred_date %}
+                                                <small class="text-muted d-block mb-2">
+                                                    <i class="fas fa-calendar me-1"></i>
+                                                    Visit scheduled: {{ visit.preferred_date|date:"M j, Y \a\t H:i" }}
+                                                </small>
+                                            {% endif %}
+                                            <form method="post" action="{% url 'properties:customer_confirm_visit' visit.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-success" onclick="return confirm('Confirm that your visit was completed? This can only be done during or after the scheduled visit time. Once both you and the agent confirm, you can book this property.')">
+                                                    <i class="fas fa-check-circle me-2"></i>Confirm Visit Completion
+                                                </button>
+                                            </form>
+                                            <small class="text-info d-block mt-1">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Can confirm 30 minutes before scheduled time
+                                            </small>
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-warning mt-2 mb-0">
+                                            <small>
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Waiting for agent to also confirm. Once both confirm, booking will be available.
+                                            </small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endwith %}
                         {% elif has_completed_visit %}
                             <!-- User has completed a visit - prioritize this over has_visit_request -->
                             {% if can_book_after_visit %}
@@ -771,14 +832,35 @@
                             </div>
                         {% else %}
                             <!-- Property available for booking -->
-                            <a href="{% url 'properties:property_booking' property.id %}?type=booking" class="btn btn-action btn-book">
-                                <i class="fas fa-key me-2"></i>Book Property
-                            </a>
-                            {% if not has_completed_visit %}
-                                <!-- Only show visit option if user hasn't completed a visit already -->
-                                <a href="{% url 'properties:property_booking' property.id %}?type=visit" class="btn btn-action btn-visit">
-                                    <i class="fas fa-eye me-2"></i>Schedule Visit
+                            {% if has_visit_request %}
+                                <!-- User has a pending/confirmed visit - show different states -->
+                                <a href="{% url 'properties:property_booking' property.id %}?type=booking" class="btn btn-action btn-book">
+                                    <i class="fas fa-key me-2"></i>Book Property
                                 </a>
+                                <button class="btn btn-action btn-disabled" disabled style="background: #6c757d; color: white;">
+                                    <i class="fas fa-calendar-check me-2"></i>Visit Already Requested
+                                </button>
+                                <div class="alert alert-info mt-2 mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    You can still book this property directly, or wait for your visit to be completed.
+                                </div>
+                            {% else %}
+                                <!-- No visit requested - show both options -->
+                                <a href="{% url 'properties:property_booking' property.id %}?type=booking" class="btn btn-action btn-book">
+                                    <i class="fas fa-key me-2"></i>Book Property
+                                </a>
+                                {% if not has_completed_visit %}
+                                    <!-- Only show visit option if user hasn't completed a visit already -->
+                                    <a href="{% url 'properties:property_booking' property.id %}?type=visit" class="btn btn-action btn-visit">
+                                        <i class="fas fa-eye me-2"></i>Schedule Visit
+                                    </a>
+                                {% else %}
+                                    <!-- User has completed a visit - show message instead of visit button -->
+                                    <div class="alert alert-success mt-2 mb-0">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        You have already completed a visit for this property. You can now book this property or choose a different one.
+                                    </div>
+                                {% endif %}
                             {% endif %}
                         {% endif %}
                         
