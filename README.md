@@ -219,18 +219,10 @@ EMAIL_HOST_PASSWORD=your-email-password
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🔗 Links
-
-- **Demo**: [Live Demo](https://your-demo-site.com)
-- **Documentation**: [Full Docs](https://your-docs-site.com)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/real-estate-management/issues)
-
 ## 📞 Support
 
 For support and questions:
-- 📧 Email: support@yoursite.com
-- 💬 Discord: [Join our server](https://discord.gg/yourserver)
-- 📖 Wiki: [Project Wiki](https://github.com/yourusername/real-estate-management/wiki)
+- 📧 Email: mr.prashon@gmail.com
 
 ## 🏆 Acknowledgments
 
