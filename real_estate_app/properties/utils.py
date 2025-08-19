@@ -115,26 +115,16 @@ def check_booking_distance_compatibility(user, new_property, preferred_date) -> 
     if not existing_bookings.exists():
         return True, None, []
     
-    # Check for conflicts - Only one agent per day rule
+    if not new_property.latitude or not new_property.longitude:
+        return False, "Cannot book properties without location coordinates on the same day.", list(existing_bookings)
+    
     conflicting_bookings = []
     
     for booking in existing_bookings:
         existing_property = booking.property_ref
         
-        # If booking is with a different agent, it's not allowed (one agent per day rule)
-        if existing_property.agent != new_property.agent:
-            conflicting_bookings.append(booking)
-            continue
-        
-        # If same agent, check distance restrictions for same-agent bookings
-        # For same agent, check distance only if both properties have coordinates
-        if not new_property.latitude or not new_property.longitude:
-            # If new property doesn't have coordinates, allow booking with same agent
-            # (assume they can manage logistics)
-            continue
-            
         if not existing_property.latitude or not existing_property.longitude:
-            # If existing property doesn't have coordinates, allow booking
+            conflicting_bookings.append(booking)
             continue
         
         distance = calculate_distance(
@@ -144,55 +134,28 @@ def check_booking_distance_compatibility(user, new_property, preferred_date) -> 
             float(existing_property.longitude)
         )
         
-        # Only restrict if same agent AND more than 5km apart
         if distance > 5.0:  # More than 5km apart
             conflicting_bookings.append(booking)
     
     if conflicting_bookings:
-        # Check if conflicts are due to different agents or same agent distance issues
-        different_agent_conflicts = []
-        same_agent_distance_conflicts = []
+        error_msg = "You cannot book properties that are more than 5km apart on the same day. "
+        error_msg += f"The following booking(s) conflict: "
         
+        conflict_details = []
         for booking in conflicting_bookings:
             existing_property = booking.property_ref
-            if existing_property.agent != new_property.agent:
-                different_agent_conflicts.append(booking)
+            if existing_property.latitude and existing_property.longitude and new_property.latitude and new_property.longitude:
+                distance = calculate_distance(
+                    float(new_property.latitude),
+                    float(new_property.longitude),
+                    float(existing_property.latitude),
+                    float(existing_property.longitude)
+                )
+                conflict_details.append(f"'{existing_property.title}' ({distance:.2f}km away)")
             else:
-                same_agent_distance_conflicts.append(booking)
+                conflict_details.append(f"'{existing_property.title}' (location unknown)")
         
-        if different_agent_conflicts:
-            error_msg = "You can only book properties from ONE agent per day. "
-            error_msg += f"You already have booking(s) with a different agent on {preferred_date.strftime('%Y-%m-%d')}: "
-            
-            conflict_details = []
-            for booking in different_agent_conflicts:
-                existing_property = booking.property_ref
-                agent_name = existing_property.agent.get_full_name() or existing_property.agent.username
-                conflict_details.append(f"'{existing_property.title}' (Agent: {agent_name})")
-            
-            error_msg += ", ".join(conflict_details)
-            error_msg += f". You cannot book with a different agent ({new_property.agent.get_full_name() or new_property.agent.username}) on the same day."
-            return False, error_msg, different_agent_conflicts
-        
-        if same_agent_distance_conflicts:
-            error_msg = "You cannot book properties from the same agent that are more than 5km apart on the same day. "
-            error_msg += f"The following booking(s) with the same agent conflict: "
-            
-            conflict_details = []
-            for booking in same_agent_distance_conflicts:
-                existing_property = booking.property_ref
-                if existing_property.latitude and existing_property.longitude and new_property.latitude and new_property.longitude:
-                    distance = calculate_distance(
-                        float(new_property.latitude),
-                        float(new_property.longitude),
-                        float(existing_property.latitude),
-                        float(existing_property.longitude)
-                    )
-                    conflict_details.append(f"'{existing_property.title}' ({distance:.2f}km away from current property)")
-                else:
-                    conflict_details.append(f"'{existing_property.title}'")
-            
-            error_msg += ", ".join(conflict_details)
-            return False, error_msg, same_agent_distance_conflicts
+        error_msg += ", ".join(conflict_details)
+        return False, error_msg, conflicting_bookings
     
     return True, None, []

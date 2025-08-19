@@ -929,31 +929,13 @@ function setupBlockedDates(dateInput, blockedDates) {
             return;
         }
         
-        // Check if user already has ANY booking on this date
+        // Check if user already has ANY booking on this date for any property/agent
         const userConflict = userBookingDates.find(booking => booking.date === selectedDate);
         if (userConflict) {
-            // Check if it's the same agent
-            const currentAgent = '{{ current_agent_name|escapejs }}';
-            
-            if (userConflict.agent === currentAgent) {
-                // Same agent - allow but warn about distance restriction
-                alert(`You already have a ${userConflict.type.toLowerCase()} scheduled for "${userConflict.property}" with the same agent (${userConflict.agent}) on this date at ${userConflict.time}. 
-
-You can book additional properties from the same agent on the same day, but they must be within 5km of each other.
-
-Please ensure the properties are within the allowed 5km distance or select a different date.`);
-                // Allow the booking to continue for same agent
-            } else {
-                // Different agent - not allowed (one agent per day rule)
-                alert(`You already have a ${userConflict.type.toLowerCase()} scheduled for "${userConflict.property}" with agent "${userConflict.agent}" on this date at ${userConflict.time}.
-
-BUSINESS RULE: You can only book properties from ONE agent per day. You cannot book with a different agent (${currentAgent}) on the same day.
-
-Please select a different date.`);
-                this.value = '';
-                this.focus();
-                return;
-            }
+            alert(`You already have a ${userConflict.type.toLowerCase()} scheduled for "${userConflict.property}" (Agent: ${userConflict.agent}) on this date at ${userConflict.time}. Please note: You can only book properties that are within 5km of each other on the same day. Please select a different date or check if the properties are within the allowed distance.`);
+            this.value = '';
+            this.focus();
+            return;
         }
         
         // Check if date is in the past

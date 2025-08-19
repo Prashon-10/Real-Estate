@@ -212,7 +212,6 @@ def property_booking_view(request, property_id):
         'completed_visit': completed_visit,
         'is_after_visit_booking': completed_visit is not None,
         'has_completed_visit': has_completed_visit,  # Add this for template logic
-        'current_agent_name': property_obj.agent.get_full_name() or property_obj.agent.username,  # Add current agent info
     }
     return render(request, 'properties/booking_form.html', context)
 
